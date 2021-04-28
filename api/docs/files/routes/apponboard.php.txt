@@ -1,0 +1,91 @@
+<?php
+
+use Model\OnBoard;
+
+// Ambil semua data kategori
+$app->get('/apponboard/index', function ($request, $response) {
+    $params = $request->getParams();
+    $OnBoard = new OnBoard();
+
+    $params['filter'] = isset($params['filter']) ? $params['filter'] : [];
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : '';
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : '';
+
+    $getDataKategoriFile = $OnBoard->getAll($params, $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' => $getDataKategoriFile['data'],
+        'totalItems' => $getDataKategoriFile['totalItem'],
+    ]);
+});
+
+// Simpan kategori file
+$app->post('/apponboard/save', function ($request, $response) {
+    $params = $request->getParams();
+    $OnBoard = new OnBoard();
+    $validasi = $OnBoard->validasi($params);
+
+    if (true === $validasi) {
+//        if (true == $validasiKode) {
+        $save = $OnBoard->save($params);
+
+        // return status sukses
+        if ($save['status']) {
+            return successResponse($response, [$save['data']]);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+//        }
+
+//        return unprocessResponse($response, 'Kode Telah Tersedia');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus kategori file
+$app->post('/apponboard/delete', function ($request, $response) {
+    $params = $request->getParams();
+    $OnBoard = new OnBoard();
+    $delete = $OnBoard->delete($params);
+
+    // return status sukses
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+
+// Generate default kode organisasi
+$app->get('/apponboard/generate_kode', function ($request, $response) {
+    $data = $request->getParams();
+    $kategoriFile = new OnBoard();
+    $model = $kategoriFile->generateKode();
+
+    if ($model['status']) {
+        return successResponse($response, $model['data']);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+
+// Generate default kode organisasi
+$app->get('/apponboard/getPencarian', function ($request, $response) {
+    $data = $request->getParams();
+    $content = file_get_contents('https://api.mapbox.com/geocoding/v5/mapbox.places/'.$data['nama'].'.json?access_token=pk.eyJ1Ijoid2FoeXVhZ3VuZzI2IiwiYSI6ImNrYjkweGVnNzAzZ2EydG53anZ3MzE2ODYifQ.IbVRbIkhgAcPrRqRyc4uEg');
+    if (isset($content)) {
+        $lokasi = json_decode($content);
+        $arr = [];
+        foreach ($lokasi->features as $key => $val) {
+            $arr[$key]['nama'] = $val->place_name;
+            $arr[$key]['lat'] = $val->geometry->coordinates[1];
+            $arr[$key]['lang'] = $val->geometry->coordinates[0];
+        }
+
+        return successResponse($response, $arr);
+    }
+
+    return unprocessResponse($response, 'pencarian tidak ditemukan');
+});
+

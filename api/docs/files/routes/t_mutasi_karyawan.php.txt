@@ -1,0 +1,133 @@
+<?php
+
+use Model\MutasiKaryawan;
+use Service\Landa;
+
+// Ambil semua emergency kontak
+//
+$app->get('/t_mutasi_karyawan/index', function ($request, $response) {
+    $params = $request->getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $getDatakJabatan = $mutasiKaryawan->getAll($params);
+
+    foreach ($getDatakJabatan['data'] as $key => $val) {
+        if (null != $val->tgl_mulai) {
+            $val->tgl_mulai = date('d/m/Y', strtotime($val->tgl_mulai));
+        }
+
+        if (null != $val->tgl_selesai) {
+            $val->tgl_selesai = date('d/m/Y', strtotime($val->tgl_selesai));
+        }
+    }
+
+    return successResponse($response, [
+        'list' => $getDatakJabatan['data'],
+        'totalItems' => $getDatakJabatan['totalItem'],
+    ]);
+});
+// Save emergency kontak
+$app->post('/t_mutasi_karyawan/save', function ($request, $response) {
+    $data = $request->getParams();
+    $landa = new Landa();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $validasi = $mutasiKaryawan->validasi($data);
+    if (true === $validasi) {
+        // Proses simpan ke dalam database.
+        if (1 == $data['is_mutasi']) {
+            $save = $mutasiKaryawan->save($data);
+        } else {
+            $save = $mutasiKaryawan->tambahMutasi($data);
+        }
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Hapus emergency kontak
+$app->post('/t_mutasi_karyawan/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan->delete($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+// Hapus emergency kontak
+$app->post('/t_mutasi_karyawan/nonaktif', function ($request, $response) {
+    $data = $request->getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan->nonaktif($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+$app->post('/t_mutasi_karyawan/ubahJabatan', function ($request, $response) {
+    $data = $request->getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan->ubahJabatan($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+$app->get('/t_mutasi_karyawan/getKaryawan', function ($request, $response) {
+    $data = $request->getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan->getKaryawan();
+    if ($model) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+$app->get('/t_mutasi_karyawan/getOrganisasi', function ($request, $response) {
+    $data = $request->getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan->getOrganisasi($data['m_perusahaan_id']);
+    if ($model) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+$app->get('/t_mutasi_karyawan/getJabatan', function ($request, $response) {
+    $data = $request->getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan->getJabatan($data['m_perusahaan_id']);
+    if ($model) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+//Ambil semua jabatan Karyawan
+$app->get('/t_mutasi_karyawan/getJabatanKaryawan', function ($request, $response) {
+    $data = $request->getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan->getJabatanKaryawan($data);
+    if ($model) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+$app->get('/t_mutasi_karyawan/generateKode', function ($request, $response) {
+    $data = $request->getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan->generate_kode();
+    if ($model) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+

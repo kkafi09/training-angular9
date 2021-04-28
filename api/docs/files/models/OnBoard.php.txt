@@ -1,0 +1,291 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+
+class OnBoard extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_onboard';
+    }
+
+    /**
+     * Ambil semua data kategori file.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select($this->table.'.*,
+			        m_perusahaan.id as perusahaan_id, 
+			        m_perusahaan.nama as perusahaan_nama')
+            ->from($this->table)
+            ->leftJoin('m_perusahaan', $this->table.'.m_perusahaan_id = m_perusahaan.id')
+            ->where($this->table.'.is_deleted', '=', 0)
+            ->orderBy($this->table.'.id DESC')
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($this->table.'.'.$key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($limit) && !empty($limit)) {
+            $this->db->limit($limit);
+        }
+        // Set offset
+        if (isset($offset) && !empty($offset)) {
+            $this->db->offset($offset);
+        }
+        // ambil data berdasarkan perusahaan
+
+        $models = $this->db->findAll();
+        $ObId = [];
+        $arr = [];
+        $karyawan = [];
+        $totalItem = $this->db->count();
+        if (count($models) > 0) {
+            foreach ($models as $key => $val) {
+                $ObId[] = $val->id;
+            }
+            $this->db->select('t_onboard_karyawan.*')
+                ->from('t_onboard_karyawan')
+                ->customWhere('t_onboard_karyawan.t_onboard_id IN('.implode(', ', $ObId).')', 'AND')
+            ;
+            $karyawanAll = $this->db->findAll();
+            foreach ($models as $key => $val) {
+                foreach ($karyawanAll as $keys => $vals) {
+                    if ($val->id == $vals->t_onboard_id) {
+                        $val->karyawan[] = $vals->karyawan_id;
+                    }
+                }
+            }
+        }
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data perusahaan.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $params
+     */
+    public function save($params)
+    {
+        $landa = new Landa();
+        $arr = [];
+
+        try {
+            $params['tgl_mulai'] = isset($params['tgl_mulai']) ? ($landa->arrayToDate($params['tgl_mulai'])) : null;
+            $params['tgl_selesai'] = isset($params['tgl_selesai']) ? ($landa->arrayToDate($params['tgl_selesai'])) : null;
+
+            if (isset($params['id']) && !empty($params['id'])) {
+                $model = $this->db->update($this->table, $params, ['id' => $params['id']]);
+                $this->db->delete('t_onboard_karyawan', ['t_onboard_id' => $params['id']]);
+                if (isset($params['karyawan'])) {
+                    foreach ($params['karyawan'] as $key => $value) {
+                        $arr['karyawan_id'] = $value;
+                        $arr['t_onboard_id'] = $model->id;
+                        $karyawan = $this->db->insert('t_onboard_karyawan', $arr);
+                    }
+                }
+            } else {
+                $params['is_deleted'] = 0;
+                $model = $this->db->insert($this->table, $params);
+                if (isset($params['karyawan'])) {
+                    foreach ($params['karyawan'] as $key => $value) {
+                        $arr['karyawan_id'] = $value;
+                        $arr['t_onboard_id'] = $model->id;
+                        $karyawan = $this->db->insert('t_onboard_karyawan', $arr);
+                    }
+                }
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            if (empty($params)) {
+                $model = $this->db->update($this->table, ['is_deleted' => 1], ['m_perusahaan_id' => $_SESSION['user']['m_perusahaan']['id']]);
+            } else {
+                $model = $this->db->update($this->table, ['is_deleted' => 1], ['id' => $params['id']]);
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        if (1 == $data['tipe']) {
+            $validasi = [
+                'nama' => 'required',
+                'm_perusahaan_id' => 'required',
+                'alamat' => 'required',
+                'tipe' => 'required',
+                'radius' => 'required',
+            ];
+        } elseif (2 == $data['tipe']) {
+            $validasi = [
+                'nama' => 'required',
+                'alamat' => 'required',
+                'radius' => 'required',
+                'tipe' => 'required',
+                'tgl_mulai' => 'required',
+                'tgl_selesai' => 'required',
+                'karyawan' => 'required',
+            ];
+        } else {
+            $validasi = [
+                'tipe' => 'required',
+            ];
+        }
+
+        return validate($data, $validasi, $custom);
+    }
+
+    /**
+     * Generate kode.
+     *
+     * @return string kode default
+     */
+    public function generateKode()
+    {
+        $cekKode = $this->db->select($this->table.'.id')
+            ->from($this->table)
+            ->where('m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->orderBy('kode DESC')
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $kode_perusahaan = isset($_SESSION['user']['m_perusahaan']['kode']) ? $_SESSION['user']['m_perusahaan']['kode'] : '';
+            $tipe = 'OB';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $kode_perusahaan.$tipe.$kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    public function checkLokasiKaryawan($karyawan_id)
+    {
+        if (isset($karyawan_id)) {
+            $this->db->select($this->table.'.*')
+                ->from($this->table)
+                ->leftJoin('t_onboard_karyawan', $this->table.'.id = t_onboard_karyawan.t_onboard_id')
+                ->where($this->table.'.is_deleted', '=', 0)
+                ->where($this->table.'.tipe', '=', 2)
+                ->where($this->table.'.tgl_mulai', '<=', date('y-m-d'))
+                ->where($this->table.'.tgl_selesai', '>=', date('y-m-d'))
+                ->where('t_onboard_karyawan.karyawan_id', '=', $karyawan_id)
+                ->orderBy($this->table.'.id DESC')
+            ;
+            $lokasi_karyawan = $this->db->find();
+            if (false == $lokasi_karyawan) {
+                $this->db->select('karyawan.*, k_jabatan.m_organisasi_id')
+                    ->from('karyawan')
+                    ->leftJoin('k_jabatan', 'k_jabatan.karyawan_id = karyawan.id AND k_jabatan.dijabat = 1 AND k_jabatan.aktif = 1 AND k_jabatan.is_deleted = 0')
+                    ->where('karyawan.id', '=', $karyawan_id)
+                ;
+                $karyawan = $this->db->find();
+
+                if (false != $karyawan) {
+                    $this->db->select($this->table.'.*')
+                        ->from($this->table)
+                        ->where($this->table.'.is_deleted', '=', 0)
+                        ->where($this->table.'.tipe', '=', 1)
+                        ->where($this->table.'.m_perusahaan_id', '=', $karyawan->m_perusahaan_id)
+                        ->where($this->table.'.m_organisasi_id', '=', $karyawan->m_organisasi_id)
+                        ->orderBy($this->table.'.id DESC')
+                    ;
+                    $lokasi_karyawan = $this->db->find();
+                    if (false == $lokasi_karyawan) {
+                        $this->db->select($this->table.'.*')
+                            ->from($this->table)
+                            ->where($this->table.'.is_deleted', '=', 0)
+                            ->where($this->table.'.tipe', '=', 1)
+                            ->customWhere($this->table.'.m_organisasi_id IS  NULL', 'AND')
+                            ->where($this->table.'.m_perusahaan_id', '=', $karyawan->m_perusahaan_id)
+                            ->orderBy($this->table.'.id DESC')
+                        ;
+                        $lokasi_karyawan = $this->db->find();
+                    }
+                }
+            }
+        }
+
+        if (false != $lokasi_karyawan && isset($lokasi_karyawan)) {
+            return [
+                'data' => $lokasi_karyawan,
+            ];
+        }
+    }
+}
+

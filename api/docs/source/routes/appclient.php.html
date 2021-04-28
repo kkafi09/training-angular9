@@ -1,0 +1,90 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Client;
+
+// Ambil semua Klien
+$app-&gt;get('/appclient/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $klien = new Client();
+    $getDataKlien = $klien-&gt;getAll();
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKlien['data'],
+    ]);
+});
+
+// Simpan Klien
+$app-&gt;post('/appclient/save', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $klien = new Client();
+    $validasi = $klien-&gt;validasi($params);
+    if (true === $validasi) {
+        $getDataKlien = $klien-&gt;save($params);
+
+        return successResponse($response, [
+            'list' =&gt; $getDataKlien['data'],
+        ]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// set Klien aktif
+$app-&gt;post('/appclient/setAktif', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $klien = new Client();
+    $_SESSION['user']['safeEmailId'] = $params['uid'];
+    $_SESSION['user']['safeEmail'] = [
+        'safeEmail1' =&gt; $params['db']['DB_HOST'],
+        'safeEmail2' =&gt; $params['db']['DB_NAME'],
+        'safeEmail3' =&gt; $params['db']['DB_PASS'],
+        'safeEmail4' =&gt; $params['db']['DB_USER'],
+    ];
+
+    return successResponse($response, $_SESSION['user']);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

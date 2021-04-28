@@ -1,0 +1,22 @@
+<?php
+
+use Model\ApprovalLine;
+
+// Ambil semua Notifikasi
+$app->get('/appnotifikasi/getAll', function ($request, $response) {
+    $params = $request->getParams();
+
+    // Ambil notifikasi approval
+    $approval = new ApprovalLine();
+    $getApproval = $approval->getApprovedByMe($params['type'], $params['limit'], $params['offset']);
+    // $arr = ['t_kasbon' => [], 't_reimbursement' => [], 't_lembur' => [], 't_ijin' => [], 't_payroll' => []];
+
+    // foreach ($getApproval['data'] as $key => $value) {
+    //     $arr[$value->reff_type][] = $value;
+    // }
+
+    return successResponse($response, [
+        'list' => $getApproval['data'],
+    ]);
+});
+

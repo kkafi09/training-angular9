@@ -1,0 +1,139 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\KFile;
+use Service\Landa;
+
+// Ambil semua KFile
+$app-&gt;get('/k_file/index/{id}', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $params['idkaryawan'] = $request-&gt;getAttribute('id');
+    $kfile = new KFile();
+    $getDatafile = $kfile-&gt;getAll($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDatafile['data'],
+        'totalItems' =&gt; $getDatafile['totalItem'],
+    ]);
+});
+// Ambil Master Kategori File
+$app-&gt;get('/k_file/filelist', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kfile = new KFile();
+    $getDatafile = $kfile-&gt;getKfile($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDatafile['data'],
+    ]);
+});
+// Save KFile
+$app-&gt;post('/k_file/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $landa = new Landa();
+    $kfile = new KFile();
+    $validasi = $kfile-&gt;validasi($data);
+    if (true === $validasi) {
+        $input = [];
+        if (isset($data['fileUpload']) &amp;&amp; !empty($data['fileUpload'])) {
+            $path = 'assets/filekaryawan/';
+            $kode = $kfile-&gt;generate_kode();
+            $batas = strpos($data['fileUpload'], 'base64,');
+            $batas_potong = $batas + 7;
+            $file['filename'] = $data['file'];
+            $file['base64'] = substr($data['fileUpload'], $batas_potong);
+            $uploadFile = $landa-&gt;base64ToFilePath($file, $path, $kode['data']);
+            $customnamafile = $uploadFile['data']['fileName'];
+            if ($uploadFile['status']) {
+                $input['file'] = $customnamafile;
+            } else {
+                return unprocessResponse($response, [$uploadFile['error']]);
+            }
+        }
+        if (isset($data['id']) &amp;&amp; !empty($data['id'])) {
+            $input['id'] = $data['id'];
+        }
+
+        $input['karyawan_id'] = $data['karyawan_id'];
+        $input['m_kategori_file'] = $data['m_kategori_file'];
+        $input['keterangan'] = $data['keterangan'];
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $kfile-&gt;save($input);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Hapus KFile
+$app-&gt;post('/k_file/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $kfile = new KFile();
+    $model = $kfile-&gt;save(['is_deleted' =&gt; 1, 'id' =&gt; $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+// Download format PDF
+$app-&gt;get('/k_file/downloadPDF/{namfile}', function ($request, $response) {
+    $nam = $request-&gt;getAttribute('namfile');
+    $kfile = new KFile();
+
+    $file = 'assets/filekaryawan/'.$nam;
+    print_r($file);
+
+    exit;
+    $save = $kfile-&gt;download($file);
+
+    return successResponse($response, $save);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,65 @@
+<?php
+
+use Model\KomponenGajiKaryawan;
+
+$app->get('/appkomponengajikaryawan/index/{id}', function ($request, $response) {
+    $params = $request->getParams();
+    $params['idkaryawan'] = $request->getAttribute('id');
+    $komponengKaryawan = new KomponenGajiKaryawan();
+    $getDataKGKaryawan = $komponengKaryawan->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDataKGKaryawan['data'],
+        'totalItems' => $getDataKGKaryawan['totalItem'],
+    ]);
+});
+
+$app->get('/appkomponengajikaryawan/getKaryawan', function ($request, $response) {
+    $params = $request->getParams();
+    $komponengKaryawan = new KomponenGajiKaryawan();
+    $getDataKGKaryawan = $komponengKaryawan->getKaryawan($params);
+
+    return successResponse($response, [
+        'list' => $getDataKGKaryawan['data'],
+    ]);
+});
+
+$app->get('/appkomponengajikaryawan/getMKomponengj', function ($request, $response) {
+    $params = $request->getParams();
+    $karyawanId = isset($params['karyawan_id']) ? $params['karyawan_id'] : 0;
+    $komponengKaryawan = new KomponenGajiKaryawan();
+    $getDataKGKaryawan = $komponengKaryawan->getMKomponengj($karyawanId);
+
+    return successResponse($response, [
+        'list' => $getDataKGKaryawan['data'],
+    ]);
+});
+
+$app->post('/appkomponengajikaryawan/save', function ($request, $response) {
+    $params = $request->getParams();
+    $komponengKaryawan = new KomponenGajiKaryawan();
+    $validasi = $komponengKaryawan->validasi($params);
+    if (true === $validasi) {
+        $save = $komponengKaryawan->save($params);
+        if ($save['status']) {
+            return successResponse($response, [$save['data']]);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus
+$app->post('/appkomponengajikaryawan/delete', function ($request, $response) {
+    $params = $request->getParams();
+    $komponengKaryawan = new KomponenGajiKaryawan();
+    $delete = $komponengKaryawan->delete($params);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+

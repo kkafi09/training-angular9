@@ -1,0 +1,38 @@
+<?php
+
+use Model\LaporanIzin;
+
+// Ambil semua kasbon
+$app->get('/l_izin/getAll', function ($request, $response) {
+    $params = $request->getParams();
+    $laporanIzin = new LaporanIzin();
+    $getDataIzin = $laporanIzin->getAll($params);
+
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/izin.html', [
+            'data' => $getDataIzin['list'],
+            'periode' => $getDataIzin['periode'],
+            'total' => $getDataIzin['total'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getDataIzin['periode']) {
+            header('Content-Disposition: attachment;Filename="Laporan Izin ('.$getDataIzin['periode'].').xls"');
+        } else {
+            header('Content-Disposition: attachment;Filename="Laporan Izin (Semua Periode).xls"');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/izin.html', [
+            'data' => $getDataIzin['list'],
+            'periode' => $getDataIzin['periode'],
+            'total' => $getDataIzin['total'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, ['list' => $getDataIzin['list'], 'total' => $getDataIzin['total'], 'periode' => $getDataIzin['periode']]);
+    }
+});
+

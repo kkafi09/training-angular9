@@ -1,0 +1,93 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Pesangon;
+
+// Ambil semua pelatihan
+$app-&gt;get('/apppesangon/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $pesangon = new Pesangon();
+    $getDataPesangon = $pesangon-&gt;getAll($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataPesangon['data'],
+        'totalItems' =&gt; $getDataPesangon['totalItem'],
+    ]);
+});
+
+// Ambil semua pelatihan
+$app-&gt;get('/apppesangon/getDetail', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $pesangon = new Pesangon();
+    $getDetail = $pesangon-&gt;getDetail($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDetail['data'],
+    ]);
+});
+
+// Save pesangon
+$app-&gt;post('/apppesangon/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $pesangon = new Pesangon();
+    $validasi = $pesangon-&gt;validasi($data['pesangon']);
+
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $pesangon-&gt;save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,122 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanJadwal
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_jadwal';
+    }
+
+    /**
+     * Ambil semua data.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+        $this->db->select('*')
+            ->from($this->table)
+            ->where($this->table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+
+        if (null != $params['bulan'] && null != $params['tahun']) {
+            $this->db->andWhere($this->table.'.bulan', '=', $params['bulan'])
+                ->andWhere($this->table.'.tahun', '=', $params['tahun'])
+            ;
+        }
+
+        $models = $this->db->findAll();
+
+        $this->db->select('t_jadwal_det.*, m_jamker.nama')
+            ->from('t_jadwal_det')
+            ->join('left join', 'm_jamker', 'm_jamker.id = t_jadwal_det.m_jamker_id')
+        ;
+
+        $detail = $this->db->findAll();
+
+        $karyawan = $this->db->select('karyawan_data.nama, karyawan.id as karyawan_id')
+            ->from('karyawan')
+            ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->findAll()
+        ;
+
+        $arr = $arrDetail = $arrKaryawan = $arrJadwal = [];
+
+        foreach ($detail as $key => $val) {
+            $arrDetail[$val->karyawan_id][$val->tanggal] = $val;
+        }
+
+        foreach ($arrDetail as $key => $val) {
+            $arrJadwal[$key] = $val;
+            foreach (json_decode($params['tanggal']) as $keys => $vals) {
+                if (!isset($val[$vals->tanggal])) {
+                    $arrJadwal[$key][$vals->tanggal] = $vals;
+                }
+            }
+        }
+
+        foreach ($karyawan as $keys => $vals) {
+            $arrKaryawan[$vals->karyawan_id] = $vals;
+            $arrKaryawan[$vals->karyawan_id]->jadwal = isset($arrDetail[$vals->karyawan_id]) ? array_values($arrJadwal[$vals->karyawan_id]) : json_decode($params['tanggal']);
+        }
+
+        foreach ($models as $key => $val) {
+            $arr[$val->id]['id'] = $val->id;
+            $arr[$val->id]['bulan'] = $val->bulan;
+            $arr[$val->id]['tahun'] = $val->tahun;
+            $arr[$val->id]['karyawan'] = isset($arrKaryawan) ? array_values($arrKaryawan) : null;
+        }
+
+        if (1 == $params['bulan']) {
+            $nama_bulan = 'Januari';
+        } elseif (2 == $params['bulan']) {
+            $nama_bulan = 'Februari';
+        } elseif (3 == $params['bulan']) {
+            $nama_bulan = 'Maret';
+        } elseif (4 == $params['bulan']) {
+            $nama_bulan = 'April';
+        } elseif (5 == $params['bulan']) {
+            $nama_bulan = 'Mei';
+        } elseif (6 == $params['bulan']) {
+            $nama_bulan = 'Juni';
+        } elseif (7 == $params['bulan']) {
+            $nama_bulan = 'Juli';
+        } elseif (8 == $params['bulan']) {
+            $nama_bulan = 'Agustus';
+        } elseif (9 == $params['bulan']) {
+            $nama_bulan = 'September';
+        } elseif (10 == $params['bulan']) {
+            $nama_bulan = 'Oktober';
+        } elseif (11 == $params['bulan']) {
+            $nama_bulan = 'November';
+        } elseif (12 == $params['bulan']) {
+            $nama_bulan = 'Desember';
+        }
+
+        return [
+            'status' => true,
+            'list' => array_values($arr),
+            'periode' => null != $params['bulan'] && null != $params['tahun'] ? $nama_bulan.' '.$params['tahun'] : null,
+        ];
+    }
+}
+

@@ -1,0 +1,66 @@
+<?php
+
+use Model\PelatihanRiwayat;
+
+$app->get('/apppelatihanriwayat/index', function ($request, $response) {
+    $params = $request->getParams();
+    $pelatihanRiwayat = new PelatihanRiwayat();
+
+    $getDataPelatihanRiwayat = $pelatihanRiwayat->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDataPelatihanRiwayat['data'],
+        'totalItems' => $getDataPelatihanRiwayat['totalItem'],
+    ]);
+});
+
+$app->get('/apppelatihanriwayat/getKaryawan', function ($request, $response) {
+    $params = $request->getParams();
+    $pelatihanRiwayat = new PelatihanRiwayat();
+    $getDataPelatihanRiwayat = $pelatihanRiwayat->getKaryawan($params);
+
+    return successResponse($response, [
+        'list' => $getDataPelatihanRiwayat['data'],
+    ]);
+});
+
+$app->get('/apppelatihanriwayat/getMPelatihan', function ($request, $response) {
+    $params = $request->getParams();
+    $pelatihanRiwayat = new PelatihanRiwayat();
+    $getDataPelatihanRiwayat = $pelatihanRiwayat->getMPelatihan($params);
+
+    return successResponse($response, [
+        'list' => $getDataPelatihanRiwayat['data'],
+    ]);
+});
+
+$app->post('/apppelatihanriwayat/save', function ($request, $response) {
+    $params = $request->getParams();
+    $pelatihanRiwayat = new PelatihanRiwayat();
+    $params['tgl_mulai'] = isset($params['tgl_mulai']) && !empty($params['tgl_mulai']) ? arr_date_to_string($params['tgl_mulai']) : null;
+    $params['tgl_selesai'] = isset($params['tgl_selesai']) && !empty($params['tgl_selesai']) ? arr_date_to_string($params['tgl_selesai']) : null;
+    $validasi = $pelatihanRiwayat->validasi($params);
+    if (true === $validasi) {
+        $save = $pelatihanRiwayat->save($params);
+        if ($save['status']) {
+            return successResponse($response, [$save['data']]);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus
+$app->post('/apppelatihanriwayat/delete', function ($request, $response) {
+    $params = $request->getParams();
+    $pelatihanRiwayat = new PelatihanRiwayat();
+    $delete = $pelatihanRiwayat->delete($params);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+

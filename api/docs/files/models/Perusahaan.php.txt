@@ -1,0 +1,412 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class Perusahaan extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_perusahaan';
+    }
+
+    public function getByIdArr($id = [])
+    {
+        $this->db->select($this->table.'.*, 
+                induk.nama as nm_induk, 
+                '.$this->table.'.logo as logo_perusahaan')
+            ->from($this->table)
+            ->leftJoin('m_perusahaan as induk', 'induk.id = '.$this->table.'.parent_id')
+            ->where($this->table.'.is_deleted', '=', 0)
+        ;
+
+        if (!empty($id)) {
+            $this->db->customWhere('m_perusahaan.id IN ('.implode(',', $id).')', 'AND');
+        }
+
+        return $this->db->findAll();
+    }
+
+    /**
+     * Ambil semua data perusahaan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select($this->table.'.*, 
+                induk.nama as nm_induk, 
+                '.$this->table.'.logo as logo_perusahaan')
+            ->from($this->table)
+            ->leftJoin('m_perusahaan as induk', 'induk.id = '.$this->table.'.parent_id')
+            ->where($this->table.'.is_deleted', '=', 0)
+        ;
+        // Filter
+        if (isset($params) && !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) && is_array($params)) {
+            $filter = $params;
+        }
+        // set parameter
+        if (isset($params) && !empty($params)) {
+            foreach ($filter as $key => $val) {
+                if (!empty($val)) {
+                    if ('nama' == $key) {
+                        $this->db->where('m_perusahaan.nama', 'like', $val);
+                    } elseif ('kode' == $key) {
+                        $this->db->where('m_perusahaan.kode', 'like', $val);
+                    } elseif ('induk' == $key) {
+                        $this->db->where('induk.nama', 'like', $val);
+                    }
+                }
+            }
+        }
+        // Set limit
+        if (isset($limit) && !empty($limit)) {
+            $this->db->limit($limit);
+        }
+        // Set offset
+        if (isset($offset) && !empty($offset)) {
+            $this->db->offset($offset);
+        }
+        // Order
+        if (!empty($order)) {
+            $this->db->orderBy($order);
+        }
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        $perusahaan_child = $this->db->select('id, nama, parent_id')
+            ->from($this->table)
+            ->customWhere('parent_id IS NOT NULL')
+            ->andWhere('is_deleted', '=', 0)
+            ->findAll()
+        ;
+
+        $arrChild = [];
+        foreach ($perusahaan_child as $key => $val) {
+            $arrChild[$val->parent_id][] = $val;
+        }
+
+        foreach ($models as $key => $val) {
+            $val->child = isset($arrChild[$val->id]) ? $arrChild[$val->id] : null;
+        }
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function generateKode()
+    {
+        $cekKode = $this->db->select('kode')
+            ->from($this->table)
+            ->orderBy('kode DESC')
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('000'.$kode_item, strlen($kode_item));
+            $kode = $kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    public function getLegalitas($data)
+    {
+        try {
+            $legalitas = $this->db->select('id as m_legalitas_id, nama as nama_legalitas')
+                ->from('m_legalitas')
+                ->findAll()
+            ;
+
+            if ('null' != $data['id']) {
+                $legalitas_perusahaan = $this->db->select('id, m_legalitas_id, nama')
+                    ->from('m_perusahaan_legalitas')
+                    ->where('m_perusahaan_id', '=', $data['id'])
+                    ->findAll()
+                ;
+
+                $arrLegalitasPerusahaan = [];
+                foreach ($legalitas_perusahaan as $key => $val) {
+                    $arrLegalitasPerusahaan[$val->m_legalitas_id]['id'] = $val->id;
+                    $arrLegalitasPerusahaan[$val->m_legalitas_id]['nama'] = $val->nama;
+                }
+            } else {
+                $arrLegalitasPerusahaan = [];
+            }
+
+            foreach ($legalitas as $key => $val) {
+                $val->id = isset($arrLegalitasPerusahaan[$val->m_legalitas_id]['id']) ? $arrLegalitasPerusahaan[$val->m_legalitas_id]['id'] : null;
+                $val->nama = isset($arrLegalitasPerusahaan[$val->m_legalitas_id]['nama']) ? $arrLegalitasPerusahaan[$val->m_legalitas_id]['nama'] : null;
+            }
+
+            return [
+                'status' => true,
+                'data' => $legalitas,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menyimpan data perusahaan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = [])
+    {
+        try {
+            if (!isset($data['id']) || (isset($data['id']) && empty($data['id']))) {
+                $data['is_deleted'] = 0;
+
+                $this->db->startTransaction();
+
+                $model = $this->db->insert($this->table, $data);
+                foreach ($data['listLegalitas'] as $key => $val) {
+                    if (isset($val['fileUpload'])) {
+                        $val['m_perusahaan_id'] = $model->id;
+                        $legalitas = $this->db->insert('m_perusahaan_legalitas', $val);
+                    }
+                }
+
+                // Generate default approval line
+                $approveLine = new ApprovalLine();
+                $approveLine->generateDefault($model->id);
+
+                $this->db->endTransaction();
+            } elseif (empty($customParams)) {
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+                $delete_legalitas = $this->db->delete('m_perusahaan_legalitas', ['m_perusahaan_id' => $data['id']]);
+
+                foreach ($data['listLegalitas'] as $key => $val) {
+                    if (null != $val['nama']) {
+                        $val['m_perusahaan_id'] = $model->id;
+                        $legalitas = $this->db->insert('m_perusahaan_legalitas', $val);
+                    }
+                }
+            } else {
+                $model = $this->db->update($this->table, $data, $customParams);
+            }
+            // Return data perusahaan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function deleteAll($data)
+    {
+        try {
+            $perusahaan = $this->db->select('id')
+                ->from($this->table)
+                ->findAll()
+            ;
+
+            foreach ($perusahaan as $key => $val) {
+                $model = $this->db->update($this->table, ['is_deleted' => $data['is_deleted']], ['id' => $val->id]);
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Import excel.
+     *
+     * @param array $data
+     * @param mixed $dataPerusahaan
+     * @param mixed $removeExcel
+     */
+    public function import($data, $removeExcel = false)
+    {
+        try {
+            try {
+                $inputFileType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($data['filePath']);
+                $objReader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
+                $objPhpSpreadsheet = $objReader->load($data['filePath']);
+            } catch (Exception $e) {
+                exit('Error loading file : "'.pathinfo($data['filePath'], PATHINFO_BASENAME).'": '.$e->getMessage());
+            }
+
+            // Ambil semua perusahaan
+            $dataPerusahaan = $this->getAll();
+            $arrPerusahaan = [];
+            $lastId = 0;
+            foreach ($dataPerusahaan['data'] as $key => $val) {
+                $arrPerusahaan[$val->kode] = $val->id;
+                if ($val->id > $lastId) {
+                    $lastId = $val->id;
+                }
+            }
+
+            $sheet = $objPhpSpreadsheet->getSheet(0);
+            $highestRow = $sheet->getHighestRow();
+            $highestColumn = $sheet->getHighestColumn();
+
+            $perusahaan = [];
+            $lastId = $lastId + 1;
+            for ($row = 2; $row <= $highestRow; ++$row) {
+                if (!empty($sheet->getCell('B'.$row)->getFormattedValue())) {
+                    $perusahaan[$lastId]['kode'] = $sheet->getCell('A'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['parent_id'] = $sheet->getCell('B'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['nama'] = $sheet->getCell('C'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['telepon'] = $sheet->getCell('D'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['fax'] = $sheet->getCell('E'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['email'] = $sheet->getCell('F'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['no_bpjs_k'] = $sheet->getCell('G'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['jkk'] = $sheet->getCell('H'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['no_npwp'] = $sheet->getCell('I'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['no_asuransi'] = $sheet->getCell('J'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['alamat'] = $sheet->getCell('K'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['kode_pos'] = $sheet->getCell('P'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['tp_nama'] = $sheet->getCell('Q'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['tp_npwp'] = $sheet->getCell('R'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['pj_jht'] = $sheet->getCell('S'.$row)->getFormattedValue();
+                    $perusahaan[$lastId]['pj_bpjs_k'] = $sheet->getCell('T'.$row)->getFormattedValue();
+
+                    // Memasukkan kode baru ke arrPerusahaan
+                    if (!isset($arrPerusahaan[$perusahaan[$lastId]['kode']])) {
+                        $arrPerusahaan[$perusahaan[$lastId]['kode']] = $lastId;
+                    }
+
+                    ++$lastId;
+                }
+            }
+
+            if ($removeExcel) {
+                unlink($data['filePath']);
+            }
+
+            foreach ($perusahaan as $key => $val) {
+                // Set value untuk diinput ke m_perusahaan
+                $val['parent_id'] = $arrPerusahaan[$val['parent_id']];
+
+                // Input ke m_perusahaan
+                $model = $this->db->insert($this->table, $val);
+            }
+
+            // Return data
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Download format excel.
+     *
+     * @param string $file
+     */
+    public function download($file)
+    {
+        parent::downloadFile($file);
+
+        return true;
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     * @param mixed $perusahaanId
+     */
+    public function validasi($data, $custom = [], $perusahaanId = 0)
+    {
+        $perusahaan = $this->db->select('*')->from($this->table)->where('is_deleted', '=', 0)->count();
+
+        // check perusahaan holding, jika holding parent boleh kosong
+        if ($perusahaanId > 0) {
+            $isHolding = $this->db->select('parent_id')->from($this->table)->where('id', '=', $perusahaanId)->find();
+            $allowEmptyParent = empty($isHolding->parent_id) ? true : false;
+        } else {
+            $allowEmptyParent = false;
+        }
+
+        $validasi = [
+            'nama' => 'required',
+            'kode' => 'required',
+        ];
+
+        if ($perusahaan > 0 && false == $allowEmptyParent) {
+            $validasi['parent_id'] = 'required';
+        }
+
+        return validate($data, $validasi, $custom);
+    }
+
+    /**
+     * Validasi Kode tersedia.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasiKode($data)
+    {
+        return parent::validasiKodeCore($data, 'm_perusahaan');
+    }
+}
+

@@ -1,0 +1,230 @@
+<header id="page-topbar">
+    <div class="navbar-header ">
+        <div class="d-flex">
+            <!-- LOGO -->
+            <div class="navbar-brand-box d-none d-lg-block d-lg-block">
+                <a href="/" class="logo logo-dark">
+                    <span class="logo-sm">
+
+                    </span>
+                    <span class="logo-lg">
+                        <img alt="250x250" src="/assets/images/profile-img.png" data-holder-rendered="true"
+                            class="text-center" class="logo-img" height="60">
+
+                    </span>
+                </a>
+            </div>
+            <button type="button" class="btn btn-sm px-3 font-size-16 d-lg-none header-item" (click)="toggleMenubar()">
+                <i class="fa fa-fw fa-bars font-size-16"></i>
+            </button>
+        </div>
+        <div class="d-flex">
+            <div class="d-inline-block d-none d-lg-block d-lg-block" style="padding-top: 17px;">
+
+            </div>
+            <div class="dropdown d-inline-block" ngbDropdown>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right p-0" ngbDropdownMenu
+                    aria-labelledby="page-header-notifications-dropdown">
+                    <div class="p-3">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h6 class="m-0"> Pengumuman terbaru </h6>
+                            </div>
+                            <div class="col-auto">
+
+
+                                <button [routerLink]="['/master/pengumuman','1']" type="button"
+                                    class="btn btn-primary btn-sm" ngbDropdownToggle>
+                                    Tambah
+                                </button>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <perfect-scrollbar style="height: 230px;" [config]="configData">
+
+                    </perfect-scrollbar>
+                </div>
+
+            </div>
+
+            <!-- <div class="top-nav dropdown d-inline-block" ngbDropdown>
+
+                <button type="button" class="btn header-item noti-icon right-bar-toggle"
+                    id="page-header-notifications-dropdown" ngbDropdownToggle>
+                    <i class="fa fa-cog"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-sm dropdown-menu-right p-0" ngbDropdownMenu
+                    aria-labelledby="page-header-notifications-dropdown">
+                    <div class="" ngbDropdown>
+
+                        <div class="dropdown" *ngIf=" 
+                        checkAkses('pengguna')
+                        ">
+                            <div class="dropdown-divider" style="margin-top: 0;"></div>
+
+                            <div class="dropdown-item" *ngIf="checkAkses('pengguna')">
+                                <a style="color: #495057;" href="#" [routerLink]="['/master/pengguna']"
+                                    class="text-black">Pengguna</a>
+                            </div>
+
+                            <div class="dropdown-divider" *ngIf="checkAkses('pengguna')"></div>
+                            <div class="dropdown-item" *ngIf="checkAkses('jabatan')">
+                                <a style="color: #495057;" href="#" [routerLink]="['/master/jabatan']"
+                                    class="text-black">Jabatan</a>
+                            </div>
+
+                            <div class="dropdown-divider" *ngIf="checkAkses('jabatan')"></div>
+                            <div class="dropdown-item" *ngIf="checkAkses('kode_form')">
+                                <a style="color: #495057;" href="#" [routerLink]="['/master/kode-form']"
+                                    class="text-black">Setting Form</a>
+                            </div>
+                            <div class="dropdown-divider" *ngIf="checkAkses('kode_form')"></div>
+                            <div class="dropdown-item" *ngIf="checkAkses('setting_aplikasi')">
+                                <a style="color: #495057;" href="#" [routerLink]="['/master/setting-aplikasi']"
+                                    class="text-black">Setting Aplikasi</a>
+                            </div>
+
+                            <div class="dropdown-divider" *ngIf="checkAkses('setting_aplikasi')"></div>
+
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+
+            <div class="dropdown d-inline-block" ngbDropdown>
+                <button type="button" class="btn header-item" id="page-header-user-dropdown" ngbDropdownToggle>
+                    <ng-template #tipUser>
+                        <div style="min-width: 100px; max-width: 200px; text-align: left;">
+                            <!-- <b>{{user.nama}}</b><br/> -->
+                            {{user.jabatanTxt}}
+                        </div>
+                    </ng-template>
+                    <img class="rounded-circle header-profile-user" src="assets/images/users/user-default.png"
+                        placement="bottom" [ngbTooltip]="tipUser" tooltipClass="tooltipUser" />
+                    <span class="d-none d-xl-inline-block ml-1">{{user.nama}} &nbsp;<i
+                            class="fas fa-angle-down"></i></span>
+                    <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right" ngbDropdownMenu>
+
+                    <div class="dropdown-divider d-lg-none"></div>
+                    <a class="dropdown-item d-block" href="javascript: void(0);"
+                        (click)="gantiPassword(modalGPassword)">
+                        <i class="fas fa-key font-size-12 align-middle mr-1"></i>
+                        Ganti Password
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item text-danger" href="javascript: void(0);" (click)="logout()">
+                        <i class=" fas fa-power-off font-size-12 align-middle mr-1 text-danger"></i>
+                        Keluar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+<div class="topnav">
+    <div class="container-fluid">
+        <nav class="navbar navbar-light navbar-expand-lg topnav-menu active">
+            <div class="collapse navbar-collapse active" id="topnav-menu-content">
+                <ul class="navbar-nav">
+
+                    <li class="nav-item">
+                        <a class="nav-link arrow-none" (click)="onMenuClick($event)" [routerLink]="['/home']"
+                            id="topnav-components" role="button">
+                            <i class="fa fa-home mr-2"></i>
+                            Dashboards
+                        </a>
+                    </li>
+
+                    <div class="dropdown d-inline-block" ngbDropdown>
+                        <li class="nav-item dropdown" ngbDropdownToggle>
+
+                            <a class="nav-link dropdown-toggle arrow-none" href="#" (click)="onMenuClick($event)"
+                                id="topnav-pages" role="button">
+                                <i class="fas fa-user mr-2"></i>
+                                Data Master
+                                <div class="arrow-down"></div>
+                            </a>
+                            <!-- *ngIf="checkAkses('petani')" -->
+                            <div class="dropdown-menu" ngbDropdownMenu>
+                                <div class="col-md-12">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="dropdown">
+                                                <a class="dropdown-item dropdown-toggle arrow-none"
+                                                    (click)="onMenuClick($event)" href="#" id="topnav-email"
+                                                    [routerLink]="['/master/pengguna']" role="button">
+                                                    Pengguna
+                                                </a>
+                                            </div>
+
+                                            <div class="dropdwon">
+                                                <a href="" class="dropdown-item dropdown-toggle arrow-none"
+                                                    (click)="onMenuClick($event)" id="barang"
+                                                    [routerLink]="['/master/barang']"
+                                                    routerLinkActive="router-link-active" role="button"> Barang
+                                                </a>
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </li>
+                    </div>
+
+
+
+
+
+
+
+                </ul>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<ng-template #modalGPassword let-modal>
+    <div class="modal-header">
+        <h5 class="modal-title mt-0">Ganti Password</h5>
+        <button type="button" class="close" (click)="modal.dismiss('Cross click')" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group row">
+                    <label class="col-md-4 col-form-label col-form-label-sm required">Password</label>
+                    <div class="col-md-8">
+                        <input class="form-control form-control-sm" type="password" [(ngModel)]="model.password"
+                            name="password" placeholder="Masukkan Password Baru" />
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-md-4 col-form-label col-form-label-sm required">Ulangi Password</label>
+                    <div class="col-md-8">
+                        <input class="form-control form-control-sm" type="password" [(ngModel)]="model.repassword"
+                            name="repassword" placeholder="Ulangi Password Baru" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <div class="float-right">
+            <button class="btn btn-primary btn-sm" (click)="savepasswords(); modal.dismiss('Cross click')"
+                [disabled]="model.password != model.repassword">
+                <i class="fa fa-save font-size-14 align-middle mr-2"></i>
+                Simpan
+            </button>
+        </div>
+    </div>
+</ng-template>

@@ -1,0 +1,364 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Service;
+
+use Google\Cloud\Firestore\FirestoreClient;
+use Kreait\Firebase\Factory;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Notification;
+
+/**
+ * Class Firebase digunakan untuk service ke firebase.
+ */
+class Firebase
+{
+    protected $fdb; // inisialisasi firestore firebase
+
+    protected $name; //inisialisasi collection
+
+    private $fb; //inisialisasi koneksi firebase
+
+    private $firestore; //inisialisasi firebase sdk
+
+    private $auth; //inisialisasi firebase sdk
+
+    private $messaging; //inisialisasi firebase sdk
+
+    public function __construct()
+    {
+        $this-&gt;fb = (new Factory())-&gt;withServiceAccount('config/humanis-2020-firebase-adminsdk-5glk8-1e47a8e2a2.json');
+        $this-&gt;firestore = $this-&gt;fb-&gt;createFirestore();
+        $this-&gt;auth = $this-&gt;fb-&gt;createAuth();
+        $this-&gt;messaging = $this-&gt;fb-&gt;createMessaging();
+        $this-&gt;fdb = new FirestoreClient([
+            'projectId' =&gt; 'humanis-2020',
+        ]);
+    }
+
+    /**
+     * [sendNotif description].
+     *
+     * @param [type] $type    [description]
+     * @param [type] $title   [description]
+     * @param [type] $message [description]
+     * @param array  $data    [description]
+     *
+     * @return [type] [description]
+     */
+    public function sendNotif($type, $title, $message, $data = [])
+    {
+        if ('all' == $type) {
+            $message = CloudMessage::withTarget('topic', 'all')
+                -&gt;withNotification([
+                    'title' =&gt; $title,
+                    'body' =&gt; $message,
+                    'image' =&gt; 'https://app.humanis.id/assets/icons/icon-128x128.png',
+                ])
+                -&gt;withData($data) // optional
+            ;
+        } elseif ('company' == $type) {
+            $message = CloudMessage::withTarget('topic', 'all_'.$_SESSION['user']['client'])
+                -&gt;withNotification([
+                    'title' =&gt; $title,
+                    'body' =&gt; $message,
+                    'image' =&gt; 'https://app.humanis.id/assets/icons/icon-128x128.png',
+                ])
+                -&gt;withData($data) // optional
+            ;
+        } elseif ('person' == $type) {
+            $message = CloudMessage::withTarget('topic', $data['idKaryawan'])
+                -&gt;withNotification(Notification::create($title, $message)) // optional
+            ;
+        }
+
+        try {
+            $send = $this-&gt;messaging-&gt;send($message);
+
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    public function firebaseAuth($email, $password)
+    {
+        $user = $this-&gt;auth-&gt;createUserWithEmailAndPassword($email, $password);
+        $ambil = $this-&gt;auth-&gt;getUserByEmail($email);
+
+        return [
+            'data' =&gt; $ambil,
+        ];
+    }
+
+    public function firebaseupdateAuth($uid, $email)
+    {
+        $update = $this-&gt;auth-&gt;changeUserEmail($uid, $email);
+
+        return [
+            'data' =&gt; $update,
+        ];
+    }
+
+    public function subscribeTopic($token, $topik)
+    {
+        try {
+            $subscribe = $this-&gt;messaging-&gt;subscribeToTopic($topik, $token);
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $subscribe,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Ambil detail user berdasarkan uid.
+     *
+     * @return [array]
+     */
+    public function getUserByUid(string $uid)
+    {
+        try {
+            $user = $this-&gt;firestore-&gt;database()-&gt;collection('users')-&gt;document($uid)-&gt;snapshot();
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $user,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Ambil detail client berdasarkan uid.
+     *
+     * @return [array]
+     */
+    public function getClientByUid(string $uid)
+    {
+        try {
+            $client = $this-&gt;firestore-&gt;database()-&gt;collection('client')-&gt;document($uid)-&gt;snapshot();
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $client,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Ambil Semua klien.
+     *
+     * @return [array]
+     */
+    public function getAllClient()
+    {
+        try {
+            $client = $this-&gt;firestore-&gt;database()-&gt;collection('client')-&gt;where('is_deleted', '=', false)-&gt;documents();
+            $arr = [];
+            $landa = new Landa();
+            foreach ($client as $key =&gt; $value) {
+                $data = $value-&gt;data();
+                $arr[$key]['nama'] = $data['nama'];
+                $arr[$key]['cp'] = $data['cp'];
+                $arr[$key]['email'] = $data['email'];
+                $arr[$key]['telepon'] = $data['telepon'];
+                $arr[$key]['uid'] = $data['uid'];
+                $arr[$key]['db'] = [
+                    'DB_HOST' =&gt; isset($data['db']['DB_HOST']) ? $landa-&gt;unsafeString($data['db']['DB_HOST']) : '',
+                    'DB_NAME' =&gt; isset($data['db']['DB_NAME']) ? $landa-&gt;unsafeString($data['db']['DB_NAME']) : '',
+                    'DB_PASS' =&gt; isset($data['db']['DB_PASS']) ? $landa-&gt;unsafeString($data['db']['DB_PASS']) : '',
+                    'DB_USER' =&gt; isset($data['db']['DB_USER']) ? $landa-&gt;unsafeString($data['db']['DB_USER']) : '',
+                ];
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $arr,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Create new document with data.
+     *
+     * @return bool|string
+     */
+    public function newDocument(string $collection, string $uid, array $data = [])
+    {
+        try {
+            if (empty($uid)) {
+                $this-&gt;fdb-&gt;collection($collection)-&gt;add($data);
+            } else {
+                $this-&gt;fdb-&gt;collection($collection)-&gt;document($uid)-&gt;create($data);
+            }
+
+            return true;
+        } catch (Exception $exception) {
+            return $exception-&gt;getMessage();
+        }
+    }
+
+    /**
+     * Update document with data.
+     *
+     * @param string $name
+     *
+     * @return bool|string
+     */
+    public function updateDocument(string $collection, string $uid, array $data = [])
+    {
+        try {
+            $updateDoc = $this-&gt;fdb-&gt;collection($collection)-&gt;document($uid);
+            $arr = [];
+            foreach ($data as $key =&gt; $value) {
+                $arr[] = ['path' =&gt; $key, 'value' =&gt; $value];
+            }
+            if (!empty($arr)) {
+                $updateDoc-&gt;update($arr);
+            }
+
+            return true;
+        } catch (Exception $exception) {
+            return $exception-&gt;getMessage();
+        }
+    }
+
+    /**
+     * Drop exists document in collection.
+     */
+    public function dropDocument(string $name)
+    {
+        $this-&gt;db-&gt;collection($collection)-&gt;document($name)-&gt;delete();
+    }
+
+    /**
+     * @param string|Uid               $uid
+     * @param ClearTextPassword|string $newPassword
+     *
+     * @throws Exception\AuthException
+     * @throws Exception\FirebaseException
+     */
+    public function changePassword($uid, $newPassword)
+    {
+        $update = $this-&gt;auth-&gt;changeUserPassword($uid, $newPassword);
+
+        return [
+            'data' =&gt; $update,
+        ];
+    }
+
+
+    /**
+     * Ambil Semua Presensi.
+     *
+     * @return [array]
+     */
+    public function getAllPresensi($idclient)
+    {
+        try {
+            $presensi = $this-&gt;firestore-&gt;database()-&gt;collection('presensi')-&gt;where('id_client', '=', $idclient)-&gt;documents();
+            $arr = [];
+            $landa = new Landa();
+            foreach ($presensi as $key =&gt; $value) {
+                $data = $value-&gt;data();
+                $arr[$key]['id_client'] = $data['id_client'];
+                $arr[$key]['id_karyawan'] = $data['id_karyawan'];
+                $arr[$key]['latitude'] = $data['latitude'];
+                $arr[$key]['longitude'] = $data['longitude'];
+                $arr[$key]['time'] = date(&quot;d-M-Y H:i&quot;, strtotime($data['time']));
+                $arr[$key]['tgl_checklock'] = date(&quot;d/m/Y&quot;, $data['tgl_checklock']);
+                $arr[$key]['jam_checklock'] = date(&quot;H:i:s&quot;, $data['jam_checklock']);
+                $arr[$key]['uid'] = isset($data['uid']) ? $data['uid'] : &quot;&quot;;
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $arr,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+    /**
+     * Drop exists document in collection.
+     */
+    public function dropDocumentPresensi(string $uid)
+    {
+        try {
+            // $this-&gt;db-&gt;collection('presensi')-&gt;document($uid)-&gt;delete()
+            $delete = $this-&gt;firestore-&gt;database()-&gt;collection('presensi')-&gt;document($uid)-&gt;delete();
+
+            return true;
+        } catch (Exception $exception) {
+            return $exception-&gt;getMessage();
+        }
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

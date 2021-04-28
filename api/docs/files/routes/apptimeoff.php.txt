@@ -1,0 +1,46 @@
+<?php
+
+use Model\Timeoff;
+
+// Ambil semua timeoff
+$app->get('/apptimeoff/index', function ($request, $response) {
+    $params = $request->getParams();
+    $timeoff = new Timeoff();
+    $getDatatimeoff = $timeoff->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDatatimeoff['data'],
+        'totalItems' => $getDatatimeoff['totalItem'],
+    ]);
+});
+
+// Save timeoff
+$app->post('/apptimeoff/save', function ($request, $response) {
+    $data = $request->getParams();
+    $timeoff = new Timeoff();
+    $validasi = $timeoff->validasi($data);
+    if (true === $validasi) {
+        // proses simpan time off
+        $save = $timeoff->save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus timeoff
+$app->post('/apptimeoff/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $timeoff = new Timeoff();
+    $model = $timeoff->save(['is_deleted' => 1, 'id' => $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+

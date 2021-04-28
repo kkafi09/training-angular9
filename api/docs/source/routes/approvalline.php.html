@@ -1,0 +1,78 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\ApprovalLine;
+
+// Ambil semua approval line
+$app-&gt;get('/approvalline/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $approvalLine = new ApprovalLine();
+
+    $params['params'] = isset($params['params']) ? $params['params'] : [];
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : '';
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : '';
+
+    $getDataApprovalLine = $approvalLine-&gt;getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataApprovalLine['data'],
+        'totalItems' =&gt; $getDataApprovalLine['totalItem'],
+    ]);
+});
+
+// Simpan approval line, detail &amp; rule
+$app-&gt;post('/approvalline/save', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $approvalLine = new ApprovalLine();
+    $save = $approvalLine-&gt;saveApproval($params);
+
+    if ($save['status']) {
+        return successResponse($response, [$save['data']]);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

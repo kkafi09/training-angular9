@@ -1,0 +1,79 @@
+<?php
+
+use Model\JabatanLevel;
+use Service\Landa;
+
+// ambil semua level jabatan
+$app->get('/appjabatanlevel/index', function ($request, $response) {
+    $params = $request->getParams();
+    $jabatanLevel = new JabatanLevel();
+    $getDataJabatanLevel = $jabatanLevel->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDataJabatanLevel['data'],
+        'totalItems' => $getDataJabatanLevel['totalItem'],
+    ]);
+});
+
+// simpan level jabatan
+$app->post('/appjabatanlevel/save', function ($request, $response) {
+    $params = $request->getParams();
+    $jabatanLevel = new JabatanLevel();
+    $validasi = $jabatanLevel->validasi($params);
+    $validasiLevel = $jabatanLevel->validasiLevel($params);
+    if (true === $validasi) {
+        if (true == $validasiLevel) {
+            $save = $jabatanLevel->save($params);
+            if ($save['status']) {
+                return successResponse($response, [$save['data']]);
+            }
+
+            return unprocessResponse($response, [$save['error']]);
+        }
+
+        return unprocessResponse($response, 'Level Telah Digunakan');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus level jabatan
+$app->post('/appjabatanlevel/delete', function ($request, $response) {
+    $params = $request->getParams();
+    $landa = new Landa();
+    $jabatanLevel = new JabatanLevel();
+    $delete = $jabatanLevel->delete($params);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+
+// Import excel jabatan level
+$app->post('/appjabatanlevel/import', function ($request, $response) {
+    $data = $request->getParams();
+    $jabatanLevel = new JabatanLevel();
+    $landa = new Landa();
+
+    $save = $landa->base64ToFile($data);
+    $excel = $save['data'];
+
+    $insert_excel = $jabatanLevel->import($excel);
+    $getDataJabatanLevel = $jabatanLevel->getAll($data);
+
+    return successResponse($response, [
+        'list' => $getDataJabatanLevel['data'],
+        'totalItems' => $getDataJabatanLevel['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app->get('/appjabatanlevel/downloadFormatExcel', function ($request, $response) {
+    $jabatanLevel = new JabatanLevel();
+    $file = 'assets/formatExcel/Level Jabatan.xlsx';
+    $save = $jabatanLevel->download($file);
+
+    return successResponse($response, $save);
+});
+

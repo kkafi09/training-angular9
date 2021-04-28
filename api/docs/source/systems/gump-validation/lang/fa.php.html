@@ -1,0 +1,96 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+return [
+    'validate_required' =&gt; '{field} الزامی میباشد',
+    'validate_valid_email' =&gt; '{field} باید یک آدرس ایمیل معتبر باشد ',
+    'validate_max_len' =&gt; '{field} باید حد اکثر {param} کاراکتر یا کمتر باشد',
+    'validate_min_len' =&gt; '{field} باید حد اقل {param} کاراکتر یا بیشتر باشد',
+    'validate_exact_len' =&gt; '{field} باید دقیقا {param} کاراکتر باشد',
+    'validate_alpha' =&gt; '{field} فقط باید شامل حروف باشد',
+    'validate_alpha_numeric' =&gt; '{field} فقط باید شامل حروف و اعداد باشد',
+    'validate_alpha_numeric_space' =&gt; '{field} فقط باید شامل حروف، اعداد و فاصله باشد',
+    'validate_alpha_dash' =&gt; '{field} فقط باید شامل حروف و خط فاصله یا خط تیره باشد',
+    'validate_alpha_space' =&gt; '{field} فقط باید شامل حروف و فاصله باشد',
+    'validate_numeric' =&gt; '{field} باید یک عدد باشد',
+    'validate_integer' =&gt; '{field} باید یک عدد بدون نقطه اعشار یا ممیز باشد',
+    'validate_boolean' =&gt; '{field} باید درست/صحیح یا نادرست/غلط باشد',
+    'validate_float' =&gt; '{field} باید عدد با نقطه اعشار یا ممیز باشد',
+    'validate_valid_url' =&gt; '{field} باید یک آدرس وب باشد',
+    'validate_url_exists' =&gt; '{field} آدرس وب/اینترنت وجود ندارد',
+    'validate_valid_ip' =&gt; '{field} باید یک IP آدرس معتبر باشد',
+    'validate_valid_ipv4' =&gt; '{field} باید یک آدرس IPv4 معتبر باشد',
+    'validate_valid_ipv6' =&gt; '{field} باید یک آدرس IPv6 معتبر باشد',
+    'validate_guidv4' =&gt; '{field} باید یک GUID معتبر داشته باشد',
+    'validate_valid_cc' =&gt; '{field} شماره کارت اعتباری درست نیست',
+    'validate_valid_name' =&gt; '{field} باید یک نام معتبر باشد',
+    'validate_contains' =&gt; 'The {field} فقط میتواند یکی از موارد {param} زیر باشد',
+    'validate_contains_list' =&gt; '{field} این گزینه درست نیست',
+    'validate_doesnt_contain_list' =&gt; '{field} شامل یک مقدار نادرست هست',
+    'validate_street_address' =&gt; '{field} باید یک آدرس خیابان معتبر باشد',
+    'validate_date' =&gt; '{field} باید یک تاریخ معتبر باشد',
+    'validate_min_numeric' =&gt; '{field} باید یک مقدار عددی مساوی یا بزرگتر از {param} باشد',
+    'validate_max_numeric' =&gt; '{field} باید یک مقدار عددی مساوی یا کوچکتر از {param} باشد',
+    'validate_min_age' =&gt; '{field} باید مقدار عمر یا سن شخص مساوی یا بزرگتر از {param} باشد',
+    'validate_invalid' =&gt; '{field} درست یا معتبر نیست',
+    'validate_starts' =&gt; '{field} باید با {param} شروع گردد',
+    'validate_extension' =&gt; '{field} فقط میتواند یکی از پسوند های {param} را داشته باشد',
+    'validate_required_file' =&gt; '{field} الزامی است',
+    'validate_equalsfield' =&gt; '{field} برابر با {param} نمی باشد',
+    'validate_iban' =&gt; '{field} باید یک IBAN معتبر باشد',
+    'validate_phone_number' =&gt; '{field} باید یک شماره تلفن معتبر باشد',
+    'validate_regex' =&gt; '{field} باید شامل یک مقدار با فرمت درست و معتبر باشد',
+    'validate_valid_json_string' =&gt; '{field} باید شامل یک فرمت درست و معتبر JSON باشد',
+    'validate_valid_array_size_greater' =&gt; '{field} باید یک آرایه که اندازه آن مساوی یا بزرگتر از {param} باشد',
+    'validate_valid_array_size_lesser' =&gt; '{field} باید یک آرایه که اندازه آن مساوی یا کوچکتر از {param} باشد',
+    'validate_valid_array_size_equal' =&gt; '{field} باید یک آرایه که اندازه آن برابر با {param} باشد',
+    'validate_valid_persian_name' =&gt; '{field} باید یک نام معتبر فارسی/دری یا عربی باشد',
+    'validate_valid_eng_per_pas_name' =&gt; '{field} باید یک نام معتبر انگلیسی، فارسی/دری، پشتو یا عربی باشد',
+    'validate_valid_persian_digit' =&gt; '{field} باید یک عدد معتبر با فرمت فارسی/دری/پشتو یا عربی باشد',
+    'validate_valid_persian_text' =&gt; '{field} باید یک متن معتبر به زبان فارسی/دری باشد',
+    'validate_valid_pashtu_text' =&gt; '{field} باید یک متن معتبر به زبان پشتو باشد',
+];
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

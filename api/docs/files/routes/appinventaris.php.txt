@@ -1,0 +1,50 @@
+<?php
+
+use Model\Inventaris;
+
+// List Inventaris
+$app->get('/appinventaris/index', function ($request, $response) {
+    $params = $request->getParams();
+    $inventaris = new Inventaris();
+    $getDataInventaris = $inventaris->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDataInventaris['data'],
+        'totalItems' => $getDataInventaris['totalItem'],
+    ]);
+});
+
+// Simpan inventaris
+$app->post('/appinventaris/save', function ($request, $response) {
+    $params = $request->getParams();
+    $inventaris = new Inventaris();
+    $validasi = $inventaris->validasi($params);
+
+    if (true === $validasi) {
+        $save = $inventaris->save($params);
+
+        // Return sukses
+        if ($save['status']) {
+            return successResponse($response, [$save['data']]);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus Inventaris
+$app->post('/appinventaris/delete', function ($request, $response) {
+    $params = $request->getParams();
+    $inventaris = new Inventaris();
+    $delete = $inventaris->delete($params);
+
+    // return sukses
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+

@@ -1,0 +1,243 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class JabatanLevel
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_jabatan_level';
+    }
+
+    /**
+     * Ambil semua data level jabatan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('m_jabatan_level.id as id,
+					       m_jabatan_level.level as level,
+					       m_jabatan_level.nama as nama,
+					       m_jabatan_level.m_perusahaan_id as perusahaan_id,
+					       m_perusahaan.nama as perusahaan_nama')
+            ->from($this->table)
+            ->leftJoin('m_perusahaan', 'm_jabatan_level.m_perusahaan_id = m_perusahaan.id')
+            ->where('m_jabatan_level.is_deleted', '=', 0)
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere($this->table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data perusahaan.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $params
+     */
+    public function save($params)
+    {
+        try {
+            $params['level'] = (int) $params['level'];
+            $params['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? (int) $_SESSION['user']['m_perusahaan']['id'] : null;
+            if (isset($params['id']) && !empty($params['id'])) {
+                $params['is_deleted'] = 0;
+                $model = $this->db->update($this->table, $params, ['id' => $params['id']]);
+            } else {
+                $model = $this->db->insert($this->table, $params);
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Hapus level jabatan.
+     *
+     * @param array $params array id level jabatan
+     *
+     * @return array
+     */
+    public function delete($params)
+    {
+        try {
+            if (!empty($params)) {
+                $model = $this->db->update($this->table, ['is_deleted' => 1], ['id' => $params['id']]);
+            } else {
+                $model = $this->db->update($this->table, ['is_deleted' => 1], ['m_perusahaan_id' => $_SESSION['user']['m_perusahaan']['id']]);
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Import excel.
+     *
+     * @param array $data
+     */
+    public function import($data)
+    {
+        try {
+            try {
+                $inputFileType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($data['filePath']);
+                $objReader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
+                $objPhpSpreadsheet = $objReader->load($data['filePath']);
+            } catch (Exception $e) {
+                exit('Error loading file : "'.pathinfo($data['filePath'], PATHINFO_BASENAME).'": '.$e->getMessage());
+            }
+
+            $sheet = $objPhpSpreadsheet->getSheet(0);
+            $highestRow = $sheet->getHighestRow();
+            $highestColumn = $sheet->getHighestColumn();
+
+            $perusahaan = [];
+            $index = 0;
+            for ($row = 2; $row <= $highestRow; ++$row) {
+                $perusahaan[$index]['level'] = $sheet->getCell('A'.$row)->getFormattedValue();
+                $perusahaan[$index]['nama'] = $sheet->getCell('B'.$row)->getFormattedValue();
+                ++$index;
+            }
+
+            unlink($data['filePath']);
+
+            foreach ($perusahaan as $key => $val) {
+                $val['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? (int) $_SESSION['user']['m_perusahaan']['id'] : null;
+                $model = $this->db->insert($this->table, $val);
+            }
+
+            // Return data
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Downlod format excel level jabatan.
+     *
+     * @param string $file
+     *
+     * @return bool
+     */
+    public function download($file)
+    {
+        parent::downloadFile($file);
+
+        return true;
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+            'level' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    /**
+     * Validasi data nama tersedia.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasiLevel($data)
+    {
+        $dataLevel = true;
+        $this->db->select('level')->from($this->table)->where('is_deleted', '=', 0);
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere('m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        $models = $this->db->findAll();
+        foreach ($models as $key => $value) {
+            if ((int) $value->level == (int) $data['level']) {
+                if (isset($data['id']) && !empty($data['id'])) {
+                    $levelFromId = $this->db->select('level')->from($this->table)->where('is_deleted', '=', 0)->andWhere('id', '=', $data['id'])
+                        ->find()->level;
+                    if ($levelFromId != $data['level']) {
+                        $dataLevel = false;
+                    }
+                } else {
+                    $dataLevel = false;
+                }
+            }
+        }
+
+        return $dataLevel;
+    }
+}
+

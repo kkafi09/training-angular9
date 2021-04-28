@@ -1,0 +1,174 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class KPendidikan
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_pendidikan';
+    }
+
+    /**
+     * Ambil semua data kpendidikan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $karyawanData = $this->db->select('karyawan_data_id')
+            ->from('karyawan')
+            ->where('id', '=', $params['id'])
+            ->find()
+        ;
+        $karyawanDataId = isset($karyawanData->karyawan_data_id) ? $karyawanData->karyawan_data_id : 0;
+        $this->db->select('k_pendidikan.*, m_pendidikan_tingkat.id as id_pendidikan, m_pendidikan_tingkat.nama as nama_tpendidikan')
+            ->from($this->table)
+            ->join('left join', 'm_pendidikan_tingkat', 'm_pendidikan_tingkat.id = k_pendidikan.m_pendidikan_tingkat_id')
+            ->leftJoin('karyawan', 'karyawan.id = k_pendidikan.karyawan_id')
+            ->where('k_pendidikan.is_deleted', '=', 0)
+            ->andWhere('karyawan_data_id', '=', $karyawanDataId)
+        ;
+        // Filter
+//        if (isset($params['filter']) && 0 !== $params['filter']) {
+//            $filter = (array) json_decode($params['filter']);
+//            $filterTahun = isset($filter['tahun']) ? $filter['tahun'] : null;
+//            if (isset($filterTahun) && '' != $filterTahun) {
+//                $this->db->where('k_pendidikan.tahun_mulai', '<=', $filterTahun);
+//                $this->db->andWhere('k_pendidikan.tahun_selesai', '>=', $filterTahun);
+//            }
+//            unset($filter['tahun']);
+//            if (isset($filter['m_pendidikan_tingkat_id'])) {
+//                $this->db->where('k_pendidikan.m_pendidikan_tingkat_id', '=', $filter['m_pendidikan_tingkat_id']);
+//                unset($filter['m_pendidikan_tingkat_id']);
+//            }
+//            foreach ($filter as $key => $val) {
+//                $this->db->where($key, 'like', $val);
+//            }
+//        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        $models = $this->db->findAll();
+//        echo json_encode($models);die();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data kpendidikan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        $data['m_pendidikan_tingkat_id'] = isset($data['m_pendidikan_tingkat_id']) ? $data['m_pendidikan_tingkat_id'] : '';
+
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $model = $this->db->insert($this->table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+            } else {
+                $model = $this->db->update($this->table, $data, $customParams);
+            }
+            // Return data kpendidikan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menghapus data kpendidikan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function hapus($data, $customParams = '')
+    {
+        try {
+            $model = $db->delete('k_pendidikan', ['id' => $data['id']]);
+            // Return data kpendidikan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'm_pendidikan_tingkat_id' => 'required',
+            'institusi' => 'required',
+            'nilai' => 'required',
+            'tahun_mulai' => 'required',
+            'tahun_selesai' => 'required',
+        ];
+        \GUMP::set_field_name('m_pendidikan_tingkat_id', 'Tingkat Pendidikan');
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function getTpendidikan($params = [])
+    {
+        $this->db->select('*')
+            ->from('m_pendidikan_tingkat')
+        ;
+
+        $models = $this->db->findAll();
+
+        return [
+            'data' => $models,
+        ];
+    }
+}
+

@@ -1,0 +1,200 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanPenggajian
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 't_payroll';
+    }
+
+    /**
+     * Ambil semua data penggajian.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+        if ('null' != $params['periode_mulai'] &amp;&amp; 'null' != $params['periode_selesai']) {
+            $tanggal_awal = date('Y-m-d', strtotime($params['periode_mulai']));
+            $tanggal_akhir = date('Y-m-d', strtotime($params['periode_selesai']));
+        } else {
+            $tanggal_awal = null;
+            $tanggal_akhir = null;
+        }
+
+        $idperusahaan = $_SESSION['user']['m_perusahaan']['id'];
+        $this-&gt;db-&gt;select('t_payroll.kode as kd_gaji, t_payroll.tgl as tgl_gaji, t_payroll_det.*, t_payroll_det.karyawan_id as kid_payroll_det, t_payroll_komponen.*, m_komponen_gaji.nama, m_komponen_gaji.is_pokok, karyawan_data.nama as nama_karyawan, karyawan.nik, karyawan.m_bank_id, karyawan.no_rekening, karyawan.atas_nama as nm_anbank, m_bank.nama as nm_bank, k_jabatan.m_jabatan_id, m_jabatan.nama as nm_jabatan')
+            -&gt;from('t_payroll_det')
+            -&gt;join('left join', 'karyawan', 't_payroll_det.karyawan_id = karyawan.id')
+            -&gt;join('left join', 'karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            -&gt;join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id')
+            -&gt;join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;join('left join', 't_payroll', 't_payroll.id = t_payroll_det.t_payroll_id')
+            -&gt;join('left join', 't_payroll_komponen', 't_payroll_det.id = t_payroll_komponen.t_payroll_det_id')
+            -&gt;join('left join', 'm_komponen_gaji', 'm_komponen_gaji.id = t_payroll_komponen.m_komponen_gaji_id')
+            -&gt;join('left join', 'm_bank', 'm_bank.id = karyawan.m_bank_id')
+            -&gt;where('karyawan.m_perusahaan_id', '=', $idperusahaan)
+            -&gt;andWhere('t_payroll.status', '=', 3)
+        ;
+
+        if (null != $tanggal_awal &amp;&amp; null != $tanggal_akhir) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.periode_mulai', '&gt;=', $tanggal_awal)
+                -&gt;andWhere($this-&gt;table.'.periode_selesai', '&lt;=', $tanggal_akhir)
+            ;
+        }
+
+        if ('null' != $params['karyawan_id'] &amp;&amp; '' != $params['karyawan_id']) {
+            $this-&gt;db-&gt;andWhere('t_payroll_det'.'.karyawan_id', '=', $params['karyawan_id']);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+
+        // print_r($models);die;
+        $arr_data = [];
+        foreach ($models as $key =&gt; $value) {
+            $arr_data[$value-&gt;t_payroll_det_id]['idkar'] = $value-&gt;kid_payroll_det;
+            $arr_data[$value-&gt;t_payroll_det_id]['kode'] = $value-&gt;kd_gaji;
+            $arr_data[$value-&gt;t_payroll_det_id]['tgl_gaji'] = $value-&gt;tgl_gaji;
+            $arr_data[$value-&gt;t_payroll_det_id]['nik'] = $value-&gt;nik;
+            $arr_data[$value-&gt;t_payroll_det_id]['nama'] = $value-&gt;nama_karyawan;
+            $arr_data[$value-&gt;t_payroll_det_id]['nm_jabatan'] = $value-&gt;nm_jabatan;
+            $arr_data[$value-&gt;t_payroll_det_id]['nm_bank'] = $value-&gt;nm_bank;
+            $arr_data[$value-&gt;t_payroll_det_id]['nm_anbank'] = $value-&gt;nm_anbank;
+            $arr_data[$value-&gt;t_payroll_det_id]['no_rekening'] = $value-&gt;no_rekening;
+
+            if (1 == $value-&gt;tipe) {
+                $arr_data[$value-&gt;t_payroll_det_id]['pendapatan'][] = $value;
+            }
+            if (2 == $value-&gt;tipe) {
+                $arr_data[$value-&gt;t_payroll_det_id]['potongan'][] = $value;
+            }
+            if (3 == $value-&gt;tipe) {
+                $arr_data[$value-&gt;t_payroll_det_id]['pph'][] = $value;
+            }
+            // $arr_data[$value-&gt;t_payroll_id][$value-&gt;karyawan_id]['takehomepay'] = $value-&gt;pendapatan;
+        }
+
+        foreach ($arr_data as $key =&gt; $value) {
+            $sumdapat = 0;
+            foreach ($value['pendapatan'] as $keys =&gt; $val) {
+                $val-&gt;nomor = $keys + 1;
+                $sumdapat += $val-&gt;nilai;
+                $arr_data[$key]['totaldapat'] = $sumdapat;
+            }
+
+            $sumpotong = 0;
+            foreach ($value['potongan'] as $keys =&gt; $val) {
+                $val-&gt;nomor = $keys + 1;
+                $sumpotong += $val-&gt;nilai;
+                $arr_data[$key]['totalpotong'] = $sumpotong;
+            }
+
+            if (isset($value['pph']) &amp;&amp; !empty($value['pph'])) {
+                $sumpph = 0;
+                foreach ($value['pph'] as $keys =&gt; $val) {
+                    $val-&gt;nomor = $keys + 1;
+                    $sumpph += $val-&gt;nilai;
+                    $arr_data[$key]['totalpph'] = $sumpph;
+                }
+            } else {
+                $value['pph'] = 0;
+                $arr_data[$key]['totalpph'] = 0;
+            }
+            // print_r($value);die;
+        }
+        // print_r($arr_data);die;
+        foreach ($arr_data as $key =&gt; $value) {
+            $arr_data[$key]['takehomepay'] = $value['totaldapat'] - $value['totalpotong'] - $value['totalpph'];
+        }
+        $arr = [];
+        $i = 0;
+        foreach ($arr_data as $keys =&gt; $value) {
+            $arr[$i] = $value;
+            ++$i;
+        }
+
+        $arr_final = [];
+        foreach ($arr as $key =&gt; $value) {
+            // print_r($value['idkar']);die;
+            $arr_final[$value['idkar']]['nama'] = $value['nama'];
+            $arr_final[$value['idkar']]['nm_jabatan'] = $value['nm_jabatan'];
+            $arr_final[$value['idkar']]['detail_all'][] = $value;
+        }
+
+        $arr_finals = [];
+        $i = 0;
+        foreach ($arr_final as $keys =&gt; $value) {
+            $arr_finals[$i] = $value;
+            ++$i;
+        }
+
+        return [
+            'data' =&gt; $arr_finals,
+            'status' =&gt; true,
+            'periode' =&gt; null != $tanggal_awal &amp;&amp; null != $tanggal_akhir ? date('d/m/Y', strtotime($tanggal_awal)).' s/d '.date('d/m/Y', strtotime($tanggal_akhir)) : null,
+        ];
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

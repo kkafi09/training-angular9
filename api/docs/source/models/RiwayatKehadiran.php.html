@@ -1,0 +1,207 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Firebase;
+use Service\Db;
+
+class RiwayatKehadiran
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'm_pelatihan';
+    }
+
+    /**
+     * Ambil semua data kehadiran.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $firebase = new Firebase();
+        $idclient = $_SESSION['user']['client'];
+        $models = $firebase-&gt;getAllPresensi($idclient);
+        // print_r($models['data']);die;
+        $arr_model = [];
+        foreach ($models['data'] as $key =&gt; $value) {
+            $arr_model[$key] = $value;
+            $ambilkaryawan = $this-&gt;db-&gt;select(&quot;karyawan.id as idkaryawan, karyawan.nik, karyawan_data.nama&quot;)
+                            -&gt;from(&quot;karyawan&quot;)
+                            -&gt;join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+                            -&gt;where(&quot;karyawan.id&quot;, &quot;=&quot;, $value['id_karyawan'])
+                            -&gt;find();
+            $arr_model[$key]['nama_karyawan'] = $ambilkaryawan-&gt;nama;
+            $arr_model[$key]['nik'] = $ambilkaryawan-&gt;nik; 
+            // $arr_model[$key]['tgl_checklock'] = date(&quot;d-M-Y&quot;, strtotime($value-&gt;tgl_checklock));
+            // $arr_model[$key]['jam_checklock'] = date(&quot;H:i&quot;, strtotime($value-&gt;jam_checklock));
+        }
+        // print_r($arr_model);die;
+        return [
+            'data' =&gt; $arr_model,
+            // 'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function getKaryawanOrg($params = [])
+    {
+        $this-&gt;db-&gt;select('m_organisasi.nama as nm_organisasi, m_jabatan.nama as nm_jabatan')
+            -&gt;from('karyawan')
+            -&gt;join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id')
+            -&gt;join('left join', 'm_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+            -&gt;join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;where('karyawan.id', '=', $params['id']);
+
+        $models = $this-&gt;db-&gt;find();
+        return [
+            'data' =&gt; $models,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data kehadiran.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {   
+        $firebase = new Firebase();
+
+        // ISI DATA
+        $params = [];
+        $params['foto'] = &quot;&quot;;
+        $params['id_client'] = $_SESSION['user']['client'];
+        $params['id_karyawan'] = $data['id_karyawan'];
+        $params['latitude'] = isset($data['latitude']) ? $data['latitude'] : &quot;&quot;;
+        $params['longitude'] = isset($data['longitude']) ? $data['longitude'] : &quot;&quot;;
+        $params['time'] = &quot;&quot;;
+        if (isset($data['tgl_checklock']) &amp;&amp; !empty($data['tgl_checklock'])) {
+            $tgl_checkclock = implode('-', $data['tgl_checklock']);
+            $params['tgl_checklock'] = strtotime($tgl_checkclock);
+        }
+        if (isset($data['jam_checklock']) &amp;&amp; !empty($data['jam_checklock'])) {
+            $jam_checkclock = implode(':', $data['jam_checklock']);
+            $params['jam_checklock'] = strtotime($jam_checkclock);
+        }
+        
+        try {
+            if (isset($data['uid']) &amp;&amp; !empty($data['uid'])) {
+                $save = $firebase-&gt;updateDocument('presensi', $data['uid'], $params);
+            } else {
+                $data['uid'] = date('ymdhis');
+                $params['uid'] = $data['uid'];  
+                $save = $firebase-&gt;newDocument('presensi', $data['uid'], $params);
+            }
+
+            // Return data kehadiran
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $save,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+
+    public function delete($data, $customParams = '')
+    {   
+        $firebase = new Firebase();
+        try {
+            
+            $delete = $firebase-&gt;dropDocumentPresensi($data['uid']);            
+
+            // Return data kehadiran
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $save,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'id_karyawan' =&gt; 'required',
+        ];
+        \GUMP::set_field_name('id_karyawan', 'Karyawan');
+
+        return validate($data, $validasi, $custom);
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

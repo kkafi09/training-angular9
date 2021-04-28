@@ -1,0 +1,25 @@
+image: php:7.2
+
+stages:
+  - deploy
+
+#runDeploy:
+#  before_script:
+#    - apt-get update
+#    - apt-get install -y lftp
+#  stage: deploy
+#  only: 
+#    - master
+#  script:
+#    - lftp -c "set ftp:ssl-allow no; open -u $FTP_DEPLOY_USER,$FTP_DEPLOY_PASSWORD $FTP_DEPLOY_HOST; mirror -Rev -x ^config/ -x ^db.php ./ /api/ --transfer-all --ignore-time --parallel=10 .git* --exclude .git/ --exclude vendor/"
+
+deployMaster:
+  before_script:
+    - apt-get update
+    - apt-get install -y lftp
+  stage: deploy
+  only: 
+    - master
+  script:
+    - lftp -c "set ftp:ssl-allow no; open -u $FTP_DEPLOY_USER,$FTP_DEPLOY_PASSWORD $FTP_DEPLOY_HOST; mirror -Rev -x ^config/ -x ^sessions/ -x ^assets/ -x ^db.php ./ /api/ --transfer-all --ignore-time --parallel=10 .git* --exclude .git/ --exclude vendor/"
+  when: manual

@@ -1,0 +1,271 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class KKeluarga
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'k_keluarga';
+    }
+
+    /**
+     * Ambil semua data KKeluarga.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $karyawanData = $this-&gt;db-&gt;select('karyawan_data_id')
+            -&gt;from('karyawan')
+            -&gt;where('id', '=', $params['idkaryawan'])
+            -&gt;find()
+        ;
+        $karyawanDataId = isset($karyawanData-&gt;karyawan_data_id) ? $karyawanData-&gt;karyawan_data_id : 0;
+        $this-&gt;db-&gt;select('k_keluarga.*')
+            -&gt;from($this-&gt;table)
+            -&gt;leftJoin('karyawan', 'karyawan.id = k_keluarga.karyawan_id')
+            -&gt;where($this-&gt;table.'.is_deleted', '=', 0)
+            -&gt;andWhere('karyawan_data_id', '=', $karyawanDataId)
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = $params['filter'];
+            foreach ($filter as $key =&gt; $val) {
+                if ('id_karyawan' == $key) {
+                    $this-&gt;db-&gt;where($key, '=', $val);
+                } else {
+                    $this-&gt;db-&gt;where($key, 'like', $val);
+                }
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        foreach ($models as $key =&gt; $value) {
+            $value-&gt;tgl_lahirr = date('d/m/Y', strtotime($value-&gt;tgl_lahir));
+        }
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data kpendidikan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        if (isset($data['tgl_lahir'])) {
+            $data['tgl_lahir'] = implode('-', $data['tgl_lahir']);
+        }
+        $data['w_provinsi_id'] = isset($data['w_provinsi_id']) ? $data['w_provinsi_id'] : '';
+        $data['w_kota_id'] = isset($data['w_kota_id']) ? $data['w_kota_id'] : '';
+        $data['w_kecamatan_id'] = isset($data['w_kecamatan_id']) ? $data['w_kecamatan_id'] : '';
+        $data['w_desa_id'] = isset($data['w_desa_id']) ? $data['w_desa_id'] : '';
+
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, ['id' =&gt; $data['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, $customParams);
+            }
+            // Return data kpendidikan
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' =&gt; 'required',
+            'hubungan' =&gt; 'required',
+            // 'jenis_identitas' =&gt; 'required',
+            // 'no_identitas' =&gt; 'required',
+            'jenkel' =&gt; 'required',
+        ];
+
+        \GUMP::set_field_name('jenkel', 'Jenis Kelamin');
+        \GUMP::set_field_name('jenis_identitas', 'Jenis Identitas');
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function getProvinsi($params = [])
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('w_provinsi')
+            -&gt;where('is_deleted', '=', 0)
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+
+        return [
+            'data' =&gt; $models,
+        ];
+    }
+
+    public function getKota($params = [])
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('w_kota')
+            -&gt;where('is_deleted', '=', '0')
+        ;
+        $id = $params;
+        if ('0' != $id) {
+            $this-&gt;db-&gt;andWhere('provinsi_id', '=', $id);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+
+        return [
+            'data' =&gt; $models,
+        ];
+    }
+
+    public function getKecamatan($params = [])
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('w_kecamatan')
+            -&gt;where('is_deleted', '=', '0')
+        ;
+        $id = $params;
+        if ('0' != $id) {
+            $this-&gt;db-&gt;andWhere('kota_id', '=', $id);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+
+        return [
+            'data' =&gt; $models,
+        ];
+    }
+
+    public function getDesa($params = [])
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('w_desa')
+            -&gt;where('is_deleted', '=', '0')
+        ;
+        $id = $params;
+        if ('0' != $id) {
+            $this-&gt;db-&gt;andWhere('kecamatan_id', '=', $id);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+
+        return [
+            'data' =&gt; $models,
+        ];
+    }
+
+    public function getDataByID($table_name, $field, $id = null)
+    {
+        $this-&gt;db-&gt;select('*')-&gt;from(&quot;{$table_name}&quot;);
+        if (null != $id) {
+            $this-&gt;db-&gt;where('id', '=', $id);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+
+        if (empty($models)) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($models as $key =&gt; $value) {
+            $data = (array) $value;
+            $result[$data[$field]] = $data;
+        }
+
+        return $result;
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

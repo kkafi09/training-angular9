@@ -1,0 +1,138 @@
+app.controller("{{ctrl}}Ctrl", function($scope, Data, $rootScope) {
+    /**
+     * Inialisasi
+     */
+    var tableStateRef;
+    $scope.formtittle = "";
+    $scope.displayed = [];
+    $scope.form = {};
+    $scope.is_edit = false;
+    $scope.is_view = false;
+    $scope.is_create = false;
+    $scope.loading = false;
+    /**
+     * End inialisasi
+     */
+    $scope.callServer = function callServer(tableState) {
+        tableStateRef = tableState;
+        $scope.isLoading = true;
+        var offset = tableState.pagination.start || 0;
+        var limit = tableState.pagination.number || 10;
+        var param = {
+            offset: offset,
+            limit: limit
+        };
+        if (tableState.sort.predicate) {
+            param["sort"] = tableState.sort.predicate;
+            param["order"] = tableState.sort.reverse;
+        }
+        if (tableState.search.predicateObject) {
+            param["filter"] = tableState.search.predicateObject;
+        }
+        Data.get("{{apiUrl}}/index", param).then(function(response) {
+            $scope.displayed = response.data.list;
+            tableState.pagination.numberOfPages = Math.ceil(
+                response.data.totalItems / limit
+            );
+        });
+        $scope.isLoading = false;
+    };
+    {% if listFieldDet|length > 0 %}
+    $scope.getDetail = function(id){
+        Data.get("{{apiUrl}}/view?{{fieldRelasi}}=" + id).then(function(response) {
+            $scope.listDetail = response.data;
+        });
+    };
+    $scope.listDetail = [{}];
+    $scope.addDetail = function(val) {
+        var comArr = eval(val);
+        var newDet = {};
+        val.push(newDet);
+    };
+    $scope.removeDetail = function(val, paramindex) {
+        var comArr = eval(val);
+        if (comArr.length > 1) {
+            val.splice(paramindex, 1);
+        } else {
+            alert("Something gone wrong");
+        }
+    };
+    {% endif %}
+    $scope.create = function(form) {
+        $scope.is_edit = true;
+        $scope.is_view = false;
+        $scope.is_create = true;
+        $scope.formtittle = "Form Tambah Data";
+        $scope.form = {};
+    };
+    $scope.update = function(form) {
+        $scope.is_edit = true;
+        $scope.is_view = false;
+        $scope.formtittle = "Edit Data : " + form.{{firstField}};
+        $scope.form = form;
+        {% if listFieldDet|length > 0 %}
+        $scope.getDetail(form.id);
+        {% endif %}
+    };
+    $scope.view = function(form) {
+        $scope.is_edit = true;
+        $scope.is_view = true;
+        $scope.formtittle = "Lihat Data : " + form.{{firstField}};
+        $scope.form = form;
+        {% if listFieldDet|length > 0 %}
+        $scope.getDetail(form.id);
+        {% endif %}
+    };
+    $scope.save = function(form) {
+        $scope.loading = true;
+        {% if listFieldDet|length > 0 %}
+        var form = {
+            data: form,
+            detail: $scope.listDetail
+        }
+        {% endif %}
+        Data.post("{{apiUrl}}/save", form).then(function(result) {
+            if (result.status_code == 200) {
+                $rootScope.alert("Berhasil", "Data berhasil disimpan", "success");
+                $scope.cancel();
+            } else {
+                $rootScope.alert("Terjadi Kesalahan", setErrorMessage(result.errors) ,"error");
+            }
+            $scope.loading = false;
+        });
+    };
+    $scope.cancel = function() {
+        $scope.is_edit = false;
+        $scope.is_view = false;
+        $scope.is_create = false;
+        $scope.callServer(tableStateRef);
+    };
+    {% if is_deleted %}
+    $scope.trash = function(row) {
+        if (confirm("Apa anda yakin akan MENGHAPUS item ini ?")) {
+            row.is_deleted = 1;
+            Data.post("{{apiUrl}}/saveStatus", row).then(function(result) {
+                $scope.displayed.splice($scope.displayed.indexOf(row), 1);
+            });
+        }
+    };
+    $scope.restore = function(row) {
+        if (confirm("Apa anda yakin akan MERESTORE item ini ?")) {
+            row.is_deleted = 0;
+            Data.post("{{apiUrl}}/saveStatus", row).then(function(result) {
+                $scope.displayed.splice($scope.displayed.indexOf(row), 1);
+            });
+        }
+    };
+    {% endif %}
+    {% if is_deleted == false %}
+    $scope.delete = function(row) {
+        if (confirm("Apa anda yakin akan Menghapus item ini ?")) {
+            row.is_deleted = 0;
+            Data.post("{{apiUrl}}/hapus", row).then(function(result) {
+                $scope.displayed.splice($scope.displayed.indexOf(row), 1);
+            });
+        }
+    };
+    {% endif %}
+});

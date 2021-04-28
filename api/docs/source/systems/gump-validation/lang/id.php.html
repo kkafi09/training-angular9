@@ -1,0 +1,97 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+return [
+    'validate_required' =&gt; '{field} harus diisi',
+    'validate_valid_email' =&gt; '{field} harus berisi alamat email yang benar',
+    'validate_max_len' =&gt; '{field} harus memiliki {param} karakter atau kurang',
+    'validate_min_len' =&gt; '{field} memiliki sedikitnya {param} karakter',
+    'validate_exact_len' =&gt; '{field} harus memiliki tepat {param} karakter',
+    'validate_alpha' =&gt; '{field} hanya boleh berisi huruf',
+    'validate_alpha_numeric' =&gt; '{field} hanya boleh berisi huruf dan angkat',
+    'validate_alpha_numeric_space' =&gt; '{field} hanya boleh berisi huruf, angkat dan spasi',
+    'validate_alpha_dash' =&gt; '{field} hanya boleh berisi huruf dan \'-\'',
+    'validate_alpha_space' =&gt; '{field} hanya boleh berisi huruf dan spasi',
+    'validate_numeric' =&gt; '{field} hanya boleh berisi angka',
+    'validate_integer' =&gt; '{field} hanya boleh berisi angka tanpa memiliki desimal',
+    'validate_boolean' =&gt; '{field} hanya boleh berisi true atau false',
+    'validate_float' =&gt; '{field} hanya boleh berisi angka yang memiliki desimal (float)',
+    'validate_valid_url' =&gt; '{field} harus berupa URL',
+    'validate_url_exists' =&gt; '{field} tidak memiliki URL didalamnya',
+    'validate_valid_ip' =&gt; '{field} harus berupa IP address yang benar',
+    'validate_valid_ipv4' =&gt; '{field} harus berupa IPv4 address yang benar',
+    'validate_valid_ipv6' =&gt; '{field} harus berupa IPv6 address yang benar',
+    'validate_guidv4' =&gt; '{field} harus berupa GUID yang benar',
+    'validate_valid_cc' =&gt; '{field} bukan merupakan nomor kartu kredit yang benar',
+    'validate_valid_name' =&gt; '{field} harus berupa nama lengkap',
+    'validate_contains' =&gt; '{field} hanya boleh berisi salah satu dari pilihan berikut: {param}',
+    'validate_contains_list' =&gt; '{field} bukan merupakan opsi yang benar',
+    'validate_doesnt_contain_list' =&gt; '{field} memiliki nilai yang tidak diperbolehkan',
+    'validate_street_address' =&gt; '{field} harus berupa alamat lengkap yang benar',
+    'validate_date' =&gt; '{field} harus memiliki format tanggal yang benar',
+    'validate_min_numeric' =&gt; '{field} hanya boleh berisi angka, yang memiliki karakter lebih besar atau sama dengan {param}',
+    'validate_max_numeric' =&gt; '{field} hanya boleh berisi angka, yang memiliki karakter lebih kecil atau sama dengan  {param}',
+    'validate_min_age' =&gt; '{field}hanya boleh berisi \'umur\' yang lebih besar atau sama dengan {param}',
+    'validate_invalid' =&gt; '{field} memiliki nilai yang salah',
+    'validate_starts' =&gt; '{field} harus dimulai oleh {param}',
+    'validate_extension' =&gt; '{field} hanya boleh memiliki salah satu daru ekstensi: {param}',
+    'validate_required_file' =&gt; '{field} harus diisi',
+    'validate_iban' =&gt; '{field} harus berupa IBAN yang benar',
+    'validate_equalsfield' =&gt; '{field} harus sama dengan {param}',
+    'validate_phone_number' =&gt; '{field} harus berupa Nomor Telepon yang benar',
+    'validate_regex' =&gt; '{field} harus memiliki nilai dengan format yang benar',
+    'validate_valid_json_string' =&gt; '{field} harus memiliki format JSON yang benar',
+    'validate_valid_array_size_greater' =&gt; '{field} harus berupa array dengan ukuran lebih besar atau sama dengan {param}',
+    'validate_valid_array_size_lesser' =&gt; '{field} harus berupa array dengan ukuran lebih kecil atau sama dengan {param}',
+    'validate_valid_array_size_equal' =&gt; '{field} harus berupa array dengan ukuran {param}',
+    'validate_valid_persian_name' =&gt; '{field} seharusnya berisi nama Persian/Dari atau Arabic',
+    'validate_valid_eng_per_pas_name' =&gt; '{field} seharusnya berisi nama English, Persian/Dari/Pashtu atau Arabic',
+    'validate_valid_persian_digit' =&gt; '{field} seharusnya berisi angka dalam bahasa Persian/Dari atau Arabic',
+    'validate_valid_persian_text' =&gt; '{field} seharusnya berisi teks dalam bahasa Persian/Dari atau Arabic ',
+    'validate_valid_pashtu_text' =&gt; '{field} seharusnya berisi teks dalam bahasa Pashtu',
+    'validate_valid_twitter' =&gt; '{field} bukan merupakan format alamat twitter yang benar',
+];
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

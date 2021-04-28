@@ -1,0 +1,101 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\HakAkses;
+
+// Ambil semua hak akses
+$app-&gt;get('/apphakakses/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $hakAkses = new HakAkses();
+
+    $params['filter'] = isset($params['filter']) ? $params['filter'] : [];
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : '';
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : '';
+
+    $getDataHakAkses = $hakAkses-&gt;getAll($params, $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataHakAkses['data'],
+        'totalItems' =&gt; $getDataHakAkses['totalItem'],
+    ]);
+});
+
+// Simpan hak akses
+$app-&gt;post('/apphakakses/save', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $hakAkses = new HakAkses();
+    $params['akses'] = json_encode($params['akses']);
+    $params['akses_perusahaan'] = json_encode($params['akses_perusahaan']);
+    $validasi = $hakAkses-&gt;validasi($params);
+
+    if (true === $validasi) {
+        $save = $hakAkses-&gt;save($params);
+
+        // return sukses
+        if ($save['status']) {
+            return successResponse($response, [$save['data']]);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus hak akses
+$app-&gt;post('/apphakakses/delete', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $hakAkses = new HakAkses();
+    $delete = $hakAkses-&gt;delete($params);
+
+    // return sukses
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

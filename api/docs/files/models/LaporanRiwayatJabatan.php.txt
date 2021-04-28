@@ -1,0 +1,148 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanRiwayatJabatan extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_jabatan';
+    }
+
+    /**
+     * Ambil semua data perusahaan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('k_jabatan.*,
+         	karyawan_data.nama as karyawan_nama, 
+         	karyawan.nik as karyawan_nik,
+            m_jabatan.nama as jabatan_nama')
+            ->from($this->table)
+            ->leftJoin('karyawan', $this->table.'.karyawan_id = karyawan.id')
+            ->leftJoin('karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->leftJoin('m_jabatan', $this->table.'.m_jabatan_id = m_jabatan.id')
+            ->where($this->table.'.is_deleted', '=', 0)
+        ;
+        if (isset($params['tgl_awal']) && '' != $params['tgl_awal'] && isset($params['tgl_selesai']) && '' != $params['tgl_selesai']) {
+            $this->db->andWhere($this->table.'.tgl_mulai', '>=', $params['tgl_awal'])
+                ->andWhere($this->table.'.tgl_mulai', '<=', $params['tgl_selesai'])
+                ;
+        }
+        if (isset($params['karyawan']) && !empty($params['karyawan']) && '' != $params['karyawan'] && 'null' != $params['karyawan']) {
+            $this->db->andWhere($this->table.'.karyawan_id', '=', $params['karyawan']);
+        }
+        if (isset($params['jabatan']) && !empty($params['jabatan']) && '' != $params['jabatan'] && 'null' != $params['jabatan']) {
+            $this->db->andWhere($this->table.'.m_jabatan_id', '=', $params['jabatan']);
+        }
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+        foreach ($models as $val) {
+            $val->tgl_mulai = date('d/m/Y', strtotime($val->tgl_mulai));
+            $val->tgl_selesai = null != $val->tgl_selesai ? date('d/m/Y', strtotime($val->tgl_selesai)) : '';
+        }
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+            'periode' => isset($params['tgl_awal']) && '' != $params['tgl_awal'] && isset($params['tgl_selesai']) && '' != $params['tgl_selesai'] ? date('d/m/Y', strtotime($params['tgl_awal'])).' s/d '.date('d/m/Y', strtotime($params['tgl_selesai'])) : 'Semua Periode',
+        ];
+    }
+
+    public function download($file)
+    {
+        parent::downloadFile($file);
+
+        return true;
+    }
+
+    public function print($params)
+    {
+        $print = '<html><body onload="window.print()">';
+        $print .= '<style type="text/css"> table, th, td {border: 1px solid black;} </style>';
+        $print .= '<div"><h4>Laporan Riwayat Jabatan</h4></div>';
+        $print .= '<table>
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>NIK</th>
+                                    <th>Nama</th>
+                                    <th>Jabatan</th>
+                                    <th>Tanggal Mulai</th>
+                                    <th>Tanggal Selesai</th>
+                                </tr>
+                            </thead>
+                            <tbody>';
+        foreach ($params as $key) {
+            $print .= '<tr>';
+            $print .= '<td>'.$key['karyawan_nik'].'</td>';
+            $print .= '<td>'.$key['karyawan_nama'].'</td>';
+            $print .= '<td>'.$key['jabatan_nama'].'</td>';
+            $print .= '<td>'.$key['tgl_mulai'].'</td>';
+            $print .= '<td>'.$key['tgl_selesai'].'</td>';
+            $print .= '</tr>';
+        }
+        $print .= '</tbody></table>';
+        $print .= '</body></html>';
+
+        return [
+            'data' => $print,
+            'status' => true,
+        ];
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

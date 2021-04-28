@@ -1,0 +1,148 @@
+<?php
+
+use Model\Organisasi;
+use Service\Landa;
+
+// Ambil semua organisasi
+$app->get('/apporganisasi/index', function ($request, $response) {
+    $params = $request->getParams();
+    $organisasi = new Organisasi();
+    $data = $organisasi->getAllOrganisasi($params);
+
+    return successResponse($response, ['list' => $data['data'], 'totalItems' => $data['totalItem']]);
+});
+
+// Ambil organisasi
+$app->get('/apporganisasi/getorganisasi', function ($request, $response) {
+    $params = $request->getParams();
+    $organisasi = new Organisasi();
+    $data = $organisasi->getOrganisasi($params);
+
+    return successResponse($response, ['list' => $data['data']]);
+});
+
+// Tampilkan struktur organisasi dalam bentuk array tree
+$app->get('/apporganisasi/dataStruktur', function ($request, $response) {
+    $params = $request->getParams();
+    $organisasi = new Organisasi();
+    $landa = new Landa();
+    $data = $organisasi->getAllOrganisasi($params);
+    $models = $data['data'];
+    $arrChild = [];
+
+    foreach ($models as $key => $value) {
+        $arrChild[] = [
+            'id' => $value->id,
+            'type' => '',
+            'name' => $value->nama,
+            'parent_id' => $value->parent_id,
+        ];
+    }
+
+    $tree = $landa->buildTree($arrChild);
+    $top_tree = [
+        'id' => $_SESSION['user']['m_perusahaan']['id'],
+        'name' => $_SESSION['user']['m_perusahaan']['nama'],
+        'children' => $tree,
+    ];
+
+    return successResponse($response, ['list' => $top_tree]);
+});
+
+// Save organisasi
+$app->post('/apporganisasi/save', function ($request, $response) {
+    $data = $request->getParams();
+    $organisasi = new Organisasi();
+    $validasi = $organisasi->validasi($data);
+    $validasiKode = $organisasi->validasiKode($data);
+
+    if (true === $validasi) {
+        if (true == $validasiKode) {
+            $save = $organisasi->save($data);
+            if ($save['status']) {
+                return successResponse($response, $save['data']);
+            }
+
+            return unprocessResponse($response, [$save['error']]);
+        }
+
+        return unprocessResponse($response, 'Kode Telah Digunakan');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus organisasi
+$app->post('/apporganisasi/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $organisasi = new Organisasi();
+    $model = $organisasi->saveData(['id' => $data['id'], 'is_deleted' => 1], 'm_organisasi');
+
+    if ($model['status']) {
+        return successResponse($response, $model['data']);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Hapus organisasi
+$app->post('/apporganisasi/delete-all', function ($request, $response) {
+    $data = $request->getParams();
+    $organisasi = new Organisasi();
+    $model = $organisasi->deleteAll(['is_deleted' => 1]);
+
+    if ($model['status']) {
+        return successResponse($response, $model['data']);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Import excel organisasi
+$app->post('/apporganisasi/import', function ($request, $response) {
+    $data = $request->getParams();
+    $organisasi = new Organisasi();
+    $landa = new Landa();
+
+    $save = $landa->base64ToFile($data);
+    $excel = $save['data'];
+
+    $insert_excel = $organisasi->import($excel);
+    $getDataOrganisasi = $organisasi->getAllOrganisasi($data);
+
+    return successResponse($response, [
+        'list' => $getDataOrganisasi['data'],
+        'totalItems' => $getDataOrganisasi['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app->get('/apporganisasi/downloadFormatExcel', function ($request, $response) {
+    $organisasi = new Organisasi();
+    $file = 'assets/formatExcel/Organisasi.xlsx';
+    $save = $organisasi->download($file);
+
+    return successResponse($response, $save);
+});
+
+// Generate default kode organisasi
+$app->get('/apporganisasi/generate_kode', function ($request, $response) {
+    $data = $request->getParams();
+    $organisasi = new Organisasi();
+    $model = $organisasi->generateKode();
+
+    if ($model['status']) {
+        return successResponse($response, $model['data']);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+// Ambil semua organisasi
+$app->get('/apporganisasi/getOrganisasiByPerusahaan', function ($request, $response) {
+    $params = $request->getParams();
+    $organisasi = new Organisasi();
+    $data = $organisasi->getOrganisasiByPerusahaan($params);
+
+    return successResponse($response, ['list' => $data['data'], 'totalItems' => $data['totalItem']]);
+});
+

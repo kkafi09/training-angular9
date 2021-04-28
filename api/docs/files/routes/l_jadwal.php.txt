@@ -1,0 +1,36 @@
+<?php
+
+use Model\LaporanJadwal;
+
+// Ambil semua kasbon
+$app->get('/l_jadwal/getAll', function ($request, $response) {
+    $params = $request->getParams();
+    $laporanJadwal = new LaporanJadwal();
+    $getDataJadwal = $laporanJadwal->getAll($params);
+
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/jadwal.html', [
+            'data' => $getDataJadwal['list'],
+            'periode' => $getDataJadwal['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getDataJadwal['periode']) {
+            header('Content-Disposition: attachment;Filename="Laporan Jadwal ('.$getDataJadwal['periode'].').xls"');
+        } else {
+            header('Content-Disposition: attachment;Filename="Laporan Jadwal (Semua Periode).xls"');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/jadwal.html', [
+            'data' => $getDataJadwal['list'],
+            'periode' => $getDataJadwal['periode'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, ['list' => $getDataJadwal['list'], 'periode' => $getDataJadwal['periode']]);
+    }
+});
+

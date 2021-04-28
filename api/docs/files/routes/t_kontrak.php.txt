@@ -1,0 +1,145 @@
+<?php
+
+use Model\Karyawan;
+use Model\Kontrak;
+use Service\Landa;
+
+// Get terminasi
+$app->get('/t_kontrak/index', function ($request, $response) {
+    $params = $request->getParams();
+    $kontrak = new Kontrak();
+    $getAlasan = $kontrak->getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' => $getAlasan['data'],
+        'totalItems' => $getAlasan['totalItem'],
+    ]);
+});
+
+// Get list karyawan
+$app->get('/t_kontrak/getKaryawan', function ($request, $response) {
+    $params = $request->getParams();
+    $kontrak = new Kontrak();
+    $data = $kontrak->getDataKaryawan();
+
+    return successResponse($response, ['list' => $data['data'], 'totalItems' => $data['totalItem']]);
+});
+
+// Get Data karyawan
+$app->get('/t_kontrak/karyawan', function ($request, $response) {
+    $params = $request->getParams();
+    $kontrak = new Kontrak();
+    $getKaryawan = $kontrak->getKaryawan($params['params']);
+
+    foreach ($getKaryawan['data'] as $key => $val) {
+        // $selisih = date_diff(date_create($val->tgl_mulai_kerja), date_create());
+        // $val->masa_kerja = $selisih->y.' Tahun '.$selisih->m.' Bulan';
+        // $val->tgl_mulai_kerja = date('d/m/Y', strtotime($val->tgl_mulai_kerja));
+        // $val->sisa_kasbon = !empty($getSisaKasbon['data'][$val->karyawan_id]) ? $getSisaKasbon['data'][$val->karyawan_id] : 0;
+
+        // if (isset($params['data'])) {
+        //     $getPesangon = $kontrak->getPesangon($val, $selisih, $params['data']);
+
+        //     if (null != $getPesangon['data']) {
+        //         $val->pesangon = $getPesangon['data']->gaji + $getPesangon['data']->nominal;
+        //     } else {
+        //         $val->pesangon = 0;
+        //     }
+        // }
+        $val->status = $val->tipe;
+    }
+
+    return successResponse($response, [
+        'list' => $getKaryawan['data'],
+    ]);
+});
+
+// Get detail terminasi
+$app->get('/t_kontrak/getDetail', function ($request, $response) {
+    $params = $request->getParams();
+    $kontrak = new Kontrak();
+    $karyawan = new Karyawan();
+    $getDetail = $kontrak->getDetail($params);
+
+    return successResponse($response, [
+        'list' => $getDetail['data'],
+    ]);
+});
+
+// Get alasan
+$app->get('/t_kontrak/alasan', function ($request, $response) {
+    $params = $request->getParams();
+    $kontrak = new Kontrak();
+    $getAlasan = $kontrak->getAlasan($params);
+
+    return successResponse($response, [
+        'list' => $getAlasan['data'],
+    ]);
+});
+
+// Get sisa kasbon
+$app->get('/t_kontrak/sisa-kasbon', function ($request, $response) {
+    $params = $request->getParams();
+    $kontrak = new Kontrak();
+    $getSisaKasbon = $kontrak->getSisaKasbon($params['params']);
+
+    return successResponse($response, [
+        'list' => $getSisaKasbon['data'],
+    ]);
+});
+
+// Save terminasi
+$app->post('/t_kontrak/save', function ($request, $response) {
+    $data = $request->getParams();
+    $kontrak = new Kontrak();
+    $landa = new Landa();
+    // print_r($data);die;
+    $validasi = $kontrak->validasi($data['data']);
+
+    if (true === $validasi) {
+        if (!isset($data['data']['id'])) {
+            $kode = $kontrak->generateKode();
+            $data['data']['kode'] = $kode['data'];
+        }
+
+        $data['data']['tgl'] = $landa->arrayToDate($data['data']['tgl']);
+
+        // Proses simpan ke dalam database.
+        if (!empty($data['hapus'])) {
+            $hapus_detail = $kontrak->deleteDetail($data['hapus']);
+        }
+        $save = $kontrak->save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus terminasi
+$app->post('/t_kontrak/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $kontrak = new Kontrak();
+    $model = $kontrak->delete($data);
+
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+// Get terminasi
+$app->get('/t_kontrak/getKaryawanHabisKontrak', function ($request, $response) {
+    $params = $request->getParams();
+    $kontrak = new Kontrak();
+    $getKontrak = $kontrak->getKaryawanHabisKontrak();
+
+    return successResponse($response, [
+        'list' => $getKontrak,
+    ]);
+});
+

@@ -1,0 +1,194 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class Inventaris
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'k_inventaris';
+    }
+
+    /**
+     * Ambil semua data inventaris.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select($this-&gt;table.'.*, karyawan_data.nama as karyawan_nama')
+            -&gt;from($this-&gt;table)
+            -&gt;leftJoin('karyawan_data', 'k_inventaris.karyawan_id = karyawan_data.id')
+            -&gt;where($this-&gt;table.'.is_deleted', '=', 0)
+            -&gt;andWhere('karyawan_id', '=', $params['id'])
+        ;
+        // Filter
+//        if (isset($params['filter'])) {
+//            $filter = (array) json_decode($params['filter']);
+//            $filter['k_inventaris.nama'] = isset($filter['nama']) ? $filter['nama'] : '';
+//            unset($filter['nama']);
+//            foreach ($filter as $key =&gt; $val) {
+//                $this-&gt;db-&gt;where($key, 'like', $val);
+//            }
+//        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data inventaris.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $params
+     */
+    public function save($params, $customParams = '')
+    {
+        try {
+            $params['tgl_mulai'] = arr_date_to_string($params['tgl_mulai']);
+            if (!empty($params['kembali']) &amp;&amp; 1 == (int) $params['kembali'] &amp;&amp; !empty($params['tgl_selesai'])) {
+                $params['tgl_selesai'] = arr_date_to_string($params['tgl_selesai']);
+            } else {
+                $params['tgl_selesai'] = null;
+            }
+            if (isset($params['id']) &amp;&amp; !empty($params['id'])) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $params, ['id' =&gt; $params['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $params);
+            }
+            // Return data inventaris
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * hapus inventaris.
+     *
+     * @param [type] $params [description]
+     *
+     * @return [type] [description]
+     */
+    public function delete($params)
+    {
+        try {
+            $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; 1], ['id' =&gt; $params['id']]);
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' =&gt; 'required',
+            'karyawan_id' =&gt; 'required',
+            'serial_number' =&gt; 'required',
+            'kembali' =&gt; 'required',
+            'tgl_mulai' =&gt; 'required',
+        ];
+        if (!empty($data['kembali']) &amp;&amp; 1 == (int) $data['kembali']) {
+            $validasi['tgl_selesai'] = 'required';
+        }
+
+        return validate($data, $validasi, $custom);
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

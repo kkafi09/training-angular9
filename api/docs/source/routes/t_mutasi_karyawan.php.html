@@ -1,0 +1,177 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\MutasiKaryawan;
+use Service\Landa;
+
+// Ambil semua emergency kontak
+//
+$app-&gt;get('/t_mutasi_karyawan/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $getDatakJabatan = $mutasiKaryawan-&gt;getAll($params);
+
+    foreach ($getDatakJabatan['data'] as $key =&gt; $val) {
+        if (null != $val-&gt;tgl_mulai) {
+            $val-&gt;tgl_mulai = date('d/m/Y', strtotime($val-&gt;tgl_mulai));
+        }
+
+        if (null != $val-&gt;tgl_selesai) {
+            $val-&gt;tgl_selesai = date('d/m/Y', strtotime($val-&gt;tgl_selesai));
+        }
+    }
+
+    return successResponse($response, [
+        'list' =&gt; $getDatakJabatan['data'],
+        'totalItems' =&gt; $getDatakJabatan['totalItem'],
+    ]);
+});
+// Save emergency kontak
+$app-&gt;post('/t_mutasi_karyawan/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $landa = new Landa();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $validasi = $mutasiKaryawan-&gt;validasi($data);
+    if (true === $validasi) {
+        // Proses simpan ke dalam database.
+        if (1 == $data['is_mutasi']) {
+            $save = $mutasiKaryawan-&gt;save($data);
+        } else {
+            $save = $mutasiKaryawan-&gt;tambahMutasi($data);
+        }
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Hapus emergency kontak
+$app-&gt;post('/t_mutasi_karyawan/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan-&gt;delete($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+// Hapus emergency kontak
+$app-&gt;post('/t_mutasi_karyawan/nonaktif', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan-&gt;nonaktif($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+$app-&gt;post('/t_mutasi_karyawan/ubahJabatan', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan-&gt;ubahJabatan($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+$app-&gt;get('/t_mutasi_karyawan/getKaryawan', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan-&gt;getKaryawan();
+    if ($model) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+$app-&gt;get('/t_mutasi_karyawan/getOrganisasi', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan-&gt;getOrganisasi($data['m_perusahaan_id']);
+    if ($model) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+$app-&gt;get('/t_mutasi_karyawan/getJabatan', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan-&gt;getJabatan($data['m_perusahaan_id']);
+    if ($model) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+//Ambil semua jabatan Karyawan
+$app-&gt;get('/t_mutasi_karyawan/getJabatanKaryawan', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan-&gt;getJabatanKaryawan($data);
+    if ($model) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+$app-&gt;get('/t_mutasi_karyawan/generateKode', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $mutasiKaryawan = new MutasiKaryawan();
+    $model = $mutasiKaryawan-&gt;generate_kode();
+    if ($model) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,55 @@
+.company-name {
+    font-size: 20px;
+    font-weight: bold;
+    margin-right: 10px;
+    border-right: 1px solid #e6e6e6;
+    padding-right: 15px;
+    cursor: pointer;
+    color: #4B50A1;
+}
+
+.company-name:hover {
+    color: darken(#4B50A1, 15%);
+}
+
+.card-perusahaan {
+    background: linear-gradient(to left, #5fc792, #35b3a7);
+}
+
+.card-perusahaan:hover {
+    background-color: darken(#5fc792, 15%);
+}
+
+.logo-img {
+    top: 13.6px;
+    position: relative;
+    vertical-align: inherit;
+    border-radius: 30%;
+}
+
+.modal-title {
+    color: #fff;
+}
+
+.modal-header .close {
+    color: #fff;
+}
+
+.modal-header {
+    background: #4E51A2;
+}
+
+.tooltipUser .tooltip-inner {
+    min-width: 200px;
+    width: 200px;
+}
+
+.custom {
+    width: 40em;
+    background-color: #ffffff;
+}
+
+.customMaster {
+    width: 30em;
+    background-color: #ffffff;
+}

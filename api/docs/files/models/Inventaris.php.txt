@@ -1,0 +1,150 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class Inventaris
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_inventaris';
+    }
+
+    /**
+     * Ambil semua data inventaris.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select($this->table.'.*, karyawan_data.nama as karyawan_nama')
+            ->from($this->table)
+            ->leftJoin('karyawan_data', 'k_inventaris.karyawan_id = karyawan_data.id')
+            ->where($this->table.'.is_deleted', '=', 0)
+            ->andWhere('karyawan_id', '=', $params['id'])
+        ;
+        // Filter
+//        if (isset($params['filter'])) {
+//            $filter = (array) json_decode($params['filter']);
+//            $filter['k_inventaris.nama'] = isset($filter['nama']) ? $filter['nama'] : '';
+//            unset($filter['nama']);
+//            foreach ($filter as $key => $val) {
+//                $this->db->where($key, 'like', $val);
+//            }
+//        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data inventaris.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $params
+     */
+    public function save($params, $customParams = '')
+    {
+        try {
+            $params['tgl_mulai'] = arr_date_to_string($params['tgl_mulai']);
+            if (!empty($params['kembali']) && 1 == (int) $params['kembali'] && !empty($params['tgl_selesai'])) {
+                $params['tgl_selesai'] = arr_date_to_string($params['tgl_selesai']);
+            } else {
+                $params['tgl_selesai'] = null;
+            }
+            if (isset($params['id']) && !empty($params['id'])) {
+                $model = $this->db->update($this->table, $params, ['id' => $params['id']]);
+            } else {
+                $model = $this->db->insert($this->table, $params);
+            }
+            // Return data inventaris
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * hapus inventaris.
+     *
+     * @param [type] $params [description]
+     *
+     * @return [type] [description]
+     */
+    public function delete($params)
+    {
+        try {
+            $model = $this->db->update($this->table, ['is_deleted' => 1], ['id' => $params['id']]);
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+            'karyawan_id' => 'required',
+            'serial_number' => 'required',
+            'kembali' => 'required',
+            'tgl_mulai' => 'required',
+        ];
+        if (!empty($data['kembali']) && 1 == (int) $data['kembali']) {
+            $validasi['tgl_selesai'] = 'required';
+        }
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

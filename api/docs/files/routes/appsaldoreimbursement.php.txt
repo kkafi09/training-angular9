@@ -1,0 +1,185 @@
+<?php
+
+use Model\Formula;
+use Model\SaldoReimbursement;
+use Service\Landa;
+
+// Ambil semua pelatihan
+$app->get('/appsaldoreimbursement/index', function ($request, $response) {
+    $params = $request->getParams();
+    $reimbursement = new SaldoReimbursement();
+    $getDataSaldoReimbursement = $reimbursement->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDataSaldoReimbursement['data'],
+        'totalItems' => $getDataSaldoReimbursement['totalItem'],
+    ]);
+});
+
+// Save pelatihan
+$app->post('/appsaldoreimbursement/save', function ($request, $response) {
+    $data = $request->getParams();
+    $saldoReimbursement = new SaldoReimbursement();
+//    echo json_encode($data);die();
+
+    $validasi = $saldoReimbursement->validasi($data['model']);
+    // $validasiKode = $reimbursement->validasiKode($data);
+
+    if (true === $validasi) {
+        $save = $saldoReimbursement->save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus pelatihan
+$app->post('/appsaldoreimbursement/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $reimbursement = new SaldoReimbursement();
+    $delete = $reimbursement->delete($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+$app->get('/appsaldoreimbursement/getDetail/{id}', function ($request, $response) {
+    $params = $request->getParams();
+    $id = $request->getAttribute('id');
+    $reimbursement = new SaldoReimbursement();
+    $get = $reimbursement->getDetail($id);
+//    echo json_encode($get['data']);die();
+
+    if ($get['totalItem'] > 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app->get('/appsaldoreimbursement/getDataRembursement', function ($request, $response) {
+    $params = $request->getParams();
+    $reimbursement = new SaldoReimbursement();
+    $get = $reimbursement->getAll();
+
+    if ($get['totalItem'] > 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app->get('/appsaldoreimbursement/getBatasFormula', function ($request, $response) {
+    $params = $request->getParams();
+    $reimbursement = new SaldoReimbursement();
+//    echo json_encode($params);die();?
+    $reim = $reimbursement->getReimbursementDet($params['m_reimbursement_id']);
+    $formula = new Formula();
+    $karyawan = [
+        'm_level_jabatan_id' => isset($params['m_jabatan_level_id']) ? $params['m_jabatan_level_id'] : '',
+        'm_jabatan_id' => isset($params['m_jabatan_id']) ? $params['m_jabatan_id'] : '',
+        //             'm_time_off_id' => 0,
+        'm_organisasi_id' => isset($params['m_organisasi_id']) ? $params['m_organisasi_id'] : '',
+        'jenkel' => isset($params['jenkel']) ? $params['jenkel'] : '',
+        'status_nikah' => isset($params['status_nikah']) ? $params['status_nikah'] : '',
+        'tipe_karyawan' => isset($params['tipe']) ? $params['tipe'] : '',
+        'karyawan_id' => isset($params['id']) ? $params['id'] : '',
+    ];
+    if (1 == $reim->is_unlimited) {
+        $value = 'unlimited';
+    } else {
+        $listFormula = $formula->getFormula('m_reimbursement_id', $params['m_reimbursement_id']);
+
+        if (1 == count($listFormula['data']) && 0 == $listFormula['data'][0]->reff_id && 0 == $listFormula['data'][0]->reff_type) {
+            $value = $listFormula['data'][0]->value;
+        } else {
+            $value = $formula->getValue($karyawan, $listFormula['data']);
+        }
+    }
+    if (isset($value)) {
+        return successResponse($response, $value);
+    }
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app->get('/appsaldoreimbursement/getSaldoAwal', function ($request, $response) {
+    $params = $request->getParams();
+    $reimbursement = new SaldoReimbursement();
+//    echo json_encode($params);die();
+    $reim = $reimbursement->getSaldoAwal($params);
+
+    if (isset($reim)) {
+        return successResponse($response, $reim);
+    }
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app->get('/appsaldoreimbursement/getTanggalSelesai', function ($request, $response) {
+    $params = $request->getParams();
+//    echo json_encode($params);die();
+    $reimbursement = new SaldoReimbursement();
+    $get = $reimbursement->getTanggalSelesai($params);
+    if (1 == $params['tipe']) {
+        $cekInputSaldo = $reimbursement->cekInputSaldo($params);
+    } else {
+        $cekInputSaldo['status'] = true;
+    }
+
+    if (isset($get) && $cekInputSaldo['status']) {
+        return successResponse($response, $get);
+    }
+    if (!$cekInputSaldo['status']) {
+        return unprocessResponse($response, $cekInputSaldo['error']);
+    }
+    unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app->get('/appsaldoreimbursement/getKode', function ($request, $response) {
+    $params = $request->getParams();
+    $reimbursement = new SaldoReimbursement();
+    $get = $reimbursement->generate_kode();
+
+    if (isset($get)) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+
+// Import excel kategori file
+$app->post('/appsaldoreimbursement/import', function ($request, $response) {
+    $data = $request->getParams();
+    $SaldoReimbursement = new SaldoReimbursement();
+    $landa = new Landa();
+
+    $save = $landa->base64ToFile($data);
+    $excel = $save['data'];
+
+    $dataKategoriFile = $SaldoReimbursement->getAll($data);
+    $insert_excel = $SaldoReimbursement->import($excel, $dataKategoriFile);
+
+    return successResponse($response, [
+        'list' => $insert_excel['data'],
+        'totalItems' => $dataKategoriFile['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app->get('/appsaldoreimbursement/downloadFormatExcel', function ($request, $response) {
+    $SaldoReimbursement = new SaldoReimbursement();
+    $Karyawan = new \Model\Karyawan();
+    $file = 'assets/formatExcel/Saldo-Reimbursement.xlsx';
+    $karyawanAktif = $Karyawan->getKaryawanAktif();
+    $save = $SaldoReimbursement->download($file, $karyawanAktif);
+
+    return successResponse($response, $save);
+});
+

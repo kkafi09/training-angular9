@@ -1,0 +1,63 @@
+<?php
+
+use Model\RiwayatKehadiran;
+
+// Ambil semua kehadiran
+$app->get('/appriwayatkehadiran/index', function ($request, $response) {
+    $params = $request->getParams();
+    $riwayatkehadiran = new RiwayatKehadiran();
+    $getDataKehadiran = $riwayatkehadiran->getAll();
+
+    return successResponse($response, [
+        'list' => $getDataKehadiran['data'],
+    ]);
+});
+
+// Ambil karyawan organisasi dan jabatan
+$app->get('/appriwayatkehadiran/karyawanorg', function ($request, $response) {
+    $params = $request->getParams();
+    $riwayatkehadiran = new RiwayatKehadiran();
+    $getDataKehadiran = $riwayatkehadiran->getKaryawanOrg($params);
+
+    return successResponse($response, [
+        'list' => $getDataKehadiran['data'],
+    ]);
+});
+
+// Save kehadiran
+$app->post('/appriwayatkehadiran/save', function ($request, $response) {
+    $data = $request->getParams();
+    // print_r($data);die;
+    $riwayatkehadiran = new RiwayatKehadiran();
+    $validasi = $riwayatkehadiran->validasi($data);
+
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        // $data['tgl_checklock'] = $landa->arrayToDate($data['tgl_checklock']);
+
+        $save = $riwayatkehadiran->save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus kehadiran
+$app->post('/appriwayatkehadiran/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $riwayatkehadiran = new RiwayatKehadiran();
+    $model = $riwayatkehadiran->delete($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+

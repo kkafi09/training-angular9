@@ -1,0 +1,69 @@
+<?php
+
+use Model\LaporanRiwayatPendidikan;
+
+$app->get('/applaporanriwayatpendidikan/getAll', function ($request, $response) {
+    $params = $request->getParams();
+//    echo json_encode($params);die();
+
+    $laporanPendidikan = new LaporanRiwayatPendidikan();
+    $getDataLaporanPendidikan = $laporanPendidikan->getAll($params);
+//    echo json_encode($getDataLaporanPendidikan);die();
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/riwayat_pendidikan.html', [
+            'data' => $getDataLaporanPendidikan['data'],
+            'periode' => $params['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;Filename="Laporan Kasbon ('.$params['periode'].').xls"');
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/riwayat_pendidikan.html', [
+            'data' => $getDataLaporanPendidikan['data'],
+            'periode' => $params['periode'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, [
+            'list' => $getDataLaporanPendidikan['data'],
+            'totalItems' => $getDataLaporanPendidikan['totalItem'],
+        ]);
+    }
+});
+
+$app->get('/applaporanriwayatpendidikan/getPendidikan', function ($request, $response) {
+    $params = $request->getParams();
+    $laporanPendidikan = new LaporanRiwayatPendidikan();
+    $getDataLaporanPendidikan = $laporanPendidikan->getPendidikan();
+
+    return successResponse($response, [
+        'list' => $getDataLaporanPendidikan['data'],
+        'totalItems' => $getDataLaporanPendidikan['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app->get('/applaporanriwayatpendidikan/downloadFormatExcel', function ($request, $response) {
+    $laporanPendidikan = new LaporanRiwayatPendidikan();
+
+    $file = 'assets/formatExcel/Laporan-Riwayat-Pendidikan.xlsx';
+    $save = $laporanPendidikan->download($file);
+
+    return successResponse($response, $save);
+});
+
+// print
+$app->post('/applaporanriwayatpendidikan/print', function ($request, $response) {
+    $params = $request->getParams();
+    $laporanPendidikan = new LaporanRiwayatPendidikan();
+    $print = $laporanPendidikan->print($params);
+
+    return successResponse($response, [
+        'list' => $print['data'],
+        'status' => $print['status'],
+    ]);
+});
+

@@ -1,0 +1,302 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class KategoriFile extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'm_kategori_file';
+    }
+
+    /**
+     * Ambil semua data kategori file.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('m_kategori_file.id as id, 
+			        m_kategori_file.nama as nama,
+                    m_kategori_file.kode as kode, 
+			        m_perusahaan.id as perusahaan_id, 
+			        m_perusahaan.nama as perusahaan_nama')
+            -&gt;from('m_kategori_file')
+            -&gt;leftJoin('m_perusahaan', 'm_kategori_file.m_perusahaan_id = m_perusahaan.id')
+            -&gt;where('m_kategori_file.is_deleted', '=', 0)
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            $filter['m_kategori_file.nama'] = isset($filter['nama']) ? $filter['nama'] : '';
+            $filter['m_kategori_file.kode'] = isset($filter['kode']) ? $filter['kode'] : '';
+            unset($filter['nama'], $filter['kode']);
+
+            foreach ($filter as $key =&gt; $val) {
+                $this-&gt;db-&gt;where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($limit) &amp;&amp; !empty($limit)) {
+            $this-&gt;db-&gt;limit($limit);
+        }
+        // Set offset
+        if (isset($offset) &amp;&amp; !empty($offset)) {
+            $this-&gt;db-&gt;offset($offset);
+        }
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this-&gt;db-&gt;andWhere('m_kategori_file.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Import excel.
+     *
+     * @param array $data
+     * @param mixed $dataJabatanLevel
+     * @param mixed $dataJabatan
+     * @param mixed $dataKategoriFile
+     */
+    public function import($data, $dataKategoriFile)
+    {
+        try {
+            try {
+                $inputFileType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($data['filePath']);
+                $objReader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
+                $objPhpSpreadsheet = $objReader-&gt;load($data['filePath']);
+            } catch (Exception $e) {
+                exit('Error loading file : &quot;'.pathinfo($data['filePath'], PATHINFO_BASENAME).'&quot;: '.$e-&gt;getMessage());
+            }
+
+            $sheet = $objPhpSpreadsheet-&gt;getSheet(0);
+            $highestRow = $sheet-&gt;getHighestRow();
+            $highestColumn = $sheet-&gt;getHighestColumn();
+
+            $kategoriFile = [];
+            $index = 0;
+            for ($row = 2; $row &lt;= $highestRow; ++$row) {
+                $kategoriFile[$index]['kode'] = $sheet-&gt;getCell('A'.$row)-&gt;getFormattedValue();
+                $kategoriFile[$index]['nama'] = $sheet-&gt;getCell('B'.$row)-&gt;getFormattedValue();
+                ++$index;
+            }
+            unlink($data['filePath']);
+
+            $arrKategoriFile = [];
+            foreach ($dataKategoriFile['data'] as $key =&gt; $val) {
+                $dataKategoriFile[$val-&gt;kode] = $val-&gt;id;
+            }
+//            echo json_encode($kategoriFile);die();
+
+            foreach ($kategoriFile as $key =&gt; $val) {
+                $val['m_perusahaan_id'] = isset($_SESSION) ? $_SESSION['user']['m_perusahaan']['id'] : 0;
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $val);
+            }
+
+            // Return data
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function download($file)
+    {
+        parent::downloadFile($file);
+
+        return true;
+    }
+
+    /**
+     * Method untuk menyimpan data perusahaan.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $params
+     */
+    public function save($params)
+    {
+        try {
+            if (isset($params['id']) &amp;&amp; !empty($params['id'])) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $params, ['id' =&gt; $params['id']]);
+            } else {
+                $params['is_deleted'] = 0;
+                $params['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : 0;
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $params);
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            if (empty($params)) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; 1], ['m_perusahaan_id' =&gt; $_SESSION['user']['m_perusahaan']['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; 1], ['id' =&gt; $params['id']]);
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' =&gt; 'required',
+            'kode' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    /**
+     * Validasi kode tersedia.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasiKode($data)
+    {
+        return parent::validasiKodeCore($data, 'm_kategori_file');
+    }
+
+    /**
+     * Generate kode.
+     *
+     * @return string kode default
+     */
+    public function generateKode()
+    {
+        $cekKode = $this-&gt;db-&gt;select($this-&gt;table.'.id')
+            -&gt;from($this-&gt;table)
+            -&gt;where('m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            -&gt;orderBy('kode DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $kode_perusahaan = isset($_SESSION['user']['m_perusahaan']['kode']) ? $_SESSION['user']['m_perusahaan']['kode'] : '';
+            $tipe = 'FILE';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $kode_perusahaan.$tipe.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

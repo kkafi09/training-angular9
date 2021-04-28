@@ -1,0 +1,82 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Wilayah;
+
+// Ambil semua perusahaan
+$app-&gt;get('/appwilayah/getProvinsi', function ($request, $response) {
+    $params = $request-&gt;getParams();
+
+    $wilayah = new Wilayah();
+    $data = $wilayah-&gt;getDataProvinsi();
+
+    return successResponse($response, ['list' =&gt; $data['data'], 'totalItems' =&gt; $data['totalItem']]);
+});
+$app-&gt;get('/appwilayah/getKota/{id}', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $id = $request-&gt;getAttribute('id');
+    $wilayah = new Wilayah();
+    $data = $wilayah-&gt;getDataKota($id);
+
+    return successResponse($response, ['list' =&gt; $data['data'], 'totalItems' =&gt; $data['totalItem']]);
+});
+$app-&gt;get('/appwilayah/getKecamatan/{id}', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $id = $request-&gt;getAttribute('id');
+    $wilayah = new Wilayah();
+    $data = $wilayah-&gt;getDataKecamatan($id);
+
+    return successResponse($response, ['list' =&gt; $data['data'], 'totalItems' =&gt; $data['totalItem']]);
+});
+$app-&gt;get('/appwilayah/getDesa/{id}', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $id = $request-&gt;getAttribute('id');
+    $wilayah = new Wilayah();
+    $data = $wilayah-&gt;getDataDesa($id);
+
+    return successResponse($response, ['list' =&gt; $data['data'], 'totalItems' =&gt; $data['totalItem']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

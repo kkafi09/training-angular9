@@ -1,0 +1,183 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\PengajuanReimbursement;
+
+// Ambil semua pelatihan
+$app-&gt;get('/apppengajuanreimbursement/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $reimbursement = new PengajuanReimbursement();
+
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : 20;
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : 0;
+    $params['params'] = isset($params['params']) ? $params['params'] : [];
+
+    $getDataPengajuanReimbursement = $reimbursement-&gt;getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataPengajuanReimbursement['data'],
+        'totalItems' =&gt; $getDataPengajuanReimbursement['totalItem'],
+    ]);
+});
+
+// Save pelatihan
+$app-&gt;post('/apppengajuanreimbursement/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $pengajuanReimbursement = new PengajuanReimbursement();
+    $validasi = $pengajuanReimbursement-&gt;validasi($data['model']);
+    $validasiDetail = $pengajuanReimbursement-&gt;validasiDetail($data);
+    $validasiAll = array_merge(true !== $validasi ? $validasi : [], true !== $validasiDetail ? $validasiDetail : []);
+    if (true === $validasi &amp;&amp; true === $validasiDetail) {
+        if (!isset($data['model']['is_approve']) || 0 == $data['model']['is_approve']) {
+            $cekTanggal = $pengajuanReimbursement-&gt;checkTanggalSaldo($data['model']['karyawan_id'], $data['model']['m_reimbursement_id'], $data['model']['tgl']);
+            if (!$cekTanggal['status']) {
+                return unprocessResponse($response, $cekTanggal['error']);
+            }
+            $cekPengajuan = $pengajuanReimbursement-&gt;checkBatasFormula($data['list_pengajuan_rem_det'], $data['model']['karyawan_id'], $data['model']['m_reimbursement_id'], $data['model']['tgl']);
+            if (!$cekPengajuan['status']) {
+                return unprocessResponse($response, $cekPengajuan['error']);
+            }
+        }
+        $save = $pengajuanReimbursement-&gt;save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasiAll);
+});
+
+// Hapus pelatihan
+$app-&gt;post('/apppengajuanreimbursement/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $delete = $reimbursement-&gt;delete($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+$app-&gt;post('/apppengajuanreimbursement/deleteFile', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $delete = $reimbursement-&gt;deleteFile($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+$app-&gt;get('/apppengajuanreimbursement/getDetail/{id}', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $id = $request-&gt;getAttribute('id');
+    $reimbursement = new PengajuanReimbursement();
+    $get = $reimbursement-&gt;getDetail($id);
+//    echo json_encode($get['data']);die();
+
+    if ($get['totalItem'] &gt; 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app-&gt;get('/apppengajuanreimbursement/getFile', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $get = $reimbursement-&gt;getFile($params['reff_table'], $params['reff_type'], $params['id'], $params['folder']);
+
+//    echo json_encode($get['data']);die();
+
+    if ($get['totalItem'] &gt; 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app-&gt;get('/apppengajuanreimbursement/getDataRembursement', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $get = $reimbursement-&gt;getAll();
+
+    if ($get['totalItem'] &gt; 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app-&gt;get('/apppengajuanreimbursement/getKode', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $get = $reimbursement-&gt;generate_kode();
+
+    if (isset($get)) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+// Ambil semua pelatihan
+$app-&gt;get('/apppengajuanreimbursement/getReimbursementPenggajian', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $getDataPengajuanReimbursement = $reimbursement-&gt;getReimbursementPenggajian($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataPengajuanReimbursement['data'],
+        'totalItems' =&gt; $getDataPengajuanReimbursement['totalItem'],
+    ]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

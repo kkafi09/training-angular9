@@ -1,0 +1,273 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class KomponenGaji
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'm_komponen_gaji';
+    }
+
+    /**
+     * Ambil semua data tunjangan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getTunjangan($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from($this-&gt;table)
+            -&gt;where('is_deleted', '=', 0)
+            -&gt;andWhere('tipe', '=', 1)
+            -&gt;andWhere('is_global', '=', 1)
+            -&gt;customWhere(' m_perusahaan_id='.$_SESSION['user']['m_perusahaan']['id'], 'OR')
+            -&gt;andWhere('tipe', '=', 1)
+            -&gt;andWhere('is_deleted', '=', 0)
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil semua komponen potongan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     *
+     * @return array
+     */
+    public function getPotongan($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from($this-&gt;table)
+            -&gt;where('is_deleted', '=', 0)
+            -&gt;andWhere('tipe', '=', -1)
+            -&gt;andWhere('is_global', '=', 1)
+            -&gt;customWhere(' m_perusahaan_id='.$_SESSION['user']['m_perusahaan']['id'], 'OR')
+            -&gt;andWhere('tipe', '=', -1)
+            -&gt;andWhere('is_deleted', '=', 0)
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil semua komponen manfaat.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     *
+     * @return [type]
+     */
+    public function getManfaat($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from($this-&gt;table)
+            -&gt;where('is_deleted', '=', 0)
+            -&gt;andWhere('tipe', '=', 0)
+            // -&gt;andWhere('is_global', '=', 1)
+            // -&gt;customWhere(' m_perusahaan_id='. $_SESSION['user']['m_perusahaan']['id'], 'OR')
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data komponen gaji.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        if (1 == $data['model']['is_global']) {
+            $data['model']['m_perusahaan_id'] = null;
+        }
+        if (0 == $data['model']['is_global']) {
+            $data['model']['m_perusahaan_id'] = $_SESSION['user']['m_perusahaan']['id'];
+        }
+        // $datakg = isset($data['model']) ? $data['model'] : '';
+        try {
+            // print_r($customParams);die;
+            if (isset($data['model']['id']) &amp;&amp; $data['model']['id'] &gt; 0) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data['model'], ['id' =&gt; $data['model']['id']]);
+            } else {
+                unset($data['model']['id']);
+                $data['model']['m_perusahaan_id'] = $_SESSION['user']['m_perusahaan']['id'];
+                $data['model']['is_deleted'] = 0;
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $data['model']);
+            }
+            // Return data komponen gaji
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function getlevel($sub_childs, $new_parent_id, $id_komponen)
+    {
+        $keep_new_parent_id = $new_parent_id;
+
+        if (is_array($sub_childs)) {
+            foreach ($sub_childs['children'] as $sub_child =&gt; $sub_child_sub) {
+                $sub_child_sub['parent_id'] = $keep_new_parent_id-&gt;id;
+                $sub_child_sub['m_komponen_gaji_id'] = $id_komponen;
+                $new_parent_id = $this-&gt;db-&gt;insert('m_komponen_formula', $sub_child_sub);
+                if (is_array($sub_child_sub)) {
+                    $this-&gt;getlevel($sub_child_sub, $new_parent_id, $id_komponen);
+                }
+            }
+        }
+    }
+
+    /**
+     * Method untuk menghapus data komponen gaji.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function hapus($data, $customParams = '')
+    {
+        try {
+            $model = $db-&gt;delete('m_komponen_gaji', ['id' =&gt; $data['id']]);
+            // Return data sertifikat
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiKode($data)
+    {
+        $dataKode = true;
+
+        $this-&gt;db-&gt;select('kode')
+            -&gt;from($this-&gt;table)
+            -&gt;where('is_deleted', '=', 0)
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+
+        foreach ($models as $key =&gt; $value) {
+            if ($value-&gt;kode == $data['kode']) {
+                $dataKode = false;
+            }
+        }
+
+        return $dataKode;
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

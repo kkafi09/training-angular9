@@ -1,0 +1,306 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class Formula
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_formula';
+    }
+
+    /**
+     * Method untuk menyimpan data sertifikat.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $type
+     * @param mixed $id
+     */
+    public function saveformula($data, $type, $id)
+    {
+        try {
+            if (!empty($type) && !empty($id)) {
+                //Hapus semua terus insert
+                $dicek = $this->db->select('*')
+                    ->from($this->table)
+                    ->where($type, '=', $id)
+                    ->findAll()
+                ;
+
+                if ($dicek) {
+                    $deleteAll = $this->db->delete($this->table, [$type => $id]);
+                }
+
+                $this->db->startTransaction();
+                $root_id;
+                foreach ($data as $root_key => $root_value) {
+                    $vala[$type] = $id;
+                    $vala['m_perusahaan_id'] = $_SESSION['user']['m_perusahaan']['id'];
+                    $vala['reff_type'] = isset($root_value['reff_type']) ? $root_value['reff_type'] : '';
+                    $vala['reff_id'] = isset($root_value['reff_id']) ? $root_value['reff_id'] : '';
+                    $vala['value'] = isset($root_value['value']) ? $root_value['value'] : '';
+                    $vala['parent_id'] = isset($root_value['parent_id']) ? $root_value['parent_id'] : '';
+
+                    $parent_id = $this->db->insert($this->table, $vala);
+                    $root_id = $parent_id;
+
+                    if (isset($root_value['children']) && !empty($root_value['children'])) {
+                        foreach ($root_value['children'] as $parent_key => $parent_value) {
+                            $parent_value['parent_id'] = $root_id->id;
+                            $parent_value[$type] = $id;
+                            $parent_id = $this->db->insert($this->table, $parent_value);
+                            $keep_parent_id = $parent_id;
+
+                            if (is_array($parent_value)) {
+                                foreach ($parent_value['children'] as $child_key => $child_value) {
+                                    $child_value['parent_id'] = $keep_parent_id->id;
+                                    $child_value[$type] = $id;
+                                    $child_kompid = $child_value[$type];
+                                    $parent_id = $this->db->insert($this->table, $child_value);
+                                    $this->getlevel($child_value, $parent_id, $child_kompid, $type);
+                                }
+                            }
+                        }
+                    }
+                }
+                $this->db->endTransaction();
+                // Return data sertifikat
+                return [
+                    'status' => true,
+                    'data' => [],
+                ];
+            }
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Insert ke sub child.
+     *
+     * @param array  $sub_childs
+     * @param int    $new_parent_id
+     * @param int    $id_komponen
+     * @param string $type
+     *
+     * @return query
+     */
+    public function getlevel($sub_childs, $new_parent_id, $id_komponen, $type)
+    {
+        $keep_new_parent_id = $new_parent_id;
+
+        if (is_array($sub_childs)) {
+            foreach ($sub_childs['children'] as $sub_child => $sub_child_sub) {
+                $sub_child_sub['parent_id'] = $keep_new_parent_id->id;
+                $sub_child_sub[$type] = $id_komponen;
+                $new_parent_id = $this->db->insert($this->table, $sub_child_sub);
+                if (is_array($sub_child_sub)) {
+                    $this->getlevel($sub_child_sub, $new_parent_id, $id_komponen);
+                }
+            }
+        }
+    }
+
+    /**
+     * Hapus formula.
+     *
+     * @param array  $data
+     * @param string $customParams
+     *
+     * @return array
+     */
+    public function hapusformula($data, $customParams = '')
+    {
+        try {
+            $model = $this->db->delete('m_formula', ['id' => $data]);
+            $model = $this->db->delete('m_formula', ['parent_id' => $data]);
+            // Return data sertifikat
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Ambil formula berdasarkan tipe (komponen gaji / reimbursement).
+     *
+     * @param string $reffType
+     * @param int    $reffId
+     *
+     * @return array
+     */
+    public function getFormula($reffType, $reffId)
+    {
+        $this->db->select('*')
+            ->from($this->table)
+            ->where($reffType, '=', $reffId)
+            ->andWhere('m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->andWhere('reff_type', '!=', '')
+        ;
+
+        $formula = $this->db->findAll();
+        foreach ($formula as $key => $value) {
+            $value->reff_type = (int) $value->reff_type;
+        }
+
+        return [
+            'data' => $formula,
+        ];
+    }
+
+    /**
+     * List tipe komponen dalam bentuk field.
+     *
+     * @return array
+     */
+    public function listType()
+    {
+        return $arr = [
+            1 => 'm_jabatan_level_id',
+            2 => 'm_jabatan_id',
+            3 => 'm_time_off_id',
+            4 => 'm_organisasi_id',
+            5 => 'jenkel',
+            6 => 'status_nikah',
+            7 => 'tipe_karyawan',
+            8 => 'karyawan_id',
+        ];
+    }
+
+    /**
+     * Ambil child formula.
+     *
+     * @param int   $parentId
+     * @param array $karyawan
+     * @param int   $value
+     *
+     * @return int
+     */
+    public function getFormulaChild(array $elements, $parentId = 0, $karyawan, $value = 0)
+    {
+        $arrTipe = $this->listType();
+        foreach ($elements as $element) {
+            if ($element['reff_type'] > 0) {
+                $tipe = isset($arrTipe[$element['reff_type']]) ? $arrTipe[$element['reff_type']] : 0;
+                if ($arrTipe[$element['reff_type']]) {
+                    if ($karyawan[$tipe] == $element['reff_id']) {
+                        if ($element['parent_id'] == $parentId) {
+                            $value = $element['value'];
+
+                            $children = $this->getFormulaChild($elements, $element['id'], $karyawan, $value);
+                            if ($children) {
+                                $value = $children;
+                            }
+                        }
+                    }
+                    // echo $value;
+                }
+            } else {
+                $value;
+            }
+        }
+
+        return $value;
+    }
+
+    /**
+     * Ambil nilai formula.
+     *
+     * @param array $karyawan
+     * @param array $arrFormula
+     *
+     * @return int
+     */
+    public function getValue($karyawan, $arrFormula)
+    {
+        $arrChild = [];
+        foreach ($arrFormula as $key => $value) {
+            $arrChild[] = [
+                'id' => $value->id,
+                'reff_type' => $value->reff_type,
+                'reff_id' => $value->reff_id,
+                'value' => $value->value,
+                'parent_id' => $value->parent_id,
+            ];
+        }
+
+        return $this->getFormulaChild($arrChild, 0, $karyawan, 0);
+    }
+
+    /**
+     * Ambil list referensi.
+     *
+     * @param int $data jenis data yang diminta
+     *
+     * @return array list data referensi
+     */
+    public function getOpsi($data)
+    {
+        $perusahaansession = $_SESSION['user']['m_perusahaan']['id'];
+        if (1 == $data) {
+            $leveljabatan = new JabatanLevel();
+            $formula = $leveljabatan->getAll();
+        } elseif (2 == $data) {
+            $jabatan = new Jabatan();
+            $formula = $jabatan->getAll();
+        } elseif (3 == $data) {
+            $kehadiran = new Timeoff();
+            $formula = $kehadiran->getAll();
+        } elseif (4 == $data) {
+            $organisasi = new Organisasi();
+            $formula = $organisasi->getAllOrganisasi();
+        } elseif (5 == $data) {
+            $arrayData = [
+                0 => ['id' => 1, 'nama' => 'Laki Laki'],
+                1 => ['id' => 2, 'nama' => 'Perempuan'],
+            ];
+            $formula['data'] = $arrayData;
+        } elseif (6 == $data) {
+            $arrayData = [
+                0 => ['id' => 1, 'nama' => 'Belum Menikah'],
+                1 => ['id' => 2, 'nama' => 'Sudah Menikah'],
+            ];
+            $formula['data'] = $arrayData;
+        } elseif (7 == $data) {
+            $arrayData = [
+                0 => ['id' => 1, 'nama' => 'PKWT'],
+                1 => ['id' => 2, 'nama' => 'PKWTT'],
+            ];
+            $formula['data'] = $arrayData;
+        } elseif (8 == $data) {
+            $karyawan = new Karyawan();
+            $formula = $karyawan->getAllKaryawan();
+        }
+
+        return [
+            'data' => $formula,
+        ];
+    }
+}
+

@@ -1,0 +1,229 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class KomponenGaji
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_komponen_gaji';
+    }
+
+    /**
+     * Ambil semua data tunjangan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getTunjangan($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('*')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+            ->andWhere('tipe', '=', 1)
+            ->andWhere('is_global', '=', 1)
+            ->customWhere(' m_perusahaan_id='.$_SESSION['user']['m_perusahaan']['id'], 'OR')
+            ->andWhere('tipe', '=', 1)
+            ->andWhere('is_deleted', '=', 0)
+        ;
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil semua komponen potongan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     *
+     * @return array
+     */
+    public function getPotongan($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('*')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+            ->andWhere('tipe', '=', -1)
+            ->andWhere('is_global', '=', 1)
+            ->customWhere(' m_perusahaan_id='.$_SESSION['user']['m_perusahaan']['id'], 'OR')
+            ->andWhere('tipe', '=', -1)
+            ->andWhere('is_deleted', '=', 0)
+        ;
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil semua komponen manfaat.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     *
+     * @return [type]
+     */
+    public function getManfaat($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('*')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+            ->andWhere('tipe', '=', 0)
+            // ->andWhere('is_global', '=', 1)
+            // ->customWhere(' m_perusahaan_id='. $_SESSION['user']['m_perusahaan']['id'], 'OR')
+        ;
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data komponen gaji.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        if (1 == $data['model']['is_global']) {
+            $data['model']['m_perusahaan_id'] = null;
+        }
+        if (0 == $data['model']['is_global']) {
+            $data['model']['m_perusahaan_id'] = $_SESSION['user']['m_perusahaan']['id'];
+        }
+        // $datakg = isset($data['model']) ? $data['model'] : '';
+        try {
+            // print_r($customParams);die;
+            if (isset($data['model']['id']) && $data['model']['id'] > 0) {
+                $model = $this->db->update($this->table, $data['model'], ['id' => $data['model']['id']]);
+            } else {
+                unset($data['model']['id']);
+                $data['model']['m_perusahaan_id'] = $_SESSION['user']['m_perusahaan']['id'];
+                $data['model']['is_deleted'] = 0;
+                $model = $this->db->insert($this->table, $data['model']);
+            }
+            // Return data komponen gaji
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function getlevel($sub_childs, $new_parent_id, $id_komponen)
+    {
+        $keep_new_parent_id = $new_parent_id;
+
+        if (is_array($sub_childs)) {
+            foreach ($sub_childs['children'] as $sub_child => $sub_child_sub) {
+                $sub_child_sub['parent_id'] = $keep_new_parent_id->id;
+                $sub_child_sub['m_komponen_gaji_id'] = $id_komponen;
+                $new_parent_id = $this->db->insert('m_komponen_formula', $sub_child_sub);
+                if (is_array($sub_child_sub)) {
+                    $this->getlevel($sub_child_sub, $new_parent_id, $id_komponen);
+                }
+            }
+        }
+    }
+
+    /**
+     * Method untuk menghapus data komponen gaji.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function hapus($data, $customParams = '')
+    {
+        try {
+            $model = $db->delete('m_komponen_gaji', ['id' => $data['id']]);
+            // Return data sertifikat
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiKode($data)
+    {
+        $dataKode = true;
+
+        $this->db->select('kode')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+        ;
+
+        $models = $this->db->findAll();
+
+        foreach ($models as $key => $value) {
+            if ($value->kode == $data['kode']) {
+                $dataKode = false;
+            }
+        }
+
+        return $dataKode;
+    }
+}
+

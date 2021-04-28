@@ -1,0 +1,152 @@
+<?php
+
+use Model\Kasbon;
+use Service\Landa;
+
+// Ambil semua kasbon
+$app->get('/t_kasbon/index', function ($request, $response) {
+    $params = $request->getParams();
+    $kasbon = new Kasbon();
+
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : 20;
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : 0;
+    $params['params'] = isset($params['params']) ? $params['params'] : [];
+    $params['approvedByMe'] = isset($params['approvedByMe']) ? $params['approvedByMe'] : false;
+
+    $getDataKasbon = $kasbon->getAll($params['params'], $params['limit'], $params['offset'], $params['approvedByMe']);
+
+    return successResponse($response, [
+        'list' => $getDataKasbon['data'],
+        'totalItems' => $getDataKasbon['totalItem'],
+    ]);
+});
+$app->post('/t_kasbon/riwayatKasbon', function ($request, $response) {
+    $params = $request->getParams();
+    $landa = new Landa();
+
+    $userID = isset($params['userID']) ? $params['userID'] : '0';
+    $tanggal = date('Y-m-d');
+    if (isset($params['tanggal'])) {
+        $tahun = isset($params['tanggal']['year']) ? $params['tanggal']['year'] : date('Y');
+        $bulan = isset($params['tanggal']['month']) ? $params['tanggal']['month'] : date('m');
+        $hari = isset($params['tanggal']['day']) ? $params['tanggal']['day'] : date('d');
+
+        $tanggal = date('Y-m-d', strtotime($tahun.'/'.$bulan.'/'.$hari));
+    }
+    $status = isset($params['status']) ? $params['status'] : '';
+    $kasbon = new Kasbon();
+    $getDataKasbon = $kasbon->getRiwayatKasbon($userID, $tanggal, $status);
+
+    return successResponse($response, [
+        'list' => $getDataKasbon['data'],
+        'totalItems' => $getDataKasbon['totalItem'],
+    ]);
+});
+$app->post('/t_kasbon/riwayatPembayaranKasbon', function ($request, $response) {
+    $params = $request->getParams();
+    $landa = new Landa();
+    $userID = isset($params['userID']) ? $params['userID'] : '0';
+    $tanggal = date('Y-m-d');
+    if (isset($params['tanggal'])) {
+        $tahun = isset($params['tanggal']['year']) ? $params['tanggal']['year'] : date('Y');
+        $bulan = isset($params['tanggal']['month']) ? $params['tanggal']['month'] : date('m');
+        $hari = isset($params['tanggal']['day']) ? $params['tanggal']['day'] : date('d');
+
+        $tanggal = date('Y-m-d', strtotime($tahun.'/'.$bulan.'/'.$hari));
+    }
+    $status = isset($params['status']) ? $params['status'] : '';
+    $kasbon = new Kasbon();
+    $getDataKasbon = $kasbon->getPembayaranKasbon($userID, $tanggal, $status);
+
+    return successResponse($response, [
+        'list' => $getDataKasbon['data'],
+        'totalItems' => $getDataKasbon['totalItem'],
+    ]);
+});
+
+// Ambil riwayat kasbon
+$app->get('/t_kasbon/riwayat', function ($request, $response) {
+    $params = $request->getParams();
+    $kasbon = new Kasbon();
+    $getRiwayatKasbon = $kasbon->getRiwayat($params);
+
+    return successResponse($response, [
+        'list' => $getRiwayatKasbon['data'],
+        'totalItems' => $getRiwayatKasbon['totalItem'],
+    ]);
+});
+
+// Save kasbon
+$app->post('/t_kasbon/save', function ($request, $response) {
+    $data = $request->getParams();
+    $kasbon = new Kasbon();
+    $landa = new Landa();
+    $validasi = $kasbon->validasi($data);
+
+    if (true === $validasi) {
+        if (!isset($data['id'])) {
+            $kode = $kasbon->generateKode();
+            $data['kode'] = $kode['data'];
+            $data['status'] = 'Belum Lunas';
+        }
+
+        if (!isset($data['t_kasbon_id'])) {
+            $data['tgl_kasbon'] = $landa->arrayToDate($data['tgl_kasbon']);
+        } else {
+            $data['tgl_bayar'] = $landa->arrayToDate($data['tgl_bayar']);
+        }
+
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $kasbon->save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus kasbon
+$app->post('/t_kasbon/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $kasbon = new Kasbon();
+    $model = $kasbon->delete($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Ambil riwayat kasbon
+$app->get('/t_kasbon/getdetail/{id}', function ($request, $response) {
+    $params = $request->getParams();
+    $user = $request->getAttribute('id');
+    $kasbon = new Kasbon();
+    $getRiwayatKasbon = $kasbon->getDetail($user);
+
+    return successResponse($response, [
+        'list' => $getRiwayatKasbon['data'],
+        'totalItems' => $getRiwayatKasbon['totalItem'],
+    ]);
+});
+
+// Ambil sisa kasbon
+$app->get('/t_kasbon/getSisa', function ($request, $response) {
+    $params = $request->getParams();
+    $kasbon = new Kasbon();
+    $karyawanId = isset($params['karyawan_id']) ? $params['karyawan_id'] : 0;
+
+    $getRiwayatKasbon = $kasbon->getSisaKasbon($karyawanId);
+    $totalSisa = isset($getRiwayatKasbon[$karyawanId]['kasbon']) ? $getRiwayatKasbon[$karyawanId]['kasbon'] : 0;
+
+    return successResponse($response, [
+        'total' => rp($totalSisa),
+    ]);
+});
+

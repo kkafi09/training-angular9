@@ -1,0 +1,173 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\PengajuanIzin;
+
+//  Ambil semua pelatihan
+$app-&gt;get('/apppengajuanizin/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $izin = new PengajuanIzin();
+
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : 20;
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : 0;
+    $params['params'] = isset($params['params']) ? $params['params'] : [];
+
+    $getDataPengajuanIzin = $izin-&gt;getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataPengajuanIzin['data'],
+        'totalItems' =&gt; $getDataPengajuanIzin['totalItem'],
+    ]);
+});
+
+// Save pelatihan
+$app-&gt;post('/apppengajuanizin/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $pengajuanIzin = new PengajuanIzin();
+    $validasi = $pengajuanIzin-&gt;validasi($data['model']);
+    $validasiDetail = $pengajuanIzin-&gt;validasiDetail($data);
+    $validasiAll = array_merge(true !== $validasi ? $validasi : [], true !== $validasiDetail ? $validasiDetail : []);
+    $checkTanggal = $pengajuanIzin-&gt;checkTanggal($data);
+
+    if (true === $validasi &amp;&amp; true === $validasiDetail) {
+        if (!$checkTanggal['status']) {
+            return unprocessResponse($response, [$checkTanggal['pesan']]);
+        }
+        $save = $pengajuanIzin-&gt;save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasiAll);
+});
+
+// Hapus pelatihan
+$app-&gt;post('/apppengajuanizin/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $izin = new PengajuanIzin();
+    $delete = $izin-&gt;delete($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+$app-&gt;post('/apppengajuanizin/deleteFile', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $izin = new PengajuanIzin();
+    $delete = $izin-&gt;deleteFile($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+$app-&gt;get('/apppengajuanizin/getDetail/{id}', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $id = $request-&gt;getAttribute('id');
+    $izin = new PengajuanIzin();
+    $get = $izin-&gt;getDetail($id);
+//    echo json_encode($get['data']);die();
+
+    if ($get['totalItem'] &gt; 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app-&gt;get('/apppengajuanizin/getFile', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $izin = new PengajuanIzin();
+    $get = $izin-&gt;getFile($params['reff_type'], $params['id']);
+
+    if ($get['totalItem'] &gt; 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app-&gt;get('/apppengajuanizin/getDataRembursement', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $izin = new PengajuanIzin();
+    $get = $izin-&gt;getAll();
+
+    if ($get['totalItem'] &gt; 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app-&gt;get('/apppengajuanizin/getKode', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $izin = new PengajuanIzin();
+    $get = $izin-&gt;generate_kode();
+
+    if (isset($get)) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app-&gt;get('/apppengajuanizin/getSisaCuti', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $izin = new PengajuanIzin();
+
+    $sisa = '12 Hari';
+
+    return successResponse($response, $sisa);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

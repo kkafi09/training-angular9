@@ -1,0 +1,118 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class Timeoff extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_time_off';
+    }
+
+    /**
+     * Ambil semua data time off.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('*')
+            ->from($this->table)->where('is_deleted', '=', 0);
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->customWhere('m_time_off.m_perusahaan_id = "'.$_SESSION['user']['m_perusahaan']['id'].'" or is_global = 1', 'AND');
+        }
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data time off.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $data['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : null;
+                $model = $this->db->insert($this->table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+            } else {
+                $model = $this->db->update($this->table, $data, $customParams);
+            }
+            // Return data perusahaan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'kode' => 'required',
+            'nama' => 'required',
+            'durasi' => 'required',
+            'is_used' => 'required',
+        ];
+        \GUMP::set_field_name('is_used', 'Digunakan');
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

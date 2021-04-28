@@ -1,0 +1,57 @@
+<?php
+
+use Model\LaporanKasbon;
+
+// Ambil semua kasbon
+$app->get('/l_kasbon/getAll', function ($request, $response) {
+    $params = $request->getParams();
+    $laporan_kasbon = new LaporanKasbon();
+    $getDataKasbon = $laporan_kasbon->getAll($params);
+
+    $arr = $arrTotal = [];
+    foreach ($getDataKasbon['data'] as $key => $value) {
+        $arr[$value->karyawan_id]['nama_karyawan'] = $value->nama_karyawan;
+        $arr[$value->karyawan_id]['nama_jabatan'] = $value->nama_jabatan;
+        $arr[$value->karyawan_id]['total'] = (isset($arr[$value->karyawan_id]['total']) ? $arr[$value->karyawan_id]['total'] : 0) + $value->total_hutang;
+        $arr[$value->karyawan_id]['total_bayar'] = (isset($arr[$value->karyawan_id]['total_bayar']) ? $arr[$value->karyawan_id]['total_bayar'] : 0) + $value->total_bayar;
+        $arr[$value->karyawan_id]['detail'][] = (array) $value;
+
+        if (!isset($arrTotal['total']) && !isset($arrTotal['total_terbayar']) && !isset($arrTotal['total_sisa'])) {
+            $arrTotal['total'] = $arr[$value->karyawan_id]['total'];
+            $arrTotal['total_terbayar'] = $arr[$value->karyawan_id]['total_bayar'];
+            $arrTotal['total_sisa'] = $arr[$value->karyawan_id]['total'] - $arr[$value->karyawan_id]['total_bayar'];
+        } else {
+            $arrTotal['total'] += $arr[$value->karyawan_id]['total'];
+            $arrTotal['total_terbayar'] += $arr[$value->karyawan_id]['total_bayar'];
+            $arrTotal['total_sisa'] += $arr[$value->karyawan_id]['total'] - $arr[$value->karyawan_id]['total_bayar'];
+        }
+    }
+
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/kasbon.html', [
+            'data' => $arr,
+            'total' => $arrTotal,
+            'periode' => $getDataKasbon['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getDataKasbon['periode']) {
+            header('Content-Disposition: attachment;Filename="Laporan Kasbon ('.$getDataKasbon['periode'].').xls"');
+        } else {
+            header('Content-Disposition: attachment;Filename="Laporan Kasbon (Semua Periode).xls"');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/kasbon.html', [
+            'data' => $arr,
+            'total' => $arrTotal,
+            'periode' => $getDataKasbon['periode'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, ['list' => array_values($arr), 'total' => $arrTotal,  'periode' => $getDataKasbon['periode']]);
+    }
+});
+

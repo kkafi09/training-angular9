@@ -1,0 +1,296 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    public $dbModel;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $table = '';
+    }
+
+    /**
+     * Ambil semua data perusahaan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     * @param mixed  $table
+     * @param mixed  $mode
+     */
+    public function getData($table, $mode = '')
+    {
+        $this->dbModel = Db::db();
+        $this->dbModel->select('*')
+            ->from($table)
+        ;
+        if (empty($mode)) {
+            $this->dbModel->where('is_deleted', '=', 0);
+        }
+
+        $models = $this->dbModel->findAll();
+        $totalItem = $this->dbModel->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Simpan data.
+     *
+     * @param [array]  $data         [data yang akan disimpan]
+     * @param [string] $table        [tabel dimana data disimpan]
+     * @param array    $customParams [parameter ketika update data]
+     *
+     * @return [array] [boolean dan data]
+     */
+    public function saveData($data, $table, $customParams = [])
+    {
+        $this->dbModel = Db::db();
+
+        try {
+            if (!isset($data['id'])) {
+                $model = $this->dbModel->insert($table, $data);
+            } elseif (empty($data['id'])) {
+                $model = $this->dbModel->insert($table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this->dbModel->update($table, $data, ['id' => $data['id']]);
+            } else {
+                $model = $this->dbModel->update($table, $data, $customParams);
+            }
+            // Return data
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Ambil list provinsi.
+     *
+     * @return [array] [list data provinsi]
+     */
+    public function getDataProvinsi()
+    {
+        $this->dbModel = Db::db();
+        $this->dbModel->select('*')
+            ->from('w_provinsi')->where('is_deleted', '=', '0');
+        $models = $this->dbModel->findAll();
+        $totalItem = $this->dbModel->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil data kota.
+     *
+     * @param [int] $id [parameter id provinsi]
+     *
+     * @return [array] [list data kota]
+     */
+    public function getDataKota($id)
+    {
+        $this->dbModel = Db::db();
+        $this->dbModel->select('*')
+            ->from('w_kota')->where('is_deleted', '=', '0');
+
+        if ('0' != $id) {
+            $this->dbModel->andWhere('provinsi_id', '=', $id);
+        }
+
+        $models = $this->dbModel->findAll();
+        $totalItem = $this->dbModel->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil data kecamatan.
+     *
+     * @param [int] $id [parameter id kota]
+     *
+     * @return [array] [list data kecamatan]
+     */
+    public function getDataKecamatan($id)
+    {
+        $this->dbModel = Db::db();
+        $this->dbModel->select('*')
+            ->from('w_kecamatan')->where('is_deleted', '=', '0');
+
+        if ('0' != $id) {
+            $this->dbModel->andWhere('kota_id', '=', $id);
+        }
+
+        $models = $this->dbModel->findAll();
+        $totalItem = $this->dbModel->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil data desa.
+     *
+     * @param [int] $id [parameter id kecamatan]
+     *
+     * @return [array] [list data desa]
+     */
+    public function getDataDesa($id)
+    {
+        $this->dbModel = Db::db();
+        $this->dbModel->select('*')
+            ->from('w_desa')->where('is_deleted', '=', '0');
+
+        if ('0' != $id) {
+            $this->dbModel->andWhere('kecamatan_id', '=', $id);
+        }
+
+        $models = $this->dbModel->findAll();
+        $totalItem = $this->dbModel->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil semua data dari tabel.
+     *
+     * @param [string] $table  [nama tabel]
+     * @param array    $params [parameter pencarian]
+     * @param string   $select [data yang diselect]
+     * @param int      $limit  [limit]
+     * @param int      $offset [offset]
+     * @param string   $order  [sorting]
+     *
+     * @return [array] [list data dari tabel]
+     */
+    public function getDataAll($table, $params = [], $select = '*', $limit = 0, $offset = 0, $order = '')
+    {
+        $this->dbModel = Db::db();
+        $this->dbModel->select($select)
+            ->from($table)->where('is_deleted', '=', 0);
+
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->dbModel->where($key, 'like', $val);
+            }
+        }
+        // parameter
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->dbModel->limit($params['limit']);
+        }
+        // offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->dbModel->offset($params['offset']);
+        }
+
+        $models = $this->dbModel->findAll();
+        $totalItem = $this->dbModel->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Validasi kode.
+     *
+     * @param [array]   $data           [data yang akan diinput]
+     * @param [string]  $table          [nama tabel]
+     * @param [boolean] $onlyOneCompany [berlaku untuk 1 perusahaan]
+     *
+     * @return [boolean]
+     */
+    public function validasiKodeCore($data, $table, $onlyOneCompany = false)
+    {
+        $dataKode = true;
+        $this->dbModel = Db::db();
+        $this->dbModel->select('kode')->from($table)->where('is_deleted', '=', 0);
+        if (true == $onlyOneCompany) {
+            $this->dbModel->andWhere('m_perusahaan_id', '=', $table);
+        }
+        $models = $this->dbModel->findAll();
+
+        foreach ($models as $key => $value) {
+            $data['kode'] = isset($data['kode']) ? $data['kode'] : '';
+            if ($value->kode == $data['kode']) {
+                if (isset($data['id']) && !empty($data['id'])) {
+                    $kodeFromId = $this->dbModel->select('kode')->from($table)->where('is_deleted', '=', 0)->andWhere('id', '=', $data['id'])->find();
+                    if (isset($kodeFromId->kode) && $kodeFromId->kode != $data['kode']) {
+                        $dataKode = false;
+                    }
+                } else {
+                    $dataKode = false;
+                }
+            }
+        }
+
+        return $dataKode;
+    }
+
+    /**
+     * Download file.
+     *
+     * @param string $file file path
+     *
+     * @return bool
+     */
+    public function downloadFile($file)
+    {
+        if (file_exists($file)) {
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename='.basename($file));
+            header('Content-Transfer-Encoding: binary');
+            header('Expires: 0');
+            header('Cache-Control: private');
+            header('Pragma: private');
+            header('Content-Length: '.filesize($file));
+            ob_clean();
+            flush();
+            readfile($file);
+
+            exit;
+        }
+
+        return false;
+    }
+}
+

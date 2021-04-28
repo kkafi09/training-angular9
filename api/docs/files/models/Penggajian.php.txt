@@ -1,0 +1,1497 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class Penggajian
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_komponen_gaji';
+        $this->tablep = 't_payroll';
+    }
+
+    /**
+     * Ambil semua data penggaajian.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getIndex($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('t_payroll.*, karyawan_data.nama as disetujui_oleh')
+            ->from($this->tablep)
+            ->join('left join', 'karyawan', 'karyawan.id = t_payroll.approved_by')
+            ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->where('t_payroll.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+        // // Filter
+        // if (isset($params['filter'])) {
+        //     $filter = (array) json_decode($params['filter']);
+        //     foreach ($filter as $key => $val) {
+        //         $this->db->where($key, 'like', $val);
+        //     }
+        // }
+
+        // print_r($params);die;
+        // filter
+        if (isset($params['params']) && !is_array($params['params'])) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params['params']) : [];
+        } elseif (isset($params) && is_array($params)) {
+            $filter = $params;
+        }
+        // print_r($params);die;
+        // set parameter
+        if (isset($params['params']) && !empty($params['params'])) {
+            foreach ($filter as $key => $val) {
+                if (!empty($val)) {
+                    if ('kode' == $key) {
+                        $this->db->where('t_payroll.kode', 'like', $val);
+                    } elseif ('status' == $key) {
+                        $this->db->where('t_payroll.status', '=', $val);
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        foreach ($models as $key => $value) {
+            $value->tgl_periode = date('Y-m-d', strtotime($value->periode_mulai)).' - '.date('Y-m-d', strtotime($value->periode_selesai));
+            $value->tgl_gajiindex = date('d M Y', strtotime($value->tgl));
+            $value->tgl_periodeindex = date('d M Y', strtotime($value->periode_mulai)).' - '.date('d M Y', strtotime($value->periode_selesai));
+            $ambiltotal = $this->db->select('t_payroll_det.*, m_komponen_gaji.nama, m_komponen_gaji.is_pokok, SUM((t_payroll_komponen.nilai * m_komponen_gaji.tipe)) as totalambil')
+                ->from('t_payroll_det')
+                ->join('left join', 't_payroll_komponen', 't_payroll_det.id = t_payroll_komponen.t_payroll_det_id')
+                ->join('left join', 'm_komponen_gaji', 'm_komponen_gaji.id = t_payroll_komponen.m_komponen_gaji_id')
+                ->where('t_payroll_det.t_payroll_id', '=', $value->id)
+                ->find()
+            ;
+            $value->alltotal = $ambiltotal->totalambil;
+            $dibuat = $this->db->select('karyawan.nik, karyawan_data.nama as dibuat_oleh')
+                ->from('karyawan')
+                ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+                ->where('karyawan.id', '=', $value->created_by)
+                ->find()
+            ;
+            if ($dibuat) {
+                $value->dibuat_oleh = $dibuat->dibuat_oleh;
+            }
+            $value->dibuat_pada = date('d M Y', $value->created_at);
+
+            $value->disetujui_oleh = $value->disetujui_oleh;
+            $value->disetujui_pada = date('d M Y', $value->approved_at);
+        }
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function bayarKasbon($payRollId)
+    {
+        // Ambil data sisa kasbon
+        $kasbon = new Kasbon();
+        $arrKasbon = $kasbon->getSisaKasbon();
+
+        // Ambil kasbon yang dibayar waktu penggajian
+        $payroll = $this->db->select('
+                sum(nilai) as bayar, 
+                t_payroll_det.karyawan_id,
+                t_payroll.tgl,
+                t_payroll.id as t_payroll_id
+            ')
+            ->from('t_payroll_komponen')
+            ->leftJoin('t_payroll_det', 't_payroll_det.id = t_payroll_komponen.t_payroll_det_id')
+            ->leftJoin('t_payroll', 't_payroll.id = t_payroll_det.t_payroll_id')
+            ->where('t_payroll_komponen.m_komponen_gaji_id', '=', 5)
+            ->andWhere('t_payroll.id', '=', $payRollId)
+            ->andWhere('t_payroll_komponen.nilai', '>', 0)
+            ->groupBy('t_payroll_det.karyawan_id')
+            ->findAll()
+        ;
+        foreach ($payroll as $key => $value) {
+            if (isset($arrKasbon[$value->karyawan_id]) && !empty($arrKasbon[$value->karyawan_id])) {
+                $totalBayar = $value->bayar;
+                foreach ($arrKasbon[$value->karyawan_id]['detail'] as $kk => $vv) {
+                    if ($totalBayar > 0) {
+                        if ($totalBayar - $vv['sisa'] <= 0) {
+                            $bayar = $totalBayar;
+                        } else {
+                            $bayar = $vv['sisa'];
+                        }
+
+                        // simpan pembayaran kasbon
+                        // if($vv['sisa'] == $bayar){
+                        //     $persen = (($vv['bunga'] + 100) / 100);
+                        //     $asliBayar = $bayar / $persen;
+                        //     $bungaBayar = $bayar - $asliBayar;
+                        // }else{
+                        //     $bungaBayar = (($bayar * $vv['bunga']) / 100);
+                        //     $asliBayar = $bayar - $bungaBayar;
+                        // }
+
+                        $bungaBayar = 0;
+                        $asliBayar = $bayar;
+
+                        $arr['t_kasbon_id'] = $vv['t_kasbon_id'];
+                        $arr['bayar'] = $asliBayar;
+                        $arr['bunga'] = $bungaBayar;
+                        $arr['tgl_bayar'] = $value->tgl;
+                        $arr['t_payroll_id'] = $value->t_payroll_id;
+
+                        $this->db->insert('t_kasbon_bayar_det', $arr);
+
+                        if ($totalBayar - $vv['sisa'] <= 0) {
+                            $totalBayar = 0;
+                        } else {
+                            $totalBayar -= $bungaBayar + $asliBayar;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Ambil semua data m_komponen_gaji.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $idperusahaan = $_SESSION['user']['m_perusahaan']['id'];
+        $modelsP = $this->db->select('*')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+            ->andWhere('tipe', '=', 1) //tipe untuk isglobal 0
+            ->andWhere('is_formula', '=', 0)
+            ->customWhere('m_perusahaan_id = "'.$idperusahaan.'" OR is_global = 1', 'AND')
+            ->andWhere('tipe', '=', 1) //tipe untuk isglobal 1
+            ->andWhere('is_deleted', '=', 0)
+            ->customWhere('id NOT IN (2,3,6)', 'AND')
+            ->findAll()
+        ;
+        $modelsPt = $this->db->select('*')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+            // ->customWhere('id NOT IN (2,3,6)', 'AND')
+            ->andWhere('tipe', '=', -1) //tipe untuk isglobal 0
+            ->andWhere('is_formula', '=', 0)
+            ->customWhere('m_perusahaan_id ='.$idperusahaan.' OR is_global = 1', 'AND')
+            ->andWhere('tipe', '=', -1) //tipe untuk isglobal 1
+            ->andWhere('is_deleted', '=', 0)
+            ->customWhere('id NOT IN (2,3,6)', 'AND')
+            ->findAll()
+        ;
+
+        // $modelsP = $this->db->select('*')
+        //     ->from($this->table)
+        //     ->where('is_deleted', '=', 0)
+        //     ->andWhere('tipe', '=', 1) //tipe untuk isglobal 0
+        //     ->andWhere('is_formula', '=', 0)
+        //     ->customWhere('m_perusahaan_id ='.$idperusahaan, 'OR')
+        //     ->andWhere('tipe', '=', 1) //tipe untuk isglobal 1
+        //     ->andWhere('is_deleted', '=', 0)
+        //     ->findAll();
+
+        // $modelsPt = $this->db->select('*')
+        //     ->from($this->table)
+        //     ->where('is_deleted', '=', 0)
+        //     ->customWhere('id NOT IN (2,3,6)', 'AND')
+        //     ->andWhere('tipe', '=', -1) //tipe untuk isglobal 0
+        //     ->andWhere('is_formula', '=', 0)
+        //     ->customWhere('m_perusahaan_id ='.$idperusahaan, 'OR')
+        //     ->andWhere('tipe', '=', -1) //tipe untuk isglobal 1
+        //     ->andWhere('is_deleted', '=', 0)
+        //     ->findAll();
+
+        $karyawan = $this->db->select('karyawan.id as idkaryawan, karyawan.no_rekening, karyawan.atas_nama, m_bank.nama as nm_bank, karyawan_data.nama,karyawan.nik, karyawan.status_jht, karyawan.status_jp, karyawan.status_kesehatan, karyawan.status_pph, k_jabatan.m_jabatan_id, m_jabatan.nama as nm_jabatan, m_ptkp.nominal as nominal_ptkp')
+            ->from('karyawan')
+            ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id AND k_jabatan.aktif = 1')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->join('left join', 'm_ptkp', 'm_ptkp.id = karyawan_data.m_ptkp_id')
+            ->join('left join', 'm_bank', 'm_bank.id = karyawan.m_bank_id')
+            ->where('karyawan.status', '=', 1)
+            ->where('karyawan.m_perusahaan_id', '=', $idperusahaan)
+            ->andWhere('karyawan.tipe_gaji', '=', $params['tipe'])
+            ->findAll()
+        ;
+        // print_r($karyawan);die;
+        $modelsBpjs = [
+            '0' => ['komponen_id' => '3', 'nama' => 'jk', 'nilai' => 0],
+            '1' => ['komponen_id' => '3', 'nama' => 'jk_perusahaan', 'nilai' => 0],
+            '2' => ['komponen_id' => '2', 'nama' => 'jkk_perusahaan', 'nilai' => 0],
+            '3' => ['komponen_id' => '2', 'nama' => 'jkm_perusahaan', 'nilai' => 0],
+            '4' => ['komponen_id' => '2', 'nama' => 'jht', 'nilai' => 0],
+            '5' => ['komponen_id' => '2', 'nama' => 'jht_perusahaan', 'nilai' => 0],
+            '6' => ['komponen_id' => '2', 'nama' => 'jp', 'nilai' => 0],
+            '7' => ['komponen_id' => '2', 'nama' => 'jp_perusahaan', 'nilai' => 0],
+        ];
+
+        $bpjsperusahaan = $this->db->select('jkk as jkkperusahaan')
+            ->from('m_perusahaan')
+            ->where('id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->find()
+        ;
+
+        // Ambil lembur karyawan
+        $lembur = new Lembur();
+        $mulai = isset($params['periode_mulai']) ? date('Y-m-d', strtotime($params['periode_mulai'])) : date('Y-m-d');
+        $selesai = isset($params['periode_selesai']) ? date('Y-m-d', strtotime($params['periode_selesai'])) : date('Y-m-d');
+        $arrLembur = $lembur->getLemburByPeriode($mulai, $selesai);
+
+        // Ambil kasbon karyawan
+        $kasbon = new Kasbon();
+        $arrKasbon = $kasbon->getSisaKasbon();
+
+        $reimbursement = new PengajuanReimbursement();
+        $arrReimbursement = $reimbursement->getReimbursementPenggajian($params);
+
+        // print_r($bpjsperusahaan);die;
+        $arr_data = [];
+        $arr_karyawan = [];
+        $arr_pendapatan = [];
+        $arr_potongan = [];
+        $arr_bpjs = [];
+
+        foreach ($karyawan as $key => $value) {
+            $value->jkkperusahaan = $bpjsperusahaan->jkkperusahaan;
+            $value->keterangan = '';
+            $value->totaldapat = 0;
+            $value->jkkperusahaan = $bpjsperusahaan->jkkperusahaan;
+            $value->totaldapat = 0;
+            $value->totalpotong = 0;
+            $value->totalbpjsketenagakerjaan = 0;
+            $value->totalbpjsketenagakerjaan_perusahaan = 0;
+            $value->totalbpjskesehatan = 0;
+            $value->totalbpjskesehatan_perusahaan = 0;
+            $value->pph = 0;
+            $value->takehomepay = 0;
+            $value->sumsemua = 0;
+            $arr_karyawan[$key] = (array) $value;
+            foreach ($modelsP as $keys => $vals) {
+                if (isset($valz->nilai) && '' == $vals->nilai) {
+                    $vals->nilai = 0;
+                } else {
+                    $vals->nilai = 0;
+                }
+                $vals->nm_komponen = $vals->nama;
+                $arr_karyawan[$key]['pendapatan'][$keys] = (array) $vals;
+            }
+            foreach ($modelsPt as $keyz => $valz) {
+                if (isset($valz->nilai) && '' == $valz->nilai) {
+                    $valz->nilai = 0;
+                } else {
+                    $valz->nilai = 0;
+                }
+                $valz->nm_komponen = $valz->nama;
+                $arr_karyawan[$key]['potongan'][$keyz] = (array) $valz;
+            }
+            foreach ($modelsBpjs as $keya => $vala) {
+                if (isset($vala['nilai']) && '' == $vala['nilai']) {
+                    $vala['nilai'] = 0;
+                } else {
+                    $vala['nilai'] = 0;
+                }
+                $vala['nm_komponen'] = $vala['nama'];
+                $arr_karyawan[$key]['bpjs'][$keya] = (array) $vala;
+            }
+        }
+        foreach ($arr_karyawan as $key => $value) {
+            $kasbon = isset($arrKasbon[$value['idkaryawan']]['kasbon']) ? $arrKasbon[$value['idkaryawan']]['kasbon'] : 0;
+            $bayar = isset($arrKasbon[$value['idkaryawan']]['bayar']) ? $arrKasbon[$value['idkaryawan']]['bayar'] : 0;
+            foreach ($value['pendapatan'] as $keys => $vals) {
+                $cektkomponen = $this->db->select('*')
+                    ->from('t_komponen_gaji')
+                    ->where('karyawan_id', '=', $value['idkaryawan'])
+                    ->andWhere('m_komponen_id', '=', $vals['id'])
+                    ->find()
+                ;
+                if (isset($cektkomponen->karyawan_id) && !empty($cektkomponen->karyawan_id)) {
+                    $arr_karyawan[$key]['pendapatan'][$keys]['nilai'] = $cektkomponen->nominal;
+                }
+                // Ambil nilai lembur
+                if (4 == $vals['id']) {
+                    $arr_karyawan[$key]['pendapatan'][$keys]['nilai'] = isset($arrLembur[$value['idkaryawan']]) ? $arrLembur[$value['idkaryawan']] : 0;
+                }
+                if (7 == $vals['id']) {
+                    $arr_karyawan[$key]['pendapatan'][$keys]['nilai'] = isset($arrReimbursement[$value['idkaryawan']]) ? $arrReimbursement[$value['idkaryawan']]['jumlahNilai'] : 0;
+                }
+            }
+            foreach ($value['potongan'] as $keyz => $valz) {
+                $cektkomponen = $this->db->select('*')
+                    ->from('t_komponen_gaji')
+                    ->where('karyawan_id', '=', $value['idkaryawan'])
+                    ->andWhere('m_komponen_id', '=', $valz['id'])
+                    ->find()
+                ;
+                if (isset($cektkomponen->karyawan_id) && !empty($cektkomponen->karyawan_id)) {
+                    $arr_karyawan[$key]['potongan'][$keyz]['nilai'] = $cektkomponen->nominal;
+                }
+                // Ambil nilai kasbon
+                if (5 == $valz['id'] && $kasbon - $bayar > 0) {
+                    $arr_karyawan[$key]['potongan'][$keyz]['nilai'] = $kasbon - $bayar;
+                }
+            }
+            $arr_karyawan[$key]['kasbon'] = ($kasbon - $bayar > 0) ? $kasbon - $bayar : 0;
+            $arr_karyawan[$key]['detailKasbon'] = isset($arrKasbon[$value['idkaryawan']]['detail']) ? $arrKasbon[$value['idkaryawan']]['detail'] : [];
+        }
+
+        return [
+            'data' => $arr_karyawan,
+            'komponenP' => $modelsP,
+            'komponenPt' => $modelsPt,
+            'komponenBpjs' => $modelsBpjs,
+        ];
+    }
+
+    /**
+     * Ambil semua data m_komponen_gaji.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAllid($params = [])
+    {
+        $idperusahaan = $_SESSION['user']['m_perusahaan']['id'];
+        $models = $this->db->select('t_payroll.status, t_payroll_det.id as idtpayrolldet, t_payroll_det.t_payroll_id, t_payroll_det.karyawan_id, t_payroll_det.nominal_ptkp, t_payroll_det.kasbon, t_payroll_det.status_pph, t_payroll_det.tipe, t_payroll_det.keterangan, t_payroll_det.karyawan_id as kid_payroll_det, t_payroll_komponen.id as idpayrollkomponen, t_payroll_komponen.t_payroll_det_id, t_payroll_komponen.m_komponen_gaji_id, t_payroll_komponen.nilai, t_payroll_komponen.tipe, m_komponen_gaji.id as id, m_komponen_gaji.nama as nm_komponen, m_komponen_gaji.is_pokok, karyawan.id as idkaryawan, karyawan.no_rekening, karyawan.atas_nama,m_bank.nama as nm_bank, karyawan_data.nama,karyawan.nik, karyawan.status_jht, karyawan.status_jp, karyawan.status_kesehatan, karyawan.karyawan_data_id as idkaryawandata, karyawan.nik, karyawan_data.nama as nama_karyawan, k_jabatan.m_jabatan_id, m_jabatan.nama as nm_jabatan, t_payroll_bpjs.id as idbpjs_kom, t_payroll_bpjs.jk, t_payroll_bpjs.jk_perusahaan, t_payroll_bpjs.jkk_perusahaan, t_payroll_bpjs.jkm_perusahaan, t_payroll_bpjs.jht, t_payroll_bpjs.jht_perusahaan, t_payroll_bpjs.jp, t_payroll_bpjs.jp_perusahaan')
+            ->from('t_payroll_det')
+            ->join('left join', 'karyawan', 't_payroll_det.karyawan_id = karyawan.id')
+            ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id AND k_jabatan.aktif = 1')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->join('left join', 't_payroll_komponen', 't_payroll_det.id = t_payroll_komponen.t_payroll_det_id')
+            ->join('left join', 't_payroll_bpjs', 't_payroll_det.id = t_payroll_bpjs.t_payroll_det_id')
+            ->join('left join', 'm_komponen_gaji', 'm_komponen_gaji.id = t_payroll_komponen.m_komponen_gaji_id')
+            ->join('left join', 't_payroll', 't_payroll.id = t_payroll_det.t_payroll_id')
+            ->join('left join', 'm_bank', 'm_bank.id = karyawan.m_bank_id')
+            ->where('t_payroll_det.t_payroll_id', '=', $params['id'])
+            ->andWhere('karyawan.m_perusahaan_id', '=', $idperusahaan)
+            ->customWhere('t_payroll_komponen.m_komponen_gaji_id NOT IN (2,3)', 'AND')
+            ->findAll()
+        ;
+        // print_r($models);die;
+        $bpjsperusahaan = $this->db->select('jkk as jkkperusahaan')
+            ->from('m_perusahaan')
+            ->where('id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->find()
+        ;
+        $arr_data = [];
+        $arr_idkomponen = [];
+        foreach ($models as $key => $value) {
+            // print_r($value);die;
+            $arr_data[$value->karyawan_id]['idkaryawan'] = $value->idkaryawan;
+            $arr_data[$value->karyawan_id]['nik'] = $value->nik;
+            $arr_data[$value->karyawan_id]['nama'] = $value->nama_karyawan;
+            $arr_data[$value->karyawan_id]['nama_komponen'] = $value->nm_komponen;
+            $arr_data[$value->karyawan_id]['nm_jabatan'] = $value->nm_jabatan;
+            $arr_data[$value->karyawan_id]['status'] = $value->status;
+            if (3 == $value->status) {
+                $arr_idkomponen[$value->m_komponen_gaji_id] = $value->m_komponen_gaji_id;
+            }
+            $arr_data[$value->karyawan_id]['keterangan'] = $value->keterangan;
+            $arr_data[$value->karyawan_id]['jkkperusahaan'] = $bpjsperusahaan->jkkperusahaan;
+            $arr_data[$value->karyawan_id]['kasbon'] = $value->kasbon;
+            $arr_data[$value->karyawan_id]['no_rekening'] = $value->no_rekening;
+            $arr_data[$value->karyawan_id]['nm_bank'] = $value->nm_bank;
+            $arr_data[$value->karyawan_id]['atas_nama'] = $value->atas_nama;
+            $arr_data[$value->karyawan_id]['status_pph'] = $value->status_pph;
+            $arr_data[$value->karyawan_id]['totaldapat'] = 0;
+            $arr_data[$value->karyawan_id]['totalpotong'] = 0;
+            $arr_data[$value->karyawan_id]['totalbpjsketenagakerjaan_perusahaan'] = 0;
+            $arr_data[$value->karyawan_id]['totalbpjskesehatan_perusahaan'] = 0;
+            $arr_data[$value->karyawan_id]['nm_jabatan'] = $value->nm_jabatan;
+            $arr_data[$value->karyawan_id]['nominal_ptkp'] = $value->nominal_ptkp;
+            $arr_data[$value->karyawan_id]['totaldapat'] = 0;
+            $arr_data[$value->karyawan_id]['totalpotong'] = 0;
+            $arr_data[$value->karyawan_id]['totalbpjsketenagakerjaan'] = 0;
+            $arr_data[$value->karyawan_id]['totalbpjskesehatan'] = 0;
+            $arr_data[$value->karyawan_id]['totalpph'] = 0;
+            $arr_data[$value->karyawan_id]['takehomepay'] = 0;
+            $arr_data[$value->karyawan_id]['sumsemua'] = 0;
+            $arr_data[$value->karyawan_id]['idtpayrolldet'] = $value->idtpayrolldet;
+            $arr_data[$value->karyawan_id]['idbpjs_kom'] = $value->idbpjs_kom;
+            $arr_data[$value->karyawan_id]['status_jp'] = $value->status_jp;
+            $arr_data[$value->karyawan_id]['status_jht'] = $value->status_jht;
+            $arr_data[$value->karyawan_id]['status_kesehatan'] = $value->status_kesehatan;
+
+            if (1 == $value->tipe) {
+                $arr_data[$value->karyawan_id]['pendapatantmp'][$value->m_komponen_gaji_id] = $value;
+            }
+            if (2 == $value->tipe) {
+                $arr_data[$value->karyawan_id]['potongantmp'][$value->m_komponen_gaji_id] = $value;
+            }
+
+            $modelsBpjs = [
+                '0' => ['komponen_id' => '3', 'nama' => 'jk', 'nilai' => $value->jk],
+                '1' => ['komponen_id' => '3', 'nama' => 'jk_perusahaan', 'nilai' => 0],
+                '2' => ['komponen_id' => '2', 'nama' => 'jkk_perusahaan', 'nilai' => 0],
+                '3' => ['komponen_id' => '2', 'nama' => 'jkm_perusahaan', 'nilai' => 0],
+                '4' => ['komponen_id' => '2', 'nama' => 'jht', 'nilai' => $value->jht],
+                '5' => ['komponen_id' => '2', 'nama' => 'jht_perusahaan', 'nilai' => 0],
+                '6' => ['komponen_id' => '2', 'nama' => 'jp', 'nilai' => $value->jp],
+                '7' => ['komponen_id' => '2', 'nama' => 'jp_perusahaan', 'nilai' => 0],
+            ];
+
+            $arr_data[$value->karyawan_id]['bpjs'] = $modelsBpjs;
+        }
+
+        // print_r($arr_idkomponen);die;
+
+        $this->db->select('*')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+            ->andWhere('tipe', '=', 1) //tipe untuk isglobal 0
+            ->andWhere('is_formula', '=', 0)
+            ->customWhere('m_perusahaan_id ='.$idperusahaan.' OR is_global = 1', 'AND')
+            ->andWhere('tipe', '=', 1) //tipe untuk isglobal 1
+            ->andWhere('is_deleted', '=', 0)
+        ;
+
+        if (!empty($arr_idkomponen)) {
+            $this->db->customWhere('id IN ('.implode(',', $arr_idkomponen).')', 'AND');
+        }
+        $modelsP = $this->db->findAll();
+
+        $this->db->select('*')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+            ->customWhere('id NOT IN (2,3,6)', 'AND')
+            ->andWhere('tipe', '=', -1) //tipe untuk isglobal 0
+            ->andWhere('is_formula', '=', 0)
+            ->customWhere('m_perusahaan_id ='.$idperusahaan.' OR is_global = 1', 'AND')
+            ->andWhere('tipe', '=', -1) //tipe untuk isglobal 1
+            ->andWhere('is_deleted', '=', 0)
+        ;
+
+        if (!empty($arr_idkomponen)) {
+            $this->db->customWhere('id IN ('.implode(',', $arr_idkomponen).')', 'AND');
+        }
+        $modelsPt = $this->db->findAll();
+
+        $addkg = [];
+        foreach ($arr_data as $key => $value) {
+            foreach ($modelsP as $keys => $vals) {
+                $addkg['nilai'] = 0;
+                $addkg['m_komponen_gaji_id'] = $vals->id;
+                $addkg['t_payroll_det_id'] = $value['idtpayrolldet'];
+                $arr_data[$key]['pendapatan'][] = isset($arr_data[$key]['pendapatantmp'][$vals->id]) ? $arr_data[$key]['pendapatantmp'][$vals->id] : $addkg;
+            }
+
+            foreach ($modelsPt as $keya => $vala) {
+                $addkg['nilai'] = 0;
+                $addkg['m_komponen_gaji_id'] = $vala->id;
+                $addkg['t_payroll_det_id'] = $value['idtpayrolldet'];
+                $arr_data[$key]['potongan'][] = isset($arr_data[$key]['potongantmp'][$vala->id]) ? $arr_data[$key]['potongantmp'][$vala->id] : $addkg;
+            }
+
+            unset($arr_data[$key]['pendapatantmp'], $arr_data[$key]['potongantmp']);
+        }
+        $arr = [];
+        $i = 0;
+        foreach ($arr_data as $keys => $value) {
+            $arr[$i] = $value;
+            ++$i;
+        }
+        // print_r($arr);die;
+        return [
+            'data' => $arr,
+            'komponenP' => $modelsP,
+            'komponenPt' => $modelsPt,
+            'komponenBpjs' => $modelsBpjs,
+        ];
+    }
+
+    /**
+     * Ambil semua data m_komponen_gaji.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getKarid($params = [])
+    {
+        $models = $this->db->select('t_payroll.id as idpayroll, t_payroll.kode, t_payroll.tgl, t_payroll.periode_mulai, t_payroll.periode_selesai, t_payroll.status, t_payroll_det.*, t_payroll_det.karyawan_id as kid_payroll_det, t_payroll_komponen.*, m_komponen_gaji.nama, m_komponen_gaji.is_pokok, karyawan.id as idkaryawan, karyawan_data.nama as nama_karyawan, karyawan.nik,  
+            SUM((t_payroll_komponen.nilai * m_komponen_gaji.tipe)) as pendapatan')
+            ->from('t_payroll')
+            ->join('left join', 't_payroll_det', 't_payroll_det.t_payroll_id = t_payroll.id')
+            ->join('left join', 'karyawan', 't_payroll_det.karyawan_id = karyawan.id')
+            ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->join('left join', 't_payroll_komponen', 't_payroll_det.id = t_payroll_komponen.t_payroll_det_id')
+            ->join('left join', 'm_komponen_gaji', 'm_komponen_gaji.id = t_payroll_komponen.m_komponen_gaji_id')
+            ->where('t_payroll_det.karyawan_id', '=', $params['idkaryawan'])
+            ->andWhere('t_payroll.status', '=', 3)
+            ->groupBy('t_payroll_komponen.t_payroll_det_id')
+            ->findAll()
+        ;
+
+        $arr_data = [];
+        foreach ($models as $key => $value) {
+            $arr_data[$value->id]['idpayroll'] = $value->idpayroll;
+            $arr_data[$value->id]['kode'] = $value->kode;
+            $arr_data[$value->id]['status'] = $value->status;
+            $arr_data[$value->id]['tanggal'] = date('d M Y', strtotime($value->tgl));
+            $arr_data[$value->id]['periode'] = date('d M Y', strtotime($value->periode_mulai)).' s/d '.date('d M Y', strtotime($value->periode_selesai));
+            $arr_data[$value->id]['idkaryawan'] = $value->idkaryawan;
+            $arr_data[$value->id]['nikkaryawan'] = $value->nik;
+            $arr_data[$value->id]['pendapatan'] = number_format($value->pendapatan);
+            $arr_data[$value->id]['slipUrl'] = site_url().'t_penggajian/slipGaji?idpayroll='.$value->idpayroll.'&karyawan_id='.$value->idkaryawan;
+        }
+
+        $arr = [];
+        $i = 0;
+        foreach ($arr_data as $keys => $value) {
+            $arr[$i] = $value;
+            ++$i;
+        }
+
+        return [
+            'data' => $arr,
+        ];
+    }
+
+    public function getPreview($data)
+    {
+        // print_r($data);die;
+        $arr_data = [];
+        foreach ($data as $key => $value) {
+            $arr_data[$key]['idkaryawan'] = $value['idkaryawan'];
+            $arr_data[$key]['nik'] = $value['nik'];
+            $arr_data[$key]['nama'] = $value['nama'];
+            $arr_data[$key]['m_jabatan_id'] = $value['m_jabatan_id'];
+            $arr_data[$key]['nm_jabatan'] = $value['nm_jabatan'];
+            $arr_data[$key]['jumlahgjpokok'] = $value['jumlahgjpokok'];
+            $arr_data[$key]['jkkperusahaan'] = $value['jkkperusahaan'];
+            $arr_data[$key]['status_jht'] = $value['status_jht'];
+            $arr_data[$key]['status_jp'] = $value['status_jp'];
+            $arr_data[$key]['status_kesehatan'] = $value['status_kesehatan'];
+
+            $sumdapat = 0;
+            foreach ($value['pendapatan'] as $keys => $val) {
+                $sumdapat += $val['nilai'];
+                $arr_data[$key]['pendapatan'][] = $val;
+                $arr_data[$key]['totaldapat'] = $sumdapat;
+            }
+
+            $sumpotong = 0;
+            foreach ($value['potongan'] as $keys => $val) {
+                $sumpotong += $val['nilai'];
+                $arr_data[$key]['potongan'][] = $val;
+                $arr_data[$key]['totalpotong'] = $sumpotong;
+            }
+
+            // $sumbpjs = 0;
+            foreach ($value['bpjs'] as $keys => $val) {
+                // print_r($value['jumlahgjpokok']);die;
+                if ('jk' == $val['nama']) {
+                    $jk = $val['nilai'];
+                } elseif ('jkk_perusahaan' == $val['nama']) {
+                    // $val['nilai'] = $value['jumlahgjpokok'] * $value['jkkperusahaan'] / 100;
+                } elseif ('jkm_perusahaan' == $val['nama']) {
+                    // $val['nilai'] = $value['jumlahgjpokok'] * 0.30 / 100;
+                } elseif ('jht' == $val['nama']) {
+                    $jht = $val['nilai'];
+                } elseif ('jp' == $val['nama']) {
+                    $jp = $val['nilai'];
+                }
+                // print_r($val);die;
+                $arr_data[$key]['bpjs'][] = $val;
+                $sumbpjskt = $jht + $jp;
+                $sumbpjsks = $jk;
+                $arr_data[$key]['totalbpjsketenagakerjaan'] = $sumbpjskt;
+                $arr_data[$key]['totalbpjskesehatan'] = $sumbpjsks;
+            }
+            if (isset($value['pph'])) {
+                $arr_data[$key]['pph'] = $value['pph'];
+            } else {
+                $arr_data[$key]['pph'] = 0;
+            }
+            // if (isset($value['pph']) && $value['pph'] != 0) {
+            //     $arr_data[$key]['pph'] = $value['pph'];
+            //     $arr_data[$key]['takehomepay'] = $arr_data[$key]['totaldapat'] - $arr_data[$key]['totalpotong'] - $arr_data[$key]['totalbpjsketenagakerjaan'] - $arr_data[$key]['totalbpjskesehatan'] - $arr_data[$key]['pph'];
+            // }else{
+            $arr_data[$key]['takehomepay'] = $arr_data[$key]['totaldapat'] - $arr_data[$key]['totalpotong'] - $arr_data[$key]['totalbpjsketenagakerjaan'] - $arr_data[$key]['totalbpjskesehatan'] - $arr_data[$key]['pph'];
+            $arr_data[$key]['sumsemua'] = $arr_data[$key]['totaldapat'] - $arr_data[$key]['totalpotong'] - $arr_data[$key]['totalbpjsketenagakerjaan'] - $arr_data[$key]['totalbpjskesehatan'] - $arr_data[$key]['pph'];
+            // }
+        }
+        // print_r($arr_data);die;
+        return [
+            'data' => $arr_data,
+        ];
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'tgl_gaji' => 'required',
+        ];
+        \GUMP::set_field_name('tgl_gaji', 'Tanggal');
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function changestatus($data, $customParams = '')
+    {
+        try {
+            if (3 == $data['status']) {
+                $data['status'] = $data['status'];
+                $data['approved_at'] = strtotime(date('Y-m-d'));
+                $data['approved_by'] = $_SESSION['user']['userId'];
+                $model = $this->db->update('t_payroll', $data, ['id' => $data['model']['id']]);
+            } else {
+                $data['status'] = $data['status'];
+                $model = $this->db->update('t_payroll', $data, ['id' => $data['model']['id']]);
+            }
+
+            // Jika penggajian diapprove simpan pembayaran kasbon
+            if (3 == $model->status) {
+                $this->bayarKasbon($model->id);
+            }
+
+            if ($model) {
+                return [
+                    'status' => true,
+                    'data' => $model,
+                ];
+            }
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menyimpan data payroll.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        //INISIALISASI TABEL T_PAYROL
+        // print_r($data);die;
+        $input1 = [];
+        $input1['m_perusahaan_id'] = $_SESSION['user']['m_perusahaan']['id'];
+        if (isset($data['form']['tgl_gaji'])) {
+            $input1['tgl'] = implode('-', $data['form']['tgl_gaji']);
+            $month = $data['form']['tgl_gaji']['month'];
+            if (strlen($month) > 1) {
+                $monthkode = $month;
+            } else {
+                $monthkode = '0'.$month;
+            }
+            $yearkode = substr($data['form']['tgl_gaji']['year'], 2);
+        }
+        if (isset($data['form']['tgl_periode'])) {
+            $input1['periode_mulai'] = substr($data['form']['tgl_periode'], 0, 10);
+            $input1['periode_selesai'] = substr($data['form']['tgl_periode'], 12, 16);
+        }
+        if (isset($data['periode_mulai']) && !empty($data['periode_mulai'])) {
+            $input1['periode_mulai'] = date('Y-m-d', strtotime($data['periode_mulai'].' +1 day'));
+            $input1['periode_selesai'] = date('Y-m-d', strtotime($data['periode_selesai']));
+        }
+        $input1['tipe'] = isset($data['form']['tipe']) ? $data['form']['tipe'] : '';
+        $input1['status'] = isset($data['is_draft']) ? $data['is_draft'] : '';
+        // print_r($input1);die;
+        try {
+            if (isset($data['form']['id']) && '' != $data['form']['id']) {
+                // print_r($input1);die;
+
+                // exit;
+                $this->db->startTransaction();
+                $model = $this->db->update($this->tablep, $input1, ['id' => $data['form']['id']]);
+
+                // $input2 = [];
+                $input3 = [];
+                $input4 = [];
+                $input5 = [];
+                // print_r($data);die;
+                foreach ($data['model'] as $key => $value) {
+                    // print_r($value);die;
+                    // $input2['t_payroll_id'] = $model->id;
+                    if (isset($value['idtpayrolldet']) && !empty($value['idtpayrolldet'])) {
+                        $input2['keterangan'] = $value['keterangan'];
+                        $t_payroll_det_ngedit = $this->db->update('t_payroll_det', $input2, ['id' => $value['idtpayrolldet']]);
+                    } else {
+                        $input2['t_payroll_id'] = $model->id;
+                        $input2['karyawan_id'] = $value['idkaryawan'];
+                        $input2['nominal_ptkp'] = $value['nominal_ptkp'];
+                        $input2['keterangan'] = $value['keterangan'];
+                        $input2['kasbon'] = $value['kasbon'];
+                        $input2['status_pph'] = $value['status_pph'];
+                        $t_payroll_det_nambah = $this->db->insert('t_payroll_det', $input2);
+                    }
+
+                    if ($t_payroll_det_ngedit) {
+                        // print_r($value);die;
+                        if (isset($value['pendapatan']) && !empty($value['pendapatan'])) {
+                            foreach ($value['pendapatan'] as $keys => $val) {
+                                if (isset($val['idpayrollkomponen']) && !empty($val['idpayrollkomponen'])) {
+                                    $input3['nilai'] = $val['nilai'];
+                                    $input3['tipe'] = 1;
+                                    $input3['m_komponen_gaji_id'] = $val['m_komponen_gaji_id'];
+                                    $input3['t_payroll_det_id'] = $val['t_payroll_det_id'];
+                                    $t_payroll_komponen = $this->db->update('t_payroll_komponen', $input3, ['id' => $val['idpayrollkomponen']]);
+                                }
+                                // else {
+                                //     $input3['nilai'] = $val['nilai'];
+                                //     $input3['tipe'] = 1;
+                                //     $input3['m_komponen_gaji_id'] = $val['m_komponen_gaji_id'];
+                                //     $input3['t_payroll_det_id'] = $val['t_payroll_det_id'];
+                                //     $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input3);
+                                // }
+                                unset($input3);
+                            }
+                            // die;
+                        }
+                        if (isset($value['potongan']) && !empty($value['potongan'])) {
+                            foreach ($value['potongan'] as $keys => $val) {
+                                if (isset($val['idpayrollkomponen']) && !empty($val['idpayrollkomponen'])) {
+                                    $input4['nilai'] = $val['nilai'];
+                                    $input4['tipe'] = 2;
+                                    $input4['m_komponen_gaji_id'] = $val['m_komponen_gaji_id'];
+                                    $input4['t_payroll_det_id'] = $val['t_payroll_det_id'];
+                                    $t_payroll_komponen = $this->db->update('t_payroll_komponen', $input4, ['id' => $val['idpayrollkomponen']]);
+                                }
+                                // else {
+                                //     $input4['nilai'] = $val['nilai'];
+                                //     $input4['tipe'] = 2;
+                                //     $input4['m_komponen_gaji_id'] = $val['m_komponen_gaji_id'];
+                                //     $input4['t_payroll_det_id'] = $val['t_payroll_det_id'];
+                                //     $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input4);
+                                // }
+                                unset($input4);
+                            }
+                        }
+                        if (isset($value['bpjs']) && !empty($value['bpjs'])) {
+                            foreach ($value['bpjs'] as $keys => $val) {
+                                $input5[$val['nama']] = $val['nilai'];
+                                // if ('JK' == $val['nama']) {
+                                //     $input5['jk'] = $val['nilai'];
+                                // } elseif ('JKK' == $val['nama']) {
+                                //     $input5['jkk'] = $val['nilai'];
+                                // } elseif ('JKM' == $val['nama']) {
+                                //     $input5['jkm'] = $val['nilai'];
+                                // } elseif ('JHT' == $val['nama']) {
+                                //     $input5['jht'] = $val['nilai'];
+                                // } elseif ('JP' == $val['nama']) {
+                                //     $input5['jp'] = $val['nilai'];
+                                // }
+                            }
+                            // print_r($input5);die;
+                            $t_payroll_komponen = $this->db->update('t_payroll_bpjs', $input5, ['id' => $value['idbpjs_kom']]);
+                        }
+                        // print_r($value);die;
+                        if (isset($value['totalbpjsketenagakerjaan']) && !empty($value['totalbpjsketenagakerjaan'])) {
+                            // print_r($val);die;
+                            $cekbpjsketenagakerjaan = $this->db->select('id')
+                                ->from('t_payroll_komponen')
+                                ->where('t_payroll_det_id', '=', $value['idtpayrolldet'])
+                                ->andWhere('m_komponen_gaji_id', '=', 2)
+                                ->find()
+                            ;
+
+                            $input6['nilai'] = $value['totalbpjsketenagakerjaan'];
+                            $input6['tipe'] = 2;
+
+                            $t_payroll_komponen = $this->db->update('t_payroll_komponen', $input6, ['id' => $cekbpjsketenagakerjaan->id]);
+                        }
+                        if (isset($value['totalbpjskesehatan']) && !empty($value['totalbpjskesehatan'])) {
+                            $cekbpjskesehatan = $this->db->select('id')
+                                ->from('t_payroll_komponen')
+                                ->where('t_payroll_det_id', '=', $value['idtpayrolldet'])
+                                ->andWhere('m_komponen_gaji_id', '=', 3)
+                                ->find()
+                            ;
+                            // print_r($cekbpjskesehatan);die;
+                            $input7['nilai'] = $value['totalbpjskesehatan'];
+                            $input7['tipe'] = 2;
+
+                            $t_payroll_komponen = $this->db->update('t_payroll_komponen', $input7, ['id' => $cekbpjskesehatan->id]);
+                        }
+                        if (isset($value['totalpph']) && !empty($value['totalpph'])) {
+                            $cekpph = $this->db->select('id')
+                                ->from('t_payroll_komponen')
+                                ->where('t_payroll_det_id', '=', $value['idtpayrolldet'])
+                                ->andWhere('m_komponen_gaji_id', '=', 6)
+                                ->find()
+                            ;
+
+                            $input8['nilai'] = $value['totalpph'];
+                            $input8['tipe'] = 3;
+
+                            $t_payroll_komponen = $this->db->update('t_payroll_komponen', $input8, ['id' => $cekpph->id]);
+                        }
+                    }
+                    if ($t_payroll_det_nambah) {
+                        if (isset($value['pendapatan']) && !empty($value['pendapatan'])) {
+                            foreach ($value['pendapatan'] as $keys => $val) {
+                                $input3['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                                $input3['m_komponen_gaji_id'] = $val['id'];
+                                $input3['nilai'] = $val['nilai'];
+                                $input3['tipe'] = 1;
+                                $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input3);
+                            }
+                        }
+                        if (isset($value['potongan']) && !empty($value['potongan'])) {
+                            foreach ($value['potongan'] as $keys => $val) {
+                                $input4['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                                $input4['m_komponen_gaji_id'] = $val['id'];
+                                $input4['nilai'] = $val['nilai'];
+                                $input4['tipe'] = 2;
+                                $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input4);
+                            }
+                        }
+                        if (isset($value['totalbpjsketenagakerjaan']) && !empty($value['totalbpjsketenagakerjaan'])) {
+                            $input6['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                            $input6['m_komponen_gaji_id'] = 2;
+                            $input6['nilai'] = $value['totalbpjsketenagakerjaan'];
+                            $input6['tipe'] = 2;
+
+                            $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input6);
+                            if (isset($value['bpjs']) && !empty($value['bpjs'])) {
+                                foreach ($value['bpjs'] as $keys => $val) {
+                                    $input5['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                                    $input5['t_payroll_komponen_id'] = $t_payroll_komponen->id;
+                                    $input5[$val['nama']] = $val['nilai'];
+                                }
+                                $t_payroll_komponen = $this->db->insert('t_payroll_bpjs', $input5);
+                            }
+                        }
+                        if (isset($value['totalbpjskesehatan']) && !empty($value['totalbpjskesehatan'])) {
+                            $input7['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                            $input7['m_komponen_gaji_id'] = 3;
+                            $input7['nilai'] = $value['totalbpjskesehatan'];
+                            $input7['tipe'] = 2;
+
+                            $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input7);
+                        }
+                        if (isset($value['totalpph']) && !empty($value['totalpph'])) {
+                            $input8['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                            $input8['m_komponen_gaji_id'] = 6;
+                            $input8['nilai'] = $value['totalpph'];
+                            $input8['tipe'] = 3;
+
+                            $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input8);
+                        }
+                    }
+                }
+                $this->db->endTransaction();
+            } else {
+                $this->db->startTransaction();
+                $input1['kode'] = generate_kodegaji($yearkode, $monthkode);
+                $model = $this->db->insert('t_payroll', $input1);
+
+                $input2 = [];
+                $input3 = [];
+                $input4 = [];
+                $input5 = [];
+                $input6 = [];
+                $input7 = [];
+                $input8 = [];
+                // print_r($data['model']);die;
+                foreach ($data['model'] as $key => $value) {
+                    $input2['t_payroll_id'] = $model->id;
+                    $input2['karyawan_id'] = $value['idkaryawan'];
+                    $input2['nominal_ptkp'] = $value['nominal_ptkp'];
+                    $input2['keterangan'] = $value['keterangan'];
+                    $input2['kasbon'] = $value['kasbon'];
+                    $input2['status_pph'] = $value['status_pph'];
+                    $t_payroll_det_nambah = $this->db->insert('t_payroll_det', $input2);
+
+                    if ($t_payroll_det_nambah) {
+                        if (isset($value['pendapatan']) && !empty($value['pendapatan'])) {
+                            foreach ($value['pendapatan'] as $keys => $val) {
+                                $input3['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                                $input3['m_komponen_gaji_id'] = $val['id'];
+                                $input3['nilai'] = $val['nilai'];
+                                $input3['tipe'] = 1;
+
+                                $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input3);
+                            }
+                        }
+                        if (isset($value['potongan']) && !empty($value['potongan'])) {
+                            foreach ($value['potongan'] as $keys => $val) {
+                                $input4['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                                $input4['m_komponen_gaji_id'] = $val['id'];
+                                $input4['nilai'] = $val['nilai'];
+                                $input4['tipe'] = 2;
+
+                                $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input4);
+                            }
+                        }
+                        if (isset($value['totalbpjsketenagakerjaan']) && !empty($value['totalbpjsketenagakerjaan'])) {
+                            $input6['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                            $input6['m_komponen_gaji_id'] = 2;
+                            $input6['nilai'] = $value['totalbpjsketenagakerjaan'];
+                            $input6['tipe'] = 2;
+
+                            $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input6);
+                            if (isset($value['bpjs']) && !empty($value['bpjs'])) {
+                                foreach ($value['bpjs'] as $keys => $val) {
+                                    $input5['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                                    $input5['t_payroll_komponen_id'] = $t_payroll_komponen->id;
+                                    $input5[$val['nama']] = $val['nilai'];
+                                }
+                                $t_payroll_komponen = $this->db->insert('t_payroll_bpjs', $input5);
+                            }
+                        }
+                        if (isset($value['totalbpjskesehatan']) && !empty($value['totalbpjskesehatan'])) {
+                            $input7['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                            $input7['m_komponen_gaji_id'] = 3;
+                            $input7['nilai'] = $value['totalbpjskesehatan'];
+                            $input7['tipe'] = 2;
+
+                            $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input7);
+                        }
+                        if (isset($value['totalpph']) && !empty($value['totalpph'])) {
+                            $input8['t_payroll_det_id'] = $t_payroll_det_nambah->id;
+                            $input8['m_komponen_gaji_id'] = 6;
+                            $input8['nilai'] = $value['totalpph'];
+                            $input8['tipe'] = 3;
+
+                            $t_payroll_komponen = $this->db->insert('t_payroll_komponen', $input8);
+                        }
+                    }
+                }
+
+                $this->db->endTransaction();
+            }
+            // Return data payroll
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            $this->db->startTransaction();
+            $model = $this->db->delete('t_payroll', ['id' => $params['id']]);
+            $payrolldet = $this->db->select('id')->from('t_payroll_det')->where('t_payroll_id', '=', $params['id'])->findAll();
+            foreach ($payrolldet as $key => $value) {
+                $komponen = $this->db->delete('t_payroll_komponen', ['t_payroll_det_id' => $value->id]);
+                $komponenbpjs = $this->db->delete('t_payroll_bpjs', ['t_payroll_det_id' => $value->id]);
+            }
+            $models = $this->db->delete('t_payroll_det', ['t_payroll_id' => $params['id']]);
+            $this->db->endTransaction();
+            // Return data payroll
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function deletedetail($params)
+    {
+        try {
+            $this->db->startTransaction();
+
+            $komponen = $this->db->delete('t_payroll_komponen', ['t_payroll_det_id' => $params['id']]);
+            $komponenbpjs = $this->db->delete('t_payroll_bpjs', ['t_payroll_det_id' => $params['id']]);
+            $models = $this->db->delete('t_payroll_det', ['t_payroll_id' => $params['id']]);
+
+            $this->db->endTransaction();
+            // Return data payroll
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Ambil semua data Slip Gaji.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getSlipgaji($params = [])
+    {
+        if (isset($params['parampreview']) && !empty($params['parampreview'])) {
+            // print_r($params['model']);die;
+            $arr_data = [];
+            $perusahaan = $this->db->select('*')->from('m_perusahaan')->where('id', '=', $_SESSION['user']['m_perusahaan']['id'])->find();
+            $karyawan = $this->db->select('*')
+                ->from('karyawan_data')
+                ->join('left join', 'karyawan', 'karyawan.karyawan_data_id = karyawan_data.id')
+                ->where('karyawan.id', '=', $params['model']['idkaryawan'])
+                ->find()
+            ;
+
+            // print_r($karyawan);die;
+            $arr_data[$params['model']['idkaryawan']]['gaji_kode'] = $params['model']['kode'];
+            // $arr_data[$params['model']['idkaryawan']]['gaji_tgl_gaji'] = date('F, Y', strtotime($value->tgl_gaji));
+            // $arr_data[$params['model']['idkaryawan']]['gaji_periode_mulai'] = date('d F, Y', strtotime($value->periode_mulai));
+            // $arr_data[$params['model']['idkaryawan']]['gaji_periode_selesai'] = date('d F, Y', strtotime($value->periode_selesai));
+            // $arr_data[$params['model']['idkaryawan']]['gaji_keterangan'] = $value->keterangan;
+            $arr_data[$params['model']['idkaryawan']]['perusahaan_nama'] = $perusahaan->nama;
+            $arr_data[$params['model']['idkaryawan']]['perusahaan_alamat'] = $perusahaan->alamat;
+            $arr_data[$params['model']['idkaryawan']]['perusahaan_telepon'] = $perusahaan->telepon;
+            $arr_data[$params['model']['idkaryawan']]['karyawan_nik'] = $params['model']['nik'];
+            $arr_data[$params['model']['idkaryawan']]['karyawan_nama'] = $karyawan->nama;
+            // $arr_data[$params['model']['idkaryawan']]['karyawan_alamat'] = $karyawan->alamat_karyawan.', '.$karyawan->provinsi.', '.$karyawan->kota.', '.$karyawan->kecamatan.', '.$karyawan->desa.', '.$karyawan->kode_pos;
+            $arr_data[$params['model']['idkaryawan']]['karyawan_telepon'] = $karyawan->no_hp;
+            $arr_data[$params['model']['idkaryawan']]['karyawan_email'] = $karyawan->email;
+            $arr_data[$params['model']['idkaryawan']]['karyawan_npwp'] = $karyawan->no_npwp;
+            $arr_data[$params['model']['idkaryawan']]['karyawan_jabatan'] = $params['model']['nm_jabatan'];
+            $arr_data[$params['model']['idkaryawan']]['nm_bank'] = $params['model']['nm_bank'];
+            $arr_data[$params['model']['idkaryawan']]['no_rekening'] = $params['model']['no_rekening'];
+            $arr_data[$params['model']['idkaryawan']]['nm_anbank'] = $params['model']['atas_nama'];
+            $arr_data[$params['model']['idkaryawan']]['kasbon'] = $params['model']['kasbon'];
+            $ardapat = [];
+            foreach ($params['model']['pendapatan'] as $key => $value) {
+                unset($value['nama']);
+                $value['nama'] = $value['nm_komponen'];
+                $arrdapat[$key] = $value;
+            }
+            $arrpotong = [];
+            foreach ($params['model']['potongan'] as $key => $value) {
+                unset($value['nama']);
+                $value['nama'] = $value['nm_komponen'];
+                $arrpotong[$key] = $value;
+            }
+
+            $arrbpjss = [];
+            foreach ($params['model']['bpjs'] as $key => $value) {
+                unset($value['nama']);
+                $value['nama'] = $value['nm_komponen'];
+                $arrbpjss[$key] = $value;
+            }
+
+            $arr_data[$params['model']['idkaryawan']]['pendapatan'] = $arrdapat;
+            $arr_data[$params['model']['idkaryawan']]['potongan'] = $arrpotong;
+            $arr_data[$params['model']['idkaryawan']]['pph'] = $params['model']['pendapatan']['totalpph'];
+
+            foreach ($arr_data as $key => $value) {
+                // print_r($value);die;
+                $sumdapat = 0;
+                foreach ($value['pendapatan'] as $keys => $val) {
+                    $val['nomor'] = $keys + 1;
+                    $sumdapat += $val['nilai'];
+                    $arr_data[$key]['totaldapat'] = $sumdapat;
+                }
+
+                $sumpotong = 0;
+                foreach ($value['potongan'] as $keys => $val) {
+                    $val['nomor'] = $keys + 1;
+                    $sumpotong += $val['nilai'];
+                    $arr_data[$key]['totalpotong'] = $sumpotong;
+
+                    if (5 == $val->m_komponen_gaji_id) {
+                        $arr_data[$key]['bayarkasbon'] = $val['nilai'];
+                    }
+                }
+            }
+            foreach ($arr_data as $key => $value) {
+                $arr_data[$key]['takehomepay'] = $value['totaldapat'] - $value['totalpotong'] - $value['pph'];
+                $arr_data[$key]['sisakasbon'] = $value['kasbon'] - $value['bayarkasbon'];
+            }
+        } else {
+            // $idperusahaan = $_SESSION['user']['m_perusahaan']['id'];
+            $this->db->select('t_payroll.kode, t_payroll.tgl as tgl_gaji, t_payroll.periode_mulai, t_payroll.periode_selesai, t_payroll_det.*, t_payroll_det.karyawan_id as kid_payroll_det, t_payroll_komponen.*, m_komponen_gaji.nama, m_komponen_gaji.is_pokok, karyawan_data.nama as nama_karyawan, karyawan.nik, karyawan.m_bank_id, karyawan.no_rekening, karyawan.atas_nama as nm_anbank, m_bank.nama as nm_bank, karyawan_data.alamat_detail as alamat_karyawan, karyawan_data.kode_pos, karyawan_data.no_hp as no_hp_karyawan, karyawan_data.email, karyawan_data.no_npwp, m_perusahaan.nama as nama_perusahaan, m_perusahaan.alamat as alamat_perusahaan, m_perusahaan.telepon as telepon_perusahaan, k_jabatan.m_jabatan_id, m_jabatan.nama as nm_jabatan_karyawan,w_provinsi.provinsi, w_kota.kota, w_kecamatan.kecamatan, w_desa.desa, w_provinsi.provinsi as prov_perusahaan, w_kota.kota as kota_perusahaan, w_kecamatan.kecamatan as kec_perusahaan, w_desa.desa as desa_perusahaan, m_perusahaan.w_provinsi_id as idprov')
+                ->from('t_payroll')
+                ->join('left join', 't_payroll_det', 't_payroll_det.t_payroll_id = t_payroll.id')
+                ->join('left join', 'karyawan', 't_payroll_det.karyawan_id = karyawan.id')
+                ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+                ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan_data.id')
+                ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+                ->join('left join', 't_payroll_komponen', 't_payroll_det.id = t_payroll_komponen.t_payroll_det_id')
+                ->join('left join', 'm_komponen_gaji', 'm_komponen_gaji.id = t_payroll_komponen.m_komponen_gaji_id')
+                ->join('left join', 'm_perusahaan', 'm_perusahaan.id = karyawan.m_perusahaan_id')
+                ->join('left join', 'w_provinsi', 'w_provinsi.id = karyawan_data.w_provinsi_id')
+                ->join('left join', 'w_kota', 'w_kota.id = karyawan_data.w_kota_id')
+                ->join('left join', 'w_kecamatan', 'w_kecamatan.id = karyawan_data.w_kecamatan_id')
+                ->join('left join', 'w_desa', 'w_desa.id = karyawan_data.w_desa_id')
+                ->join('left join', 'm_bank', 'm_bank.id = karyawan.m_bank_id')
+                ->where('t_payroll_det.t_payroll_id', '=', $params['model']['id'])
+                // ->andWhere('t_payroll.m_perusahaan_id', '=', $idperusahaan)
+                ->andWhere('t_payroll.status', '=', 3)
+            ;
+
+            if (0 !== $params['karyawan_id'] && !empty($params['karyawan_id'])) {
+                $this->db->andWhere('karyawan.id', '=', $params['karyawan_id']);
+            }
+            $models = $this->db->findAll();
+
+            $arr_data = [];
+            foreach ($models as $key => $value) {
+                $arr_data[$value->karyawan_id]['gaji_kode'] = $value->kode;
+                $arr_data[$value->karyawan_id]['gaji_tgl_gaji'] = date('F, Y', strtotime($value->tgl_gaji));
+                $arr_data[$value->karyawan_id]['gaji_periode_mulai'] = date('d F, Y', strtotime($value->periode_mulai));
+                $arr_data[$value->karyawan_id]['gaji_periode_selesai'] = date('d F, Y', strtotime($value->periode_selesai));
+                $arr_data[$value->karyawan_id]['gaji_keterangan'] = $value->keterangan;
+                $arr_data[$value->karyawan_id]['perusahaan_nama'] = $value->nama_perusahaan;
+                $arr_data[$value->karyawan_id]['perusahaan_alamat'] = $value->alamat_perusahaan;
+                $arr_data[$value->karyawan_id]['perusahaan_telepon'] = $value->telepon_perusahaan;
+                $arr_data[$value->karyawan_id]['karyawan_nik'] = $value->nik;
+                $arr_data[$value->karyawan_id]['karyawan_nama'] = $value->nama_karyawan;
+                $arr_data[$value->karyawan_id]['karyawan_alamat'] = $value->alamat_karyawan.', '.$value->provinsi.', '.$value->kota.', '.$value->kecamatan.', '.$value->desa.', '.$value->kode_pos;
+                $arr_data[$value->karyawan_id]['karyawan_telepon'] = $value->no_hp_karyawan;
+                $arr_data[$value->karyawan_id]['karyawan_email'] = $value->email;
+                $arr_data[$value->karyawan_id]['karyawan_npwp'] = $value->no_npwp;
+                $arr_data[$value->karyawan_id]['karyawan_jabatan'] = $value->nm_jabatan_karyawan;
+                $arr_data[$value->karyawan_id]['nm_bank'] = $value->nm_bank;
+                $arr_data[$value->karyawan_id]['no_rekening'] = $value->no_rekening;
+                $arr_data[$value->karyawan_id]['nm_anbank'] = $value->nm_anbank;
+                $arr_data[$value->karyawan_id]['kasbon'] = $value->kasbon;
+
+                if (1 == $value->tipe) {
+                    $arr_data[$value->karyawan_id]['pendapatan'][] = $value;
+                }
+                if (2 == $value->tipe) {
+                    $arr_data[$value->karyawan_id]['potongan'][] = $value;
+                }
+                if (3 == $value->tipe) {
+                    $arr_data[$value->karyawan_id]['pph'] = $value->nilai;
+                }
+            }
+            // print_r($models);die;
+            foreach ($arr_data as $key => $value) {
+                // print_r($value);die;
+                $sumdapat = 0;
+                foreach ($value['pendapatan'] as $keys => $val) {
+                    $val->nomor = $keys + 1;
+                    $sumdapat += $val->nilai;
+                    $arr_data[$key]['totaldapat'] = $sumdapat;
+                }
+
+                $sumpotong = 0;
+                foreach ($value['potongan'] as $keys => $val) {
+                    $val->nomor = $keys + 1;
+                    $sumpotong += $val->nilai;
+                    $arr_data[$key]['totalpotong'] = $sumpotong;
+
+                    if (5 == $val->m_komponen_gaji_id) {
+                        $arr_data[$key]['bayarkasbon'] = $val->nilai;
+                    }
+                }
+            }
+            foreach ($arr_data as $key => $value) {
+                $arr_data[$key]['takehomepay'] = $value['totaldapat'] - $value['totalpotong'] - $value['pph'];
+                $arr_data[$key]['sisakasbon'] = $value['kasbon'] - $value['bayarkasbon'];
+            }
+        }
+        // print_r($arr_data);die;
+        $arr = [];
+        $i = 0;
+        foreach ($arr_data as $keys => $value) {
+            $arr[$i] = $value;
+            ++$i;
+        }
+        // print_r($arr);die;
+        return [
+            'data' => $arr,
+        ];
+    }
+
+    /**
+     * Ambil semua data Slip Gaji.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getSlipgajiemail($params = [])
+    {
+        // print_r($params);die;
+        $idperusahaan = $_SESSION['user']['m_perusahaan']['id'];
+        $this->db->select('t_payroll.kode, t_payroll.tgl as tgl_gaji, t_payroll.periode_mulai, t_payroll.periode_selesai, t_payroll_det.*, t_payroll_det.karyawan_id as kid_payroll_det, t_payroll_komponen.*, m_komponen_gaji.nama, m_komponen_gaji.is_pokok, karyawan_data.nama as nama_karyawan, karyawan_data.id as idkaryawan, karyawan.nik, karyawan.m_bank_id, karyawan.no_rekening, karyawan.atas_nama as nm_anbank, m_bank.nama as nm_bank, karyawan_data.alamat_detail as alamat_karyawan, karyawan_data.kode_pos, karyawan_data.no_hp as no_hp_karyawan, karyawan_data.email, m_perusahaan.nama as nama_perusahaan, m_perusahaan.alamat as alamat_perusahaan, m_perusahaan.telepon as telepon_perusahaan, k_jabatan.m_jabatan_id, m_jabatan.nama as nm_jabatan_karyawan,w_provinsi.provinsi, w_kota.kota, w_kecamatan.kecamatan, w_desa.desa')
+            ->from('t_payroll')
+            ->join('left join', 't_payroll_det', 't_payroll_det.t_payroll_id = t_payroll.id')
+            ->join('left join', 'karyawan', 't_payroll_det.karyawan_id = karyawan.id')
+            ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan_data.id')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->join('left join', 't_payroll_komponen', 't_payroll_det.id = t_payroll_komponen.t_payroll_det_id')
+            ->join('left join', 'm_komponen_gaji', 'm_komponen_gaji.id = t_payroll_komponen.m_komponen_gaji_id')
+            ->join('left join', 'm_perusahaan', 'm_perusahaan.id = karyawan.m_perusahaan_id')
+            ->join('left join', 'w_provinsi', 'w_provinsi.id = karyawan_data.w_provinsi_id')
+            ->join('left join', 'w_kota', 'w_kota.id = karyawan_data.w_kota_id')
+            ->join('left join', 'w_kecamatan', 'w_kecamatan.id = karyawan_data.w_kecamatan_id')
+            ->join('left join', 'w_desa', 'w_desa.id = karyawan_data.w_desa_id')
+            ->join('left join', 'm_bank', 'm_bank.id = karyawan.m_bank_id')
+            ->where('t_payroll_det.t_payroll_id', '=', $params['model']['id'])
+            ->andWhere('t_payroll.m_perusahaan_id', '=', $idperusahaan)
+            ->andWhere('t_payroll.status', '=', 3)
+        ;
+
+        if (0 !== $params['karyawan_id'] && !empty($params['karyawan_id'])) {
+            $this->db->andWhere('karyawan.karyawan_data_id', '=', $params['karyawan_id']);
+        }
+        $models = $this->db->findAll();
+        $arr_data = [];
+        foreach ($models as $key => $value) {
+            $arr_data[$value->karyawan_id]['gaji_kode'] = $value->kode;
+            $arr_data[$value->karyawan_id]['gaji_tgl_gaji'] = date('d F, Y', strtotime($value->tgl_gaji));
+            $arr_data[$value->karyawan_id]['gaji_periode_mulai'] = date('d F, Y', strtotime($value->periode_mulai));
+            $arr_data[$value->karyawan_id]['gaji_periode_selesai'] = date('d F, Y', strtotime($value->periode_selesai));
+            $arr_data[$value->karyawan_id]['gaji_keterangan'] = $value->keterangan;
+            $arr_data[$value->karyawan_id]['perusahaan_nama'] = $value->nama_perusahaan;
+            $arr_data[$value->karyawan_id]['perusahaan_alamat'] = $value->alamat_perusahaan;
+            $arr_data[$value->karyawan_id]['perusahaan_telepon'] = $value->telepon_perusahaan;
+            $arr_data[$value->karyawan_id]['karyawan_id'] = $value->idkaryawan;
+            $arr_data[$value->karyawan_id]['karyawan_nik'] = $value->nik;
+            $arr_data[$value->karyawan_id]['karyawan_nama'] = $value->nama_karyawan;
+            $arr_data[$value->karyawan_id]['karyawan_alamat'] = $value->alamat_karyawan.', '.$value->provinsi.', '.$value->kota.', '.$value->kecamatan.', '.$value->desa.', '.$value->kode_pos;
+            $arr_data[$value->karyawan_id]['karyawan_telepon'] = $value->no_hp_karyawan;
+            $arr_data[$value->karyawan_id]['karyawan_email'] = $value->email;
+            $arr_data[$value->karyawan_id]['karyawan_jabatan'] = $value->nm_jabatan_karyawan;
+            $arr_data[$value->karyawan_id]['nm_bank'] = $value->nm_bank;
+            $arr_data[$value->karyawan_id]['no_rekening'] = $value->no_rekening;
+            $arr_data[$value->karyawan_id]['nm_anbank'] = $value->nm_anbank;
+        }
+        $arr = [];
+        $i = 0;
+        foreach ($arr_data as $keys => $value) {
+            $arr[$i] = $value;
+            ++$i;
+        }
+
+        return [
+            'data' => $arr,
+        ];
+    }
+
+    /**
+     * Ambil semua data Karyawan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAllKaryawanNew($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        // print_r($params);die;
+        $idkaryawanavailable = [];
+        foreach ($params as $key => $value) {
+            $idkaryawanavailable[] = $value['idkaryawan'];
+        }
+        $idkaryawantersedia = implode(',', $idkaryawanavailable);
+        // print_r($idkaryawantersedia);die;
+        $idperusahaan = $_SESSION['user']['m_perusahaan']['id'];
+        $modelsP = $this->db->select('*')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+            ->andWhere('tipe', '=', 1) //tipe untuk isglobal 0
+            ->andWhere('is_formula', '=', 0)
+            ->customWhere('m_perusahaan_id ='.$idperusahaan.' OR is_global = 1', 'AND')
+            ->andWhere('tipe', '=', 1) //tipe untuk isglobal 1
+            ->andWhere('is_deleted', '=', 0)
+            ->customWhere('id NOT IN (2,3,6)', 'AND')
+            ->findAll()
+        ;
+        $modelsPt = $this->db->select('*')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+            // ->customWhere('id NOT IN (2,3,6)', 'AND')
+            ->andWhere('tipe', '=', -1) //tipe untuk isglobal 0
+            ->andWhere('is_formula', '=', 0)
+            ->customWhere('m_perusahaan_id ='.$idperusahaan.' OR is_global = 1', 'AND')
+            ->andWhere('tipe', '=', -1) //tipe untuk isglobal 1
+            ->andWhere('is_deleted', '=', 0)
+            ->customWhere('id NOT IN (2,3,6)', 'AND')
+            ->findAll()
+        ;
+
+        $karyawan = $this->db->select('karyawan.id as idkaryawan, karyawan.no_rekening, karyawan.atas_nama, m_bank.nama as nm_bank, karyawan_data.nama,karyawan.nik, karyawan.status_jht, karyawan.status_jp, karyawan.status_kesehatan, karyawan.status_pph, k_jabatan.m_jabatan_id, m_jabatan.nama as nm_jabatan, m_ptkp.nominal as nominal_ptkp')
+            ->from('karyawan')
+            ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id AND k_jabatan.aktif = 1')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->join('left join', 'm_ptkp', 'm_ptkp.id = karyawan_data.m_ptkp_id')
+            ->join('left join', 'm_bank', 'm_bank.id = karyawan.m_bank_id')
+            ->where('karyawan.status', '=', 1)
+            ->where('karyawan.m_perusahaan_id', '=', $idperusahaan)
+            // ->andWhere('karyawan.tipe_gaji', '=', $params['tipe'])
+            ->customWhere('karyawan.id NOT IN ('.$idkaryawantersedia.')', 'AND')
+            ->findAll()
+        ;
+        // print_r($karyawan);die;
+        $modelsBpjs = [
+            '0' => ['komponen_id' => '3', 'nama' => 'jk', 'nilai' => 0],
+            '1' => ['komponen_id' => '3', 'nama' => 'jk_perusahaan', 'nilai' => 0],
+            '2' => ['komponen_id' => '2', 'nama' => 'jkk_perusahaan', 'nilai' => 0],
+            '3' => ['komponen_id' => '2', 'nama' => 'jkm_perusahaan', 'nilai' => 0],
+            '4' => ['komponen_id' => '2', 'nama' => 'jht', 'nilai' => 0],
+            '5' => ['komponen_id' => '2', 'nama' => 'jht_perusahaan', 'nilai' => 0],
+            '6' => ['komponen_id' => '2', 'nama' => 'jp', 'nilai' => 0],
+            '7' => ['komponen_id' => '2', 'nama' => 'jp_perusahaan', 'nilai' => 0],
+        ];
+
+        $bpjsperusahaan = $this->db->select('jkk as jkkperusahaan')
+            ->from('m_perusahaan')
+            ->where('id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->find()
+        ;
+
+        // Ambil lembur karyawan
+        $lembur = new Lembur();
+        $mulai = isset($params['periode_mulai']) ? date('Y-m-d', strtotime($params['periode_mulai'])) : date('Y-m-d');
+        $selesai = isset($params['periode_selesai']) ? date('Y-m-d', strtotime($params['periode_selesai'])) : date('Y-m-d');
+        $arrLembur = $lembur->getLemburByPeriode($mulai, $selesai);
+
+        // Ambil kasbon karyawan
+        $kasbon = new Kasbon();
+        $arrKasbon = $kasbon->getSisaKasbon();
+
+        // print_r($bpjsperusahaan);die;
+        $arr_data = [];
+        $arr_karyawan = [];
+        $arr_pendapatan = [];
+        $arr_potongan = [];
+        $arr_bpjs = [];
+
+        foreach ($karyawan as $key => $value) {
+            $value->jkkperusahaan = $bpjsperusahaan->jkkperusahaan;
+            $value->keterangan = '';
+            $value->totaldapat = 0;
+            $value->jkkperusahaan = $bpjsperusahaan->jkkperusahaan;
+            $value->totaldapat = 0;
+            $value->totalpotong = 0;
+            $value->totalbpjsketenagakerjaan = 0;
+            $value->totalbpjsketenagakerjaan_perusahaan = 0;
+            $value->totalbpjskesehatan = 0;
+            $value->totalbpjskesehatan_perusahaan = 0;
+            $value->pph = 0;
+            $value->takehomepay = 0;
+            $value->sumsemua = 0;
+            $arr_karyawan[$key] = (array) $value;
+            foreach ($modelsP as $keys => $vals) {
+                if (isset($valz->nilai) && '' == $vals->nilai) {
+                    $vals->nilai = 0;
+                } else {
+                    $vals->nilai = 0;
+                }
+                $vals->nm_komponen = $vals->nama;
+                $arr_karyawan[$key]['pendapatan'][$keys] = (array) $vals;
+            }
+            foreach ($modelsPt as $keyz => $valz) {
+                if (isset($valz->nilai) && '' == $valz->nilai) {
+                    $valz->nilai = 0;
+                } else {
+                    $valz->nilai = 0;
+                }
+                $valz->nm_komponen = $valz->nama;
+                $arr_karyawan[$key]['potongan'][$keyz] = (array) $valz;
+            }
+            foreach ($modelsBpjs as $keya => $vala) {
+                if (isset($vala['nilai']) && '' == $vala['nilai']) {
+                    $vala['nilai'] = 0;
+                } else {
+                    $vala['nilai'] = 0;
+                }
+                $vala['nm_komponen'] = $vala['nama'];
+                $arr_karyawan[$key]['bpjs'][$keya] = (array) $vala;
+            }
+        }
+        foreach ($arr_karyawan as $key => $value) {
+            $kasbon = isset($arrKasbon[$value['idkaryawan']]['kasbon']) ? $arrKasbon[$value['idkaryawan']]['kasbon'] : 0;
+            $bayar = isset($arrKasbon[$value['idkaryawan']]['bayar']) ? $arrKasbon[$value['idkaryawan']]['bayar'] : 0;
+
+            foreach ($value['pendapatan'] as $keys => $vals) {
+                $cektkomponen = $this->db->select('*')
+                    ->from('t_komponen_gaji')
+                    ->where('karyawan_id', '=', $value['idkaryawan'])
+                    ->andWhere('m_komponen_id', '=', $vals['id'])
+                    ->find()
+                ;
+                if (isset($cektkomponen->karyawan_id) && !empty($cektkomponen->karyawan_id)) {
+                    $arr_karyawan[$key]['pendapatan'][$keys]['nilai'] = $cektkomponen->nominal;
+                }
+                // Ambil nilai lembur
+                if (4 == $vals['id']) {
+                    $arr_karyawan[$key]['pendapatan'][$keys]['nilai'] = isset($arrLembur[$value['idkaryawan']]) ? $arrLembur[$value['idkaryawan']] : 0;
+                }
+            }
+            foreach ($value['potongan'] as $keyz => $valz) {
+                $cektkomponen = $this->db->select('*')
+                    ->from('t_komponen_gaji')
+                    ->where('karyawan_id', '=', $value['idkaryawan'])
+                    ->andWhere('m_komponen_id', '=', $valz['id'])
+                    ->find()
+                ;
+                if (isset($cektkomponen->karyawan_id) && !empty($cektkomponen->karyawan_id)) {
+                    $arr_karyawan[$key]['potongan'][$keyz]['nilai'] = $cektkomponen->nominal;
+                }
+                // Ambil nilai kasbon
+                if (5 == $valz['id'] && $kasbon - $bayar > 0) {
+                    $arr_karyawan[$key]['potongan'][$keyz]['nilai'] = $kasbon - $bayar;
+                }
+            }
+            $arr_karyawan[$key]['kasbon'] = ($kasbon - $bayar > 0) ? $kasbon - $bayar : 0;
+            $arr_karyawan[$key]['detailKasbon'] = isset($arrKasbon[$value['idkaryawan']]['detail']) ? $arrKasbon[$value['idkaryawan']]['detail'] : [];
+        }
+        // print_r($arr_karyawan);die;
+        return [
+            'data' => $arr_karyawan,
+        ];
+    }
+}
+

@@ -1,0 +1,243 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class Reimbursement extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_reimbursement';
+    }
+
+    /**
+     * Ambil semua data pelatihan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('*')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+
+        ;
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere($this->table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+        foreach ($models as $key => $val) {
+            $models[$key]->tipe_nilai = isset($val->tipe_nilai) ? (string) $val->tipe_nilai : null;
+            $models[$key]->tipe_expired = isset($val->tgl_expired) ? '2' : '1';
+        }
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data pelatihan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        $dataModel = $data['model'];
+        $tipeExpired1 = isset($data['tipe_expired_1']) ? $data['tipe_expired_1'] : null;
+        $tipeExpired2 = isset($data['tipe_expired_2']) ? $data['tipe_expired_2'] : null;
+        $tipeNilai1 = isset($data['tipe_nilai_1']) ? $data['tipe_nilai_1'] : null;
+        $tipeNilai2 = isset($data['tipe_nilai_2']) ? $data['tipe_nilai_2'] : null;
+        $listReimbursementDet = $data['list_reimbursement_det'];
+
+        try {
+            $this->db->startTransaction();
+            if (0 == $dataModel['is_unlimited'] || '0' == $dataModel['is_unlimited']) {
+                if (1 == $dataModel['is_expired'] || '1' == $dataModel['is_expired']) {
+                    if (1 == $dataModel['tipe_expired'] || '1' == $dataModel['tipe_expired'] && isset($tipeExpired1)) {
+                        $thisMonth = date('M');
+                        $dataModel['bulan_expired'] = (int) $tipeExpired1;
+                        $dataModel['tgl_expired'] = null;
+                    } elseif (isset($tipeExpired2)) {
+                        $dataModel['tgl_expired'] = (int) $tipeExpired2['tanggal'];
+                        $dataModel['bulan_expired'] = (int) $tipeExpired2['bulan'];
+                    }
+                }
+            }
+
+            //tipe nilai
+            if (1 == $dataModel['tipe_nilai'] || '1' == $dataModel['tipe_nilai'] && isset($tipeNilai1)) {
+                $dataModel['nilai'] = $tipeNilai1;
+            }
+            if (isset($dataModel['id']) && !empty($dataModel['id']) && '' != $dataModel['id']) {
+                $model = $this->db->update($this->table, $dataModel, ['id' => $dataModel['id']]);
+            } else {
+                $kode = $this->generate_kode();
+                $dataModel['kode'] = $kode['data'];
+                $dataModel['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : '';
+                $model = $this->db->insert($this->table, $dataModel);
+            }
+            if (!empty($model) && isset($data['list_reimbursement_det']) && '' != $data['list_reimbursement_det'] && [] != $data['list_reimbursement_det']) {
+                if (isset($dataModel['id']) && !empty($dataModel['id']) && '' != $dataModel['id']) {
+                    $this->db->delete('m_reimbursement_det', ['m_reimbursement_id' => $dataModel['id']]);
+                }
+                $m_reimbursement_id = $model->id;
+                foreach ($listReimbursementDet as $k_Rdet => $v_RDet) {
+                    $v_RDet['m_reimbursement_id'] = $m_reimbursement_id;
+                    $modelRDet = $this->db->insert('m_reimbursement_det', $v_RDet);
+                }
+            }
+            $this->db->endTransaction();
+            // Return data pelatihan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            $this->db->startTransaction();
+            $model = $this->db->update($this->table, ['is_deleted' => 1], ['id' => $params['id']]);
+            $this->db->delete('m_formula', ['m_reimbursement_id' => $params['id']]);
+            $this->db->delete('m_reimbursement_det', ['m_reimbursement_id' => $params['id']]);
+            $this->db->endTransaction();
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+            'is_expired' => 'required',
+            'is_unlimited' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiDetail($data, $custom = [])
+    {
+        $validasi = [
+            'list_reimbursement_det' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiKode($data)
+    {
+        return parent::validasiKodeCore($data, $this->table);
+    }
+
+    public function getDetail($id)
+    {
+        $this->db->select('*')
+            ->from('m_reimbursement_det')
+            ->where('m_reimbursement_id', '=', $id)
+        ;
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function generate_kode()
+    {
+        $this->dbModel = Db::db();
+        $cekKode = $this->db->select('id')
+            ->from($this->table)
+            ->orderBy('id DESC')
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $tahun = date('y');
+            $bulan = date('m');
+            $tipe = 'SDR';
+            $kode_item = (substr($kode_terakhir, -3) + 1);
+            $kode = substr('000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$tahun.$bulan.$kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+}
+

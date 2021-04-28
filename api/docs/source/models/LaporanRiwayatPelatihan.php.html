@@ -1,0 +1,179 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanRiwayatPelatihan extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'k_pelatihan';
+    }
+
+    /**
+     * Ambil semua data perusahaan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('k_pelatihan.*,
+         	karyawan_data.nama as karyawan_nama, 
+         	karyawan.nik as karyawan_nik,
+         	m_pelatihan.nama as pelatihan_nama,
+         	k_pelatihan.tgl_mulai as pelatihan_tanggal,
+         	k_pelatihan.lokasi as pelatihan_lokasi,
+         	k_pelatihan.total_jam as pelatihan_totaljam,
+         	m_jabatan.nama as jabatan_nama')
+            -&gt;from($this-&gt;table)
+            -&gt;leftJoin('karyawan', $this-&gt;table.'.karyawan_id = karyawan.id')
+            -&gt;leftJoin('karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            -&gt;leftJoin('m_pelatihan', $this-&gt;table.'.m_pelatihan_id = m_pelatihan.id')
+            -&gt;leftJoin('k_jabatan', 'karyawan.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1')
+            -&gt;leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;where($this-&gt;table.'.is_deleted', '=', 0)
+        ;
+
+        if (isset($params['karyawan']) &amp;&amp; !empty($params['karyawan']) &amp;&amp; '' != $params['karyawan'] &amp;&amp; 'null' != $params['karyawan']) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.karyawan_id', '=', $params['karyawan']);
+        }
+        if (isset($params['pelatihan']) &amp;&amp; !empty($params['pelatihan']) &amp;&amp; '' != $params['pelatihan'] &amp;&amp; 'null' != $params['pelatihan']) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.m_pelatihan_id', '=', $params['pelatihan']);
+        }
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this-&gt;db-&gt;andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key =&gt; $val) {
+                $this-&gt;db-&gt;where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $arr = [];
+        foreach ($models as $key =&gt; $val) {
+            $val-&gt;pelatihan_tanggal = date('d-m-Y', strtotime($val-&gt;tgl_mulai));
+            $arr[$key] = (array) $val;
+        }
+
+        // jika status belum diikut
+        if (isset($params['status']) &amp;&amp; 'belum' == $params['status']) {
+            // jika status belum diikuti ambil pelatihan yang diikuti dulu
+            $sudahDiikut = [];
+            foreach ($models as $key =&gt; $value) {
+                $sudahDiikut[$value-&gt;karyawan_id][$value-&gt;m_pelatihan_id] = $value-&gt;m_pelatihan_id;
+            }
+
+            // Ambil list pelatihan sesuai dengan spesifikasi jabatan
+            $this-&gt;db-&gt;select('
+                    karyawan_data.nama as karyawan_nama, 
+                    karyawan.id as karyawan_id,
+                    karyawan.nik as karyawan_nik,
+                    m_jabatan.nama as jabatan_nama,
+                    m_pelatihan.nama as pelatihan_nama,
+                    m_pelatihan.id as m_pelatihan_id
+                ')
+                -&gt;from('karyawan')
+                -&gt;leftJoin('karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+                -&gt;leftJoin('k_jabatan', 'karyawan.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1')
+                -&gt;leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+                -&gt;leftJoin('m_jabatan_standard', 'm_jabatan.id = m_jabatan_standard.m_jabatan_id')
+                -&gt;leftJoin('m_pelatihan', 'm_pelatihan.id = m_jabatan_standard.m_pelatihan_id')
+                -&gt;customWhere('m_jabatan_standard.m_pelatihan_id'.' IS NOT NULL', 'AND')
+            ;
+            if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+                $this-&gt;db-&gt;andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+            }
+            $models = $this-&gt;db-&gt;findAll();
+//            echo json_encode($models);die();
+            $arr = [];
+            foreach ($models as $key =&gt; $value) {
+                if (isset($sudahDiikut[$value-&gt;karyawan_id][$value-&gt;m_pelatihan_id])) {
+                    // sudah diikuti
+                } else {
+                    $arr[$key] = (array) $value;
+                    $arr[$key]['pelatihan_tanggal'] = '';
+                    $arr[$key]['pelatihan_lokasi'] = '';
+                    $arr[$key]['pelatihan_totaljam'] = '';
+                }
+            }
+        }
+
+        return [
+            'data' =&gt; array_values($arr),
+        ];
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

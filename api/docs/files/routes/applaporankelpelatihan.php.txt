@@ -1,0 +1,38 @@
+<?php
+
+use Model\LaporanKelengkapanPelatihan;
+
+$app->get('/applaporankelpelatihan/getAll', function ($request, $response) {
+    $params = $request->getParams();
+
+    $laporanKelPelatihan = new LaporanKelengkapanPelatihan();
+    $getDataLaporanKelPelatihan = $laporanKelPelatihan->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDataLaporanKelPelatihan['data'],
+        'totalItems' => $getDataLaporanKelPelatihan['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app->get('/applaporankelpelatihan/downloadFormatExcel', function ($request, $response) {
+    $laporanKelPelatihan = new LaporanKelengkapanPelatihan();
+
+    $file = 'assets/formatExcel/Laporan-Kelengkapan-Pelatihan.xlsx';
+    $save = $laporanKelPelatihan->download($file);
+
+    return successResponse($response, $save);
+});
+
+// print
+$app->post('/applaporankelpelatihan/print', function ($request, $response) {
+    $params = $request->getParams();
+    $laporanKelPelatihan = new LaporanKelengkapanPelatihan();
+    $print = $laporanKelPelatihan->print($params);
+
+    return successResponse($response, [
+        'list' => $print['data'],
+        'status' => $print['status'],
+    ]);
+});
+

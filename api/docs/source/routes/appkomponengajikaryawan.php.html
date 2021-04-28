@@ -1,0 +1,109 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\KomponenGajiKaryawan;
+
+$app-&gt;get('/appkomponengajikaryawan/index/{id}', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $params['idkaryawan'] = $request-&gt;getAttribute('id');
+    $komponengKaryawan = new KomponenGajiKaryawan();
+    $getDataKGKaryawan = $komponengKaryawan-&gt;getAll($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKGKaryawan['data'],
+        'totalItems' =&gt; $getDataKGKaryawan['totalItem'],
+    ]);
+});
+
+$app-&gt;get('/appkomponengajikaryawan/getKaryawan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $komponengKaryawan = new KomponenGajiKaryawan();
+    $getDataKGKaryawan = $komponengKaryawan-&gt;getKaryawan($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKGKaryawan['data'],
+    ]);
+});
+
+$app-&gt;get('/appkomponengajikaryawan/getMKomponengj', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $karyawanId = isset($params['karyawan_id']) ? $params['karyawan_id'] : 0;
+    $komponengKaryawan = new KomponenGajiKaryawan();
+    $getDataKGKaryawan = $komponengKaryawan-&gt;getMKomponengj($karyawanId);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKGKaryawan['data'],
+    ]);
+});
+
+$app-&gt;post('/appkomponengajikaryawan/save', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $komponengKaryawan = new KomponenGajiKaryawan();
+    $validasi = $komponengKaryawan-&gt;validasi($params);
+    if (true === $validasi) {
+        $save = $komponengKaryawan-&gt;save($params);
+        if ($save['status']) {
+            return successResponse($response, [$save['data']]);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus
+$app-&gt;post('/appkomponengajikaryawan/delete', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $komponengKaryawan = new KomponenGajiKaryawan();
+    $delete = $komponengKaryawan-&gt;delete($params);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

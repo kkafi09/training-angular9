@@ -1,0 +1,89 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanKontrak
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_status';
+    }
+
+    /**
+     * Ambil semua data Pengajuan Reimbursement.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+        if ('null' != $params['periode_mulai'] && 'null' != $params['periode_selesai']) {
+            $tanggal_awal = date('Y-m-d', strtotime($params['periode_mulai']));
+            $tanggal_akhir = date('Y-m-d', strtotime($params['periode_selesai']));
+        } else {
+            $tanggal_awal = null;
+            $tanggal_akhir = null;
+        }
+        //echo json_encode($params);die();
+        $this->db->select($this->table.'.*,karyawan_data.nama as namaKaryawan, t_kontrak.kode as kode_kontrak, t_kontrak.tgl as tgl_kontrak, t_kontrak.tipe as tipe_kontrak')
+            ->from($this->table)
+            ->leftJoin('t_kontrak', 't_kontrak.id = k_status.t_kontrak_id')
+            ->leftJoin('karyawan', 'karyawan.id = k_status.karyawan_id')
+            ->leftJoin('karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            ->where($this->table.'.is_deleted', '=', 0)
+            ->where($this->table.'.k_status_lama_id', '>', 0)
+            ->orderBy($this->table.'.id DESC')
+            ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+
+        if (null != $tanggal_awal && null != $tanggal_akhir) {
+            $this->db->andWhere('t_kontrak.tgl', '>=', $tanggal_awal)
+                ->andWhere('t_kontrak.tgl', '<=', $tanggal_akhir)
+            ;
+        }
+
+        if ('null' != $params['karyawan_id'] && '' != $params['karyawan_id']) {
+            $this->db->andWhere($this->table.'.karyawan_id', '=', $params['karyawan_id']);
+        }
+
+        if ('null' != $params['tipe'] && '' != $params['tipe']) {
+            $this->db->andWhere('t_kontrak.tipe', '=', $params['tipe']);
+        }
+        $models = $this->db->findAll();
+        $this->db->select('k_status.*')
+            ->from($this->table)
+        ;
+        $kontrakAll = $this->db->findAll();
+
+        foreach ($models as $key => $val) {
+            foreach ($kontrakAll as $keys => $vals) {
+                if (isset($val->k_status_lama_id) && $val->k_status_lama_id == $vals->id) {
+                    $val->tgl_mulai_lama = $vals->tgl_mulai;
+                    $val->tgl_selesai_lama = $vals->tgl_selesai;
+                }
+            }
+        }
+
+        return [
+            'status' => true,
+            'list' => array_values($models),
+            'periode' => null != $tanggal_awal && null != $tanggal_akhir ? date('d/m/Y', strtotime($tanggal_awal)).' s/d '.date('d/m/Y', strtotime($tanggal_akhir)) : null,
+        ];
+    }
+}
+

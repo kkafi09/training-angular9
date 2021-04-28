@@ -1,0 +1,492 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+use Service\Firebase;
+
+class ApprovalLine extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+    }
+
+    /**
+     * Ambil semua data approval line.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('*')
+            ->from('m_approval_line')
+        ;
+        // Filter
+        if (isset($params) && !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) && is_array($params)) {
+            $filter = $params;
+        }
+        // set parameter
+        if (isset($params) && !empty($params)) {
+            foreach ($filter as $key => $val) {
+                if (!empty($val)) {
+                    if ('id' == $val) {
+                        $this->db->where($key, '=', $val);
+                    } else {
+                        $this->db->where($key, 'like', $val);
+                    }
+                }
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        // Order
+        if (!empty($order)) {
+            $this->db->orderBy($order);
+        }
+        // Ambil data berdasarkan session perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id']) && $_SESSION['user']['m_perusahaan']['id'] > 0) {
+            $this->db->andWhere('m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        // set approval detail
+        foreach ($models as $key => $value) {
+            $value->detail = $this->db->select('*')->from('m_approval_detail')->where('m_approval_line_id', '=', $value->id)->findAll();
+            foreach ($value->detail as $k => $v) {
+                $v->detail = $this->db->select('*')->from('m_approval_rule')->where('m_approval_detail_id', '=', $v->id)->findAll();
+            }
+        }
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function getApprovedByMe($kategori, $limit, $offset)
+    {
+        if ('t_kasbon' == $kategori) {
+            $this->db->select('
+                    karyawan_data.nama,
+                    t_kasbon.*,
+                    t_approval.*
+                ')
+                ->from('t_approval')
+                ->leftJoin('karyawan', 'karyawan.id = t_approval.k_pengajuan_id')
+                ->leftJoin('karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+                ->leftJoin('t_kasbon', 't_kasbon.id = t_approval.reff_id and t_approval.reff_type = "t_kasbon"')
+                ->andWhere('t_approval.is_aktif', '=', 1)
+            ;
+        }
+
+        // $this->db->andWhere('t_approval.k_approval_id', '=', $_SESSION['user']['userId']);
+
+        $model = $this->db->findAll();
+
+        return [
+            'data' => (empty($model)) ? [] : $model,
+        ];
+    }
+
+    /**
+     * Ambil semua rule berdasarkan detail approval line.
+     *
+     * @param int $detailId id detail approval line
+     *
+     * @return array data rule approval
+     */
+    public function getRule($detailId)
+    {
+        return $this->db->select('*')
+            ->from('m_approval_rule')
+            ->where('m_approval_detail_id', '=', $detailId)
+            ->findAll()
+        ;
+    }
+
+    /**
+     * Set approval rule.
+     *
+     * @param array $karyawan  data karyawan
+     * @param int   $lineDetId id detail approval line
+     *
+     * @return array
+     */
+    public function setRule($karyawan, $lineDetId)
+    {
+        $rule = $this->getRule($lineDetId);
+        $landa = new Landa();
+        $arr = [];
+        foreach ($rule as $key => $value) {
+            if ('atasan' == $value->reff_type || 'jabatan' == $value->reff_type) {
+                $this->db->select('karyawan.id')
+                    ->from('karyawan')
+                    ->leftJoin('k_jabatan', 'k_jabatan.karyawan_id = karyawan.id and k_jabatan.aktif = 1')
+                    ->leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+                ;
+                if ('atasan' == $value->reff_type) {
+                    $this->db->where('m_jabatan.level', '=', $value->reff_id);
+                } elseif ('jabatan' == $value->reff_type) {
+                    $this->db->where('m_jabatan.id', '=', $value->reff_id);
+                }
+                // simpan id atasan ke dalam array
+                $model = $this->db->findAll();
+                foreach ($model as $key => $value) {
+                    $arr[] = [
+                        'id' => $value->reff_id,
+                        'idKaryawan' => $landa->idKaryawan($value->reff_id),
+                    ];
+                }
+            } elseif ('karyawan_id' == $value->reff_type) {
+                $arr[] = [
+                    'id' => $value->reff_id,
+                    'idKaryawan' => $landa->idKaryawan($value->reff_id),
+                ];
+            } else {
+                if (empty($arr)) {
+                    return [
+                        'status' => false,
+                        'data' => [],
+                    ];
+                }
+            }
+        }
+
+        return [
+            'status' => true,
+            'data' => $arr,
+        ];
+    }
+
+    public function listApproval()
+    {
+        return [
+            't_lembur' => 'Lembur',
+            't_ijin' => 'Ijin/Cuti',
+            't_kasbon' => 'Kasbon',
+            't_reimbursement' => 'Reimbursement',
+        ];
+    }
+
+    /**
+     * Approve pengajuan berdasarkan approval line
+     * @param  int $status 2 = Approve, 3 = Reject 
+     * @param  string $reff_type nama tabel pengajuan 
+     * @param  integer $reff_id id pengajuan
+     * @return array
+     */
+    public function approvePengajuan($status, $reff_type, $reff_id){
+        $landa = new Landa;
+
+        // Ambil approval line terbaru
+        $approveLine = $this->db->select('*')
+            ->from('t_approval')
+            ->where('reff_type', '=', $reff_type)
+            ->andWhere('reff_id', '=', $reff_id)
+            ->where('status', '=', 1)
+            ->andWhere('is_aktif', '=', 1)
+            ->orderBy('level_approve DESC')
+            ->find();
+
+        if(!isset($approveLine->id)){
+            return false;
+        }
+        
+        // Update status approval line
+        $this->db->update('t_approval', ['status' => $status], ['id' => $approveLine->id]);
+        
+        // Cek apakah ada approval line selanjutnya
+        $nextApproval = $this->db->select('*')
+            ->from('t_approval')
+            ->where('reff_type', '=', $reff_type)
+            ->andWhere('reff_id', '=', $reff_id)
+            ->where('status', '=', 1)
+            ->andWhere('is_aktif', '=', 0)
+            ->andWhere('level_approve', '>', $approvalLine->level_approve)
+            ->orderBy('level_approve DESC')
+            ->find();
+
+        if(!isset($nextApproval->id)){
+            return false;
+        }
+
+        // Jika diapprove
+        if($status == 2){
+            // Aktifkan approval line selanjutnya
+            if(isset($nextApproval->id)){
+                $this->db->update('t_approval', ['is_aktif' => 1], ['id' => $nextApproval->id]);
+                
+                // Kirim notifikasi ke pegawai yang harus approve
+                $idKaryawan = $landa->idKaryawan($nextApproval->k_approval_id);
+                $firebase = new Firebase();
+                $firebase->sendNotif('person', 'Pengajuan Kasbon', 'Ada pengajuan kasbon baru', [
+                    'idKaryawan' => $idKaryawan,
+                    'tipe' => 'kasbon',
+                    'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                ]);
+            }else{
+                // Update status di tabel pengajuan
+                $this->db->update($reff_type, ['is_approve' => 1], ['id' => $reff_id]);
+            }
+
+            // Kirim notifikasi ke pegawai yang mengajukan
+            $idKaryawan = $landa->idKaryawan($approveLine->k_pengajuan_id);
+            $firebase = new Firebase();
+            $firebase->sendNotif('person', 'Pengajuan Kasbon', 'Pengajuan kasbon anda telah diterima', [
+                'idKaryawan' => $idKaryawan,
+                'tipe' => 'kasbon',
+                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+            ]);
+        }else{
+            // Reject di tabel pengajuan
+            $this->db->update($reff_type, ['is_approve' => 2], ['id' => $reff_id]);
+            
+            // Kirim notifikasi ke pegawai yang mengajukan
+            $idKaryawan = $landa->idKaryawan($approveLine->k_pengajuan_id);
+            $firebase = new Firebase();
+            $firebase->sendNotif('person', 'Pengajuan Kasbon', 'Pengajuan kasbon anda telah ditolak', [
+                'idKaryawan' => $idKaryawan,
+                'tipe' => 'kasbon',
+                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+            ]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Set approval line pengajuan.
+     *
+     * @param array  $karyawan  ['karyawan_id' => 1, 'm_jabatan_id' => 1, 'm_jabatan_level_id' => 1]
+     * @param string $reff_type t_lembur / t_ijin / t_kasbon / t_reimbursement
+     * @param int    $reff_id   id transaksi pengajuan
+     */
+    public function setApprovalLine($karyawan, $reff_type, $reff_id)
+    {
+        $arr = $this->listApproval();
+        $typeApproval = isset($arr[$reff_type]) ? $arr[$reff_type] : '';
+
+        if (empty($typeApproval)) {
+            return false;
+        }
+
+        $getSettingApprove = $this->db->select('
+            m_approval_line.*,
+            m_approval_detail.reff_type,
+            m_approval_detail.reff_id,
+            m_approval_detail.auto_approve
+        ')
+            ->from('m_approval_line')
+            ->leftJoin('m_approval_detail', 'm_approval_detail.m_approval_line_id = m_approval_line.id')
+            ->where('m_approval_line.nama', '=', $typeApproval)
+            ->andWhere('m_approval_line.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->findAll()
+        ;
+        // rule default butuh approve = false
+        $rule = [
+            'status' => false,
+            'data' => [],
+        ];
+        // Ambil rule yang berlaku untuk karyawan tersebut
+        $ruleId = 0;
+        foreach ($getSettingApprove as $key => $value) {
+            if ('all' == $value->reff_type) {
+                $ruleId = $value->id;
+            } else {
+                if (isset($karyawan[$value->reff_type]) && $karyawan[$value->reff_type] == $value->reff_id) {
+                    // jika auto approve return false
+                    if (0 == $value->auto_approve) {
+                        $ruleId = $value->id;
+                    }
+                }
+            }
+        }
+        // Apabila approval line tidak ditemukan dianggap auto approve
+        if (0 == $ruleId) {
+            // auto approve
+        } else {
+            $rule = $this->setRule($karyawan, $ruleId);
+            $atasanId = $rule['data'];
+        }
+        // input id atasan ke tabel approval
+        if (isset($atasanId) && !empty($atasanId)) {
+            // Input ke tabel t_approval
+            foreach ($atasanId as $key => $value) {
+                $dataApproval['k_pengajuan_id'] = $karyawan['karyawan_id'];
+                $dataApproval['k_approval_id'] = $value['id'];
+                $dataApproval['reff_type'] = $reff_type;
+                $dataApproval['reff_id'] = $reff_id;
+                $dataApproval['keterangan'] = isset($karyawan['keterangan']) ? $karyawan['keterangan'] : '';
+                $dataApproval['level_approve'] = $key + 1;
+                $dataApproval['is_aktif'] = 0 == $key ? 1 : 0;
+                $dataApproval['is_read'] = 0;
+                $dataApproval['status'] = 1;
+
+                // Simpan device atasan yang approve
+                if (1 == $dataApproval['is_aktif']) {
+                    $data[] = [
+                        'idKaryawan' => $value['idKaryawan'],
+                    ];
+                }
+                // Simpan
+                $model = $this->db->insert('t_approval', $dataApproval);
+            }
+
+            return [
+                'status' => true,
+                'data' => $data,
+            ];
+        }
+        // tidak butuh approval
+        return [
+            'status' => false,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data master approval line.
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    public function saveApproval($data)
+    {
+        try {
+            $this->db->startTransaction();
+            $approvalLine = $this->db->update('m_approval_line', $data, ['id' => $data['id']]);
+            $idDetail = $idRule = [];
+            foreach ($data['detail'] as $key => $value) {
+                // Simpan approval detail
+                if (isset($value['id']) && $value['id'] > 0) {
+                    // Update approva; detail
+                    $approvalDetail = $this->db->update('m_approval_detail', $value, ['id' => $value['id']]);
+                } else {
+                    // Insert approval detail
+                    $approvalDetail = $this->db->insert('m_approval_detail', $value);
+                }
+                if (!isset($approvalDetail->id) && !empty($approvalDetail->id)) {
+                    $idDetail[$approvalDetail->id] = $approvalDetail->id;
+                }
+                // Simpan approval rule
+                foreach ($value['detail'] as $k => $v) {
+                    $v['m_approval_detail_id'] = $approvalDetail->id;
+                    if (isset($v['id']) && $v['id'] > 0) {
+                        // Update approval detail
+                        $approvalRule = $this->db->update('m_approval_rule', $v, ['id' => $v['id']]);
+                    } else {
+                        // Insert approval detail
+                        $approvalRule = $this->db->insert('m_approval_rule', $v);
+                    }
+                    if (!isset($approvalRule->id) && !empty($approvalRule->id)) {
+                        $idRule[$approvalRule->id] = $approvalRule->id;
+                    }
+                }
+            }
+            // Hapus approval detail & Rule yang tidak digunakan
+            if (!empty($idDetail)) {
+                $this->db->run('delete from m_approval_detail where id NOT IN ('.implode(',', $idDetail).') and m_approval_line_id = "'.$approvalLine->id.'"');
+            }
+            if (!empty($idRule)) {
+                $this->db->run('delete from m_approval_rule where id NOT IN ('.implode(',', $idRule).') and m_approval_detail_id = "'.$approvalDetail->id.'"');
+            }
+            $this->db->endTransaction();
+            // Ambil data approval
+            $data = $this->getAll(['id' => $data['id']]);
+            $approvalLine = isset($data['data'][0]) ? $data['data'][0] : [];
+            // Return data approvalLine
+            return [
+                'status' => true,
+                'data' => $approvalLine,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Generate Default Approval Line.
+     *
+     * @param int $perusahaanId id perusahaan
+     *
+     * @return bool
+     */
+    public function generateDefault($perusahaanId)
+    {
+        $arr = $this->listApproval();
+        foreach ($arr as $key => $value) {
+            $this->db->startTransaction();
+            // Simpan Approval Line
+            $approvalLine = $this->db->insert('m_approval_line', [
+                'm_perusahaan_id' => $perusahaanId,
+                'nama' => $value,
+                'kode' => $key,
+            ]);
+            // Simpan Approval Detail
+            $approvalDetail = $this->db->insert('m_approval_detail', [
+                'm_approval_line_id' => $approvalLine->id,
+                'reff_type' => 'all',
+                'reff_id' => '',
+                'auto_approve' => 0,
+            ]);
+            // Simpan Approval Rule
+            $approvalRule = $this->db->insert('m_approval_rule', [
+                'm_approval_detail_id' => $approvalDetail->id,
+                'reff_type' => 'atasan',
+                'reff_id' => 1,
+            ]);
+            $this->db->endTransaction();
+        }
+
+        return true;
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+            'kode' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

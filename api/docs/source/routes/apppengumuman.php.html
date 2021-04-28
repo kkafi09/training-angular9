@@ -1,0 +1,112 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Pengumuman;
+use Service\Firebase;
+use Service\Landa;
+
+// Ambil semua pengumuman
+$app-&gt;get('/apppengumuman/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $pengumuman = new Pengumuman();
+    $getDatapengumuman = $pengumuman-&gt;getAll($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDatapengumuman['data'],
+        'totalItems' =&gt; $getDatapengumuman['totalItem'],
+    ]);
+});
+// Save pengumuman
+$app-&gt;post('/apppengumuman/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $landa = new Landa();
+    $pengumuman = new Pengumuman();
+    $validasi = $pengumuman-&gt;validasi($data);
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $pengumuman-&gt;save($data);
+        if ($save['status']) {
+            $firebase = new Firebase();
+            $judul = $save['data']-&gt;judul;
+            $data = [
+                'tipe' =&gt; 'pengumuman',
+                'click_action' =&gt; 'FLUTTER_NOTIFICATION_CLICK',
+            ];
+            $kirimnotif = $firebase-&gt;sendNotif('company', 'Pengumuman', $judul, $data);
+
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Hapus pengumuman
+$app-&gt;post('/apppengumuman/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $pengumuman = new Pengumuman();
+    $model = $pengumuman-&gt;save(['is_deleted' =&gt; 1, 'id' =&gt; $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+
+$app-&gt;get('/apppengumuman/getData', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $pengumuman = new Pengumuman();
+    $getDatapengumuman = $pengumuman-&gt;getData();
+
+    return successResponse($response, [
+        'list' =&gt; $getDatapengumuman['data'],
+        'totalItems' =&gt; $getDatapengumuman['totalItem'],
+    ]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

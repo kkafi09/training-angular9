@@ -1,0 +1,316 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class JadwalKerja extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_jadwal';
+    }
+
+    /**
+     * Ambil semua data jadwal kerja.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('*')
+            ->from($this->table)
+            ->where('is_deleted', '=', 0)
+        ;
+
+        // Filter
+        if (isset($params) && !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) && is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($params) && !empty($params)) {
+            foreach ($filter as $key => $val) {
+                if (!empty($val)) {
+                    if ('nama' == $key) {
+                        $this->db->where('m_jadwal.nama', 'like', $val);
+                    } elseif ('kode' == $key) {
+                        $this->db->where('m_jadwal.kode', 'like', $val);
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) && !empty($limit)) {
+            $this->db->limit($limit);
+        }
+
+        // Set offset
+        if (isset($offset) && !empty($offset)) {
+            $this->db->offset($offset);
+        }
+
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere($this->table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        $models = $this->db->orderBy('id DESC')->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil detail jadwal kerja.
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    public function getDetail($data)
+    {
+        try {
+            $detJadwal = $this->db->select('m_jadwal_det.*, m_jamker.nama')
+                ->from('m_jadwal_det')
+                ->join('left join', 'm_jamker', 'm_jamker.id = m_jadwal_det.m_jamker_id')
+                ->where('m_jadwal_det.m_jadwal_id', '=', $data['id'])
+                ->findAll()
+            ;
+
+            return [
+                'data' => $detJadwal,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function getJamKerja()
+    {
+        try {
+            $this->db->select('*')
+                ->from('m_jamker')
+                ->where('is_deleted', '=', 0)
+            ;
+
+            $models = $this->db->findAll();
+
+            return [
+                'status' => true,
+                'data' => $models,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function generateKode()
+    {
+        $cekKode = $this->db->select('kode')
+            ->from($this->table)
+            ->where('kode', 'LIKE', 'JDW')
+            ->orderBy('kode DESC')
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $tipe = 'JDW';
+            $kode_item = (substr($kode_terakhir, -3) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $tanggal = date('y').date('m');
+            $kode = $tipe.$tanggal.$kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menyimpan data jadwal kerja.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (isset($data['data'])) {
+                if ('jadwal' == $data['tipe']) {
+                    $jadwal = $data['data'];
+
+                    if (!isset($jadwal['id'])) {
+                        $jadwal['is_deleted'] = 0;
+                        $jadwal['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : null;
+
+                        $this->db->startTransaction();
+
+                        $model = $this->db->insert($this->table, $jadwal);
+                        foreach ($data['listJadwal'] as $key => $value) {
+                            $value['m_jadwal_id'] = $model->id;
+                            $detail = $this->db->insert('m_jadwal_det', $value);
+                        }
+
+                        $this->db->endTransaction();
+                    } elseif (empty($customParams)) {
+                        $jadwal = $data['data'];
+
+                        $this->db->startTransaction();
+
+                        $model = $this->db->update($this->table, $jadwal, ['id' => $jadwal['id']]);
+                        $delete = $this->db->delete('m_jadwal_det', ['m_jadwal_id' => $jadwal['id']]);
+                        foreach ($data['listJadwal'] as $key => $value) {
+                            $value['m_jadwal_id'] = $model->id;
+                            $detail = $this->db->insert('m_jadwal_det', $value);
+                        }
+
+                        $this->db->endTransaction();
+                    } else {
+                        $model = $this->db->update($this->table, $data, $customParams);
+                    }
+                } else {
+                    $this->table = 'm_jamker';
+                    $jamker = $data['data'];
+
+                    if (!isset($jamker['id'])) {
+                        $jamker['jam_masuk'] = isset($jamker['jam_masuk']) ? $jamker['jam_masuk']['hour'].':'.$jamker['jam_masuk']['minute'].':'.$jamker['jam_masuk']['second'] : null;
+                        $jamker['jam_pulang'] = isset($jamker['jam_pulang']) ? $jamker['jam_pulang']['hour'].':'.$jamker['jam_pulang']['minute'].':'.$jamker['jam_pulang']['second'] : null;
+                        $jamker['m_istirahat'] = isset($jamker['m_istirahat']) ? $jamker['m_istirahat']['hour'].':'.$jamker['m_istirahat']['minute'].':'.$jamker['m_istirahat']['second'] : null;
+                        $jamker['s_istirahat'] = isset($jamker['s_istirahat']) ? $jamker['s_istirahat']['hour'].':'.$jamker['s_istirahat']['minute'].':'.$jamker['s_istirahat']['second'] : null;
+                        $jamker['t_after'] = isset($jamker['t_after']) ? '00:'.$jamker['t_after'].':00' : null;
+                        $jamker['t_before'] = isset($jamker['t_before']) ? '00:'.$jamker['t_before'].':00' : null;
+                        $jamker['ganti_hari'] = true == $jamker['ganti_hari'] ? 1 : 0;
+
+                        $model = $this->db->insert($this->table, $jamker);
+                    }
+                }
+            } else {
+                if ('jadwal' == $data['tipe']) {
+                    $model = $this->db->update($this->table, ['is_deleted' => $data['is_deleted']], ['id' => $data['id']]);
+                } else {
+                    $this->table = 'm_jamker';
+                    $model = $this->db->update($this->table, ['is_deleted' => $data['is_deleted']], ['id' => $data['id']]);
+                }
+            }
+
+            // Return data pelatihan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     * @param mixed $tipe
+     */
+    public function validasi($tipe, $data, $custom = [])
+    {
+        if ('jadwal' == $tipe) {
+            $validasi = [
+                'kode' => 'required',
+                'nama' => 'required',
+            ];
+        } else {
+            $validasi = [
+                'nama' => 'required',
+                'jam_masuk' => 'required',
+                'jam_pulang' => 'required',
+                'm_istirahat' => 'required',
+                's_istirahat' => 'required',
+                't_before' => 'required',
+                't_after' => 'required',
+                'ganti_hari' => 'required',
+            ];
+
+            \GUMP::set_field_name('m_istirahat', 'Mulai Istirahat');
+            \GUMP::set_field_name('s_istirahat', 'Selesai Istirahat');
+            \GUMP::set_field_name('t_before', 'Toleransi Sebelum');
+            \GUMP::set_field_name('t_after', 'Toleransi Sesudah');
+        }
+
+        return validate($data, $validasi, $custom);
+    }
+
+    /**
+     * Validasi kode tersedia.
+     *
+     * @param array $data
+     * @param array $custom
+     * @param mixed $tipe
+     */
+    public function validasiKode($tipe, $data)
+    {
+        if ('jadwal' === $tipe) {
+            if (!isset($data['id'])) {
+                $dataKode = true;
+                $this->db->select('kode')->from($this->table)->where('is_deleted', '=', 0);
+                $models = $this->db->findAll();
+                foreach ($models as $key => $value) {
+                    if ($value->kode == $data['kode']) {
+                        $dataKode = false;
+                    }
+                }
+            } else {
+                $dataKode = true;
+            }
+        } else {
+            $dataKode = true;
+        }
+
+        return $dataKode;
+    }
+}
+

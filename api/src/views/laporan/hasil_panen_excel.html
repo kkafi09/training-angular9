@@ -1,0 +1,197 @@
+<style type="text/css">
+  table {
+      border-collapse: collapse;
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+  }
+
+  .table td,
+  .table th {
+      font-size: 12px;
+      border: 1px solid black;
+      padding: 3px;
+  }
+
+  .table1 td,
+  .table1 th {
+      font-size: 12px;
+      border: 1px solid black;
+  }
+  .row {
+  display: flex;
+  flex-wrap: wrap;
+  /* margin-right: -12px;
+margin-left: -12px; */
+}
+
+.col {
+  flex-basis: 0;
+  flex-grow: 1;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.col-1 {
+  flex: 0 0 40%;
+  max-width: 40%
+}
+
+.col-2 {
+  flex: 0 0 20%;
+  max-width: 20%
+}
+
+.col-3 {
+  flex: 0 0 70%;
+  max-width: 70%
+}
+
+.col-4 {
+  flex: 0 0 30%;
+  max-width: 30%
+}
+
+.col-5 {
+  flex: 0 0 28%;
+  max-width: 28%
+}
+</style>
+<div align="left">
+  <div class="row" style="margin-bottom: 2.5em;">
+    <div class="col-2 ">
+      <img src="../assets/img/setting_aplikasi/{{gbr.logo_laporan}}" style="width: 120px; height: 75px;" alt="symfony"
+        srcset="">
+    </div>
+
+    <div class="col" style="margin-top: 1.5em;margin-left: 1.5em;">
+      <center>
+          <h4 style="margin-bottom: 0px;">LAPORAN HASIL PANEN</h5>
+             
+      </center>
+    </div>
+  </div>
+ 
+</div>
+<div style="font-size: 14px;">
+
+  <div class="row">
+    <table class="table" border="1">
+      <tr>
+        <td>Provinsi</td>
+        <td></td>
+        <td style="text-align: left;">{{list.prov}}</td>
+      </tr>
+      <tr>
+        <td>Kabupaten</td>
+        <td></td>
+        <td style="text-align: left;">{{list.kab}}</td>
+      </tr>
+      <tr>
+        <td>Kode Tambak</td>
+        <td></td>
+        <td style="text-align: left;">{{list.kode_tambak}}</td>
+      </tr>
+      <tr>
+        <td>Nama Tambak</td>
+        <td></td>
+        <td style="text-align: left;">{{list.nama_tambak}}</td>
+      </tr>
+      <tr>
+        <td>Nama Petani</td>
+        <td></td>
+        <td style="text-align: left;">{{list.nama_petani}}</td>
+      </tr>
+      <tr>
+        <td>Periode Panen</td>
+        <td></td>
+        <td style="text-align: left;">{{list.jadwal_kode}}({{list.tanggal_mulai_jadwal}} / {{list.tanggal_selesai}})</td>
+      </tr>
+      <tr>
+        <td>Nama Spesies</td>
+        <td></td>
+        <td style="text-align: left;">{{list.nama_spesies}}</td>
+      </tr>
+      <tr>
+        <td>Kode Kor Pembelian</td>
+        <td></td>
+        <td style="text-align: left;">{{list.kode_kor}}</td>
+      </tr>
+      <tr>
+        <td>Nama Kor Pembelian</td>
+        <td></td>
+        <td style="text-align: left;">{{list.nama_kor}}</td>
+      </tr>
+      <tr>
+        <td>Kode Sub Pembelian</td>
+        <td></td>
+        <td style="text-align: left;">{{list.kode_sub}}</td>
+      </tr>
+    </table>
+  </div>
+
+      <table class="table" style="margin-top: 2em;width: 50%;"  border="1">
+          <thead>
+
+              <tr>
+                  <th>
+
+                      <div style="text-align: center;">Timbangan</div>
+                  </th>
+                  <th>
+
+                      <div style="text-align: center;">Grade</div>
+                  </th>
+                  <th>
+
+                      <div style="text-align: center;">Size</div>
+                  </th>
+                  <th>
+
+                      <div style="text-align: center;">Kuantiti(kg)</div>
+                  </th>
+              </tr>
+
+
+          </thead>
+          <tbody>
+              {% if detail is defined %}
+              {% for key, val in detail %}
+              <tr>
+                  <td style="text-align: center;">{{key + 1}}</td>
+                  <td style="text-align: center;">{{val.nama_grade}}</td>
+                  <td style="text-align: center;">{{val.nama_size}}</td>
+                  <td style="text-align: center;">{{val.kuantiti}}</td>
+                  
+              </tr>
+              {% endfor %}
+              {% endif%}
+             
+
+      </table>
+      <div class="total" style="margin-top: 3.5em;">
+     
+        <table class="table"  border="1">
+          {% if Total is defined %}
+          {% for key, val in Total %}
+          <tr>
+            <td>Total {{val.nama}}</td>
+            <td></td>
+            <td style="text-align: left;">{{val.totalDet}}</td>
+          </tr>
+          {% endfor %}
+         {% endif%}
+
+         <tr>
+          <td>Grand Total</td>
+          <td></td>
+          <td style="text-align: left;">{{list.grandTotal}}</td>
+        </tr>
+        </table>
+     
+
+
+
+    </div>
+  </div>
+</div>

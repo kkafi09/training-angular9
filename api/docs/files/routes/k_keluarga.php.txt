@@ -1,0 +1,49 @@
+<?php
+
+use Model\KKeluarga;
+use Service\Landa;
+
+// Ambil semua K Keluarga
+$app->get('/k_keluarga/index/{id}', function ($request, $response) {
+    $params = $request->getParams();
+    $kkeluarga = new KKeluarga();
+    $params['idkaryawan'] = $request->getAttribute('id');
+    $getDataemergencykontak = $kkeluarga->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDataemergencykontak['data'],
+        'totalItems' => $getDataemergencykontak['totalItem'],
+    ]);
+});
+// Save KKeluarga
+$app->post('/k_keluarga/save', function ($request, $response) {
+    $data = $request->getParams();
+    $landa = new Landa();
+    $kkeluarga = new KKeluarga();
+    $validasi = $kkeluarga->validasi($data);
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $kkeluarga->save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Hapus KKeluarga
+$app->post('/k_keluarga/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $kkeluarga = new KKeluarga();
+    $model = $kkeluarga->save(['is_deleted' => 1, 'id' => $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+

@@ -1,0 +1,258 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class KategoriFile extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_kategori_file';
+    }
+
+    /**
+     * Ambil semua data kategori file.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('m_kategori_file.id as id, 
+			        m_kategori_file.nama as nama,
+                    m_kategori_file.kode as kode, 
+			        m_perusahaan.id as perusahaan_id, 
+			        m_perusahaan.nama as perusahaan_nama')
+            ->from('m_kategori_file')
+            ->leftJoin('m_perusahaan', 'm_kategori_file.m_perusahaan_id = m_perusahaan.id')
+            ->where('m_kategori_file.is_deleted', '=', 0)
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            $filter['m_kategori_file.nama'] = isset($filter['nama']) ? $filter['nama'] : '';
+            $filter['m_kategori_file.kode'] = isset($filter['kode']) ? $filter['kode'] : '';
+            unset($filter['nama'], $filter['kode']);
+
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($limit) && !empty($limit)) {
+            $this->db->limit($limit);
+        }
+        // Set offset
+        if (isset($offset) && !empty($offset)) {
+            $this->db->offset($offset);
+        }
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere('m_kategori_file.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Import excel.
+     *
+     * @param array $data
+     * @param mixed $dataJabatanLevel
+     * @param mixed $dataJabatan
+     * @param mixed $dataKategoriFile
+     */
+    public function import($data, $dataKategoriFile)
+    {
+        try {
+            try {
+                $inputFileType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($data['filePath']);
+                $objReader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
+                $objPhpSpreadsheet = $objReader->load($data['filePath']);
+            } catch (Exception $e) {
+                exit('Error loading file : "'.pathinfo($data['filePath'], PATHINFO_BASENAME).'": '.$e->getMessage());
+            }
+
+            $sheet = $objPhpSpreadsheet->getSheet(0);
+            $highestRow = $sheet->getHighestRow();
+            $highestColumn = $sheet->getHighestColumn();
+
+            $kategoriFile = [];
+            $index = 0;
+            for ($row = 2; $row <= $highestRow; ++$row) {
+                $kategoriFile[$index]['kode'] = $sheet->getCell('A'.$row)->getFormattedValue();
+                $kategoriFile[$index]['nama'] = $sheet->getCell('B'.$row)->getFormattedValue();
+                ++$index;
+            }
+            unlink($data['filePath']);
+
+            $arrKategoriFile = [];
+            foreach ($dataKategoriFile['data'] as $key => $val) {
+                $dataKategoriFile[$val->kode] = $val->id;
+            }
+//            echo json_encode($kategoriFile);die();
+
+            foreach ($kategoriFile as $key => $val) {
+                $val['m_perusahaan_id'] = isset($_SESSION) ? $_SESSION['user']['m_perusahaan']['id'] : 0;
+                $model = $this->db->insert($this->table, $val);
+            }
+
+            // Return data
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function download($file)
+    {
+        parent::downloadFile($file);
+
+        return true;
+    }
+
+    /**
+     * Method untuk menyimpan data perusahaan.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $params
+     */
+    public function save($params)
+    {
+        try {
+            if (isset($params['id']) && !empty($params['id'])) {
+                $model = $this->db->update($this->table, $params, ['id' => $params['id']]);
+            } else {
+                $params['is_deleted'] = 0;
+                $params['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : 0;
+                $model = $this->db->insert($this->table, $params);
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            if (empty($params)) {
+                $model = $this->db->update($this->table, ['is_deleted' => 1], ['m_perusahaan_id' => $_SESSION['user']['m_perusahaan']['id']]);
+            } else {
+                $model = $this->db->update($this->table, ['is_deleted' => 1], ['id' => $params['id']]);
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+            'kode' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    /**
+     * Validasi kode tersedia.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasiKode($data)
+    {
+        return parent::validasiKodeCore($data, 'm_kategori_file');
+    }
+
+    /**
+     * Generate kode.
+     *
+     * @return string kode default
+     */
+    public function generateKode()
+    {
+        $cekKode = $this->db->select($this->table.'.id')
+            ->from($this->table)
+            ->where('m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->orderBy('kode DESC')
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $kode_perusahaan = isset($_SESSION['user']['m_perusahaan']['kode']) ? $_SESSION['user']['m_perusahaan']['kode'] : '';
+            $tipe = 'FILE';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $kode_perusahaan.$tipe.$kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+}
+

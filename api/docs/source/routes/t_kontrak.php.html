@@ -1,0 +1,179 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Karyawan;
+use Model\Kontrak;
+use Service\Landa;
+
+// Get terminasi
+$app-&gt;get('/t_kontrak/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kontrak = new Kontrak();
+    $getAlasan = $kontrak-&gt;getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getAlasan['data'],
+        'totalItems' =&gt; $getAlasan['totalItem'],
+    ]);
+});
+
+// Get list karyawan
+$app-&gt;get('/t_kontrak/getKaryawan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kontrak = new Kontrak();
+    $data = $kontrak-&gt;getDataKaryawan();
+
+    return successResponse($response, ['list' =&gt; $data['data'], 'totalItems' =&gt; $data['totalItem']]);
+});
+
+// Get Data karyawan
+$app-&gt;get('/t_kontrak/karyawan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kontrak = new Kontrak();
+    $getKaryawan = $kontrak-&gt;getKaryawan($params['params']);
+
+    foreach ($getKaryawan['data'] as $key =&gt; $val) {
+        // $selisih = date_diff(date_create($val-&gt;tgl_mulai_kerja), date_create());
+        // $val-&gt;masa_kerja = $selisih-&gt;y.' Tahun '.$selisih-&gt;m.' Bulan';
+        // $val-&gt;tgl_mulai_kerja = date('d/m/Y', strtotime($val-&gt;tgl_mulai_kerja));
+        // $val-&gt;sisa_kasbon = !empty($getSisaKasbon['data'][$val-&gt;karyawan_id]) ? $getSisaKasbon['data'][$val-&gt;karyawan_id] : 0;
+
+        // if (isset($params['data'])) {
+        //     $getPesangon = $kontrak-&gt;getPesangon($val, $selisih, $params['data']);
+
+        //     if (null != $getPesangon['data']) {
+        //         $val-&gt;pesangon = $getPesangon['data']-&gt;gaji + $getPesangon['data']-&gt;nominal;
+        //     } else {
+        //         $val-&gt;pesangon = 0;
+        //     }
+        // }
+        $val-&gt;status = $val-&gt;tipe;
+    }
+
+    return successResponse($response, [
+        'list' =&gt; $getKaryawan['data'],
+    ]);
+});
+
+// Get detail terminasi
+$app-&gt;get('/t_kontrak/getDetail', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kontrak = new Kontrak();
+    $karyawan = new Karyawan();
+    $getDetail = $kontrak-&gt;getDetail($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDetail['data'],
+    ]);
+});
+
+// Get alasan
+$app-&gt;get('/t_kontrak/alasan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kontrak = new Kontrak();
+    $getAlasan = $kontrak-&gt;getAlasan($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getAlasan['data'],
+    ]);
+});
+
+// Get sisa kasbon
+$app-&gt;get('/t_kontrak/sisa-kasbon', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kontrak = new Kontrak();
+    $getSisaKasbon = $kontrak-&gt;getSisaKasbon($params['params']);
+
+    return successResponse($response, [
+        'list' =&gt; $getSisaKasbon['data'],
+    ]);
+});
+
+// Save terminasi
+$app-&gt;post('/t_kontrak/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $kontrak = new Kontrak();
+    $landa = new Landa();
+    // print_r($data);die;
+    $validasi = $kontrak-&gt;validasi($data['data']);
+
+    if (true === $validasi) {
+        if (!isset($data['data']['id'])) {
+            $kode = $kontrak-&gt;generateKode();
+            $data['data']['kode'] = $kode['data'];
+        }
+
+        $data['data']['tgl'] = $landa-&gt;arrayToDate($data['data']['tgl']);
+
+        // Proses simpan ke dalam database.
+        if (!empty($data['hapus'])) {
+            $hapus_detail = $kontrak-&gt;deleteDetail($data['hapus']);
+        }
+        $save = $kontrak-&gt;save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus terminasi
+$app-&gt;post('/t_kontrak/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $kontrak = new Kontrak();
+    $model = $kontrak-&gt;delete($data);
+
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

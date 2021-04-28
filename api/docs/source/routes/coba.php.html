@@ -1,0 +1,125 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Coba;
+use Service\Landa;
+
+// Ambil semua sertifikat
+$app-&gt;get('/coba/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $sertifikat = new Coba();
+    $getDatasertifikat = $sertifikat-&gt;getAll($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDatasertifikat['data'],
+        'totalItems' =&gt; $getDatasertifikat['totalItem'],
+    ]);
+});
+
+// Save sertifikat
+$app-&gt;post('/coba/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $sertifikat = new Coba();
+    $validasi = $sertifikat-&gt;validasi($data);
+    $validasiKode = $sertifikat-&gt;validasiKode($data);
+
+    if (true === $validasi) {
+        if (true === $validasiKode) {
+            // simpan Sertifikat
+            $save = $sertifikat-&gt;save($data);
+            if ($save['status']) {
+                return successResponse($response, $data);
+            }
+
+            return unprocessResponse($response, [$save['error']]);
+        }
+
+        return unprocessResponse($response, 'Kode sudah digunakan');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus sertifikat
+$app-&gt;post('/coba/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $sertifikat = new Coba();
+    $model = $sertifikat-&gt;save(['is_deleted' =&gt; 1, 'id' =&gt; $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Import excel sertifikat
+$app-&gt;post('/coba/import', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $sertifikat = new Coba();
+    $landa = new Landa();
+
+    $save = $landa-&gt;base64ToFile($data);
+    $excel = $save['data'];
+
+    $insert_excel = $sertifikat-&gt;import($excel);
+    $getDataSertifikat = $sertifikat-&gt;getAll($data);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataSertifikat['data'],
+        'totalItems' =&gt; $getDataSertifikat['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app-&gt;get('/coba/downloadFormatExcel', function ($request, $response) {
+    $sertifikat = new Coba();
+
+    $file = 'assets/formatExcel/Sertifikat.xlsx';
+    $save = $sertifikat-&gt;download($file);
+
+    return successResponse($response, $save);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

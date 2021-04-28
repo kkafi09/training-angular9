@@ -1,0 +1,57 @@
+<?php
+
+use Model\LaporanRiwayatJabatan;
+
+$app->get('/applaporanriwayatjabatan/getAll', function ($request, $response) {
+    $params = $request->getParams();
+
+    $laporanJabatan = new LaporanRiwayatJabatan();
+    $getLaporanJabatan = $laporanJabatan->getAll($params);
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/riwayat_jabatan.html', [
+            'data' => $getLaporanJabatan['data'],
+            'periode' => $params['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;Filename="Laporan Riwayat Jabatan ('.$params['periode'].').xls"');
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/riwayat_jabatan.html', [
+            'data' => $getLaporanJabatan['data'],
+            'periode' => $params['periode'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, [
+            'list' => $getLaporanJabatan['data'],
+            'periode' => $getLaporanJabatan['periode'],
+            'totalItems' => $getLaporanJabatan['totalItem'],
+        ]);
+    }
+});
+
+// Download format excel
+$app->get('/applaporanriwayatjabatan/downloadFormatExcel', function ($request, $response) {
+    $laporanJabatan = new LaporanRiwayatJabatan();
+
+    $file = 'assets/formatExcel/Laporan-Riwayat-Jabatan.xlsx';
+    $save = $laporanJabatan->download($file);
+
+    return successResponse($response, $save);
+});
+
+// print
+$app->post('/applaporanriwayatjabatan/print', function ($request, $response) {
+    $params = $request->getParams();
+    $laporanJabatan = new LaporanRiwayatJabatan();
+    $print = $laporanJabatan->print($params);
+
+    return successResponse($response, [
+        'list' => $print['data'],
+        'status' => $print['status'],
+    ]);
+});
+

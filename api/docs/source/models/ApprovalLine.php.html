@@ -1,0 +1,449 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+
+class ApprovalLine extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+    }
+
+    /**
+     * Ambil semua data approval line.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('m_approval_line')
+        ;
+        // Filter
+        if (isset($params) &amp;&amp; !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) &amp;&amp; is_array($params)) {
+            $filter = $params;
+        }
+        // set parameter
+        if (isset($params) &amp;&amp; !empty($params)) {
+            foreach ($filter as $key =&gt; $val) {
+                if (!empty($val)) {
+                    if ('id' == $val) {
+                        $this-&gt;db-&gt;where($key, '=', $val);
+                    } else {
+                        $this-&gt;db-&gt;where($key, 'like', $val);
+                    }
+                }
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+        // Order
+        if (!empty($order)) {
+            $this-&gt;db-&gt;orderBy($order);
+        }
+        // Ambil data berdasarkan session perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id']) &amp;&amp; $_SESSION['user']['m_perusahaan']['id'] &gt; 0) {
+            $this-&gt;db-&gt;andWhere('m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        // set approval detail
+        foreach ($models as $key =&gt; $value) {
+            $value-&gt;detail = $this-&gt;db-&gt;select('*')-&gt;from('m_approval_detail')-&gt;where('m_approval_line_id', '=', $value-&gt;id)-&gt;findAll();
+            foreach ($value-&gt;detail as $k =&gt; $v) {
+                $v-&gt;detail = $this-&gt;db-&gt;select('*')-&gt;from('m_approval_rule')-&gt;where('m_approval_detail_id', '=', $v-&gt;id)-&gt;findAll();
+            }
+        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function getApprovedByMe($kategori, $limit, $offset)
+    {
+        if ('t_kasbon' == $kategori) {
+            $this-&gt;db-&gt;select('
+                    karyawan_data.nama,
+                    t_kasbon.*,
+                    t_approval.*
+                ')
+                -&gt;from('t_approval')
+                -&gt;leftJoin('karyawan', 'karyawan.id = t_approval.k_pengajuan_id')
+                -&gt;leftJoin('karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+                -&gt;leftJoin('t_kasbon', 't_kasbon.id = t_approval.reff_id and t_approval.reff_type = &quot;t_kasbon&quot;')
+                -&gt;andWhere('t_approval.is_aktif', '=', 1)
+            ;
+        }
+
+        // $this-&gt;db-&gt;andWhere('t_approval.k_approval_id', '=', $_SESSION['user']['userId']);
+
+        $model = $this-&gt;db-&gt;findAll();
+
+        return [
+            'data' =&gt; (empty($model)) ? [] : $model,
+        ];
+    }
+
+    /**
+     * Ambil semua rule berdasarkan detail approval line.
+     *
+     * @param int $detailId id detail approval line
+     *
+     * @return array data rule approval
+     */
+    public function getRule($detailId)
+    {
+        return $this-&gt;db-&gt;select('*')
+            -&gt;from('m_approval_rule')
+            -&gt;where('m_approval_detail_id', '=', $detailId)
+            -&gt;findAll()
+        ;
+    }
+
+    /**
+     * Set approval rule.
+     *
+     * @param array $karyawan  data karyawan
+     * @param int   $lineDetId id detail approval line
+     *
+     * @return array
+     */
+    public function setRule($karyawan, $lineDetId)
+    {
+        $rule = $this-&gt;getRule($lineDetId);
+        $landa = new Landa();
+        $arr = [];
+        foreach ($rule as $key =&gt; $value) {
+            if ('atasan' == $value-&gt;reff_type || 'jabatan' == $value-&gt;reff_type) {
+                $this-&gt;db-&gt;select('karyawan.id')
+                    -&gt;from('karyawan')
+                    -&gt;leftJoin('k_jabatan', 'k_jabatan.karyawan_id = karyawan.id and k_jabatan.aktif = 1')
+                    -&gt;leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+                ;
+                if ('atasan' == $value-&gt;reff_type) {
+                    $this-&gt;db-&gt;where('m_jabatan.level', '=', $value-&gt;reff_id);
+                } elseif ('jabatan' == $value-&gt;reff_type) {
+                    $this-&gt;db-&gt;where('m_jabatan.id', '=', $value-&gt;reff_id);
+                }
+                // simpan id atasan ke dalam array
+                $model = $this-&gt;db-&gt;findAll();
+                foreach ($model as $key =&gt; $value) {
+                    $arr[] = [
+                        'id' =&gt; $value-&gt;reff_id,
+                        'idKaryawan' =&gt; $landa-&gt;idKaryawan($value-&gt;reff_id),
+                    ];
+                }
+            } elseif ('karyawan_id' == $value-&gt;reff_type) {
+                $arr[] = [
+                    'id' =&gt; $value-&gt;reff_id,
+                    'idKaryawan' =&gt; $landa-&gt;idKaryawan($value-&gt;reff_id),
+                ];
+            } else {
+                if (empty($arr)) {
+                    return [
+                        'status' =&gt; false,
+                        'data' =&gt; [],
+                    ];
+                }
+            }
+        }
+
+        return [
+            'status' =&gt; true,
+            'data' =&gt; $arr,
+        ];
+    }
+
+    public function listApproval()
+    {
+        return [
+            't_lembur' =&gt; 'Lembur',
+            't_ijin' =&gt; 'Ijin/Cuti',
+            't_kasbon' =&gt; 'Kasbon',
+            't_reimbursement' =&gt; 'Reimbursement',
+        ];
+    }
+
+    /**
+     * Set approval line pengajuan.
+     *
+     * @param array  $karyawan  ['karyawan_id' =&gt; 1, 'm_jabatan_id' =&gt; 1, 'm_jabatan_level_id' =&gt; 1]
+     * @param string $reff_type t_lembur / t_ijin / t_kasbon / t_reimbursement
+     * @param int    $reff_id   id transaksi pengajuan
+     */
+    public function setApprovalLine($karyawan, $reff_type, $reff_id)
+    {
+        $arr = $this-&gt;listApproval();
+        $typeApproval = isset($arr[$reff_type]) ? $arr[$reff_type] : '';
+
+        if (empty($typeApproval)) {
+            return false;
+        }
+
+        $getSettingApprove = $this-&gt;db-&gt;select('
+            m_approval_line.*,
+            m_approval_detail.reff_type,
+            m_approval_detail.reff_id,
+            m_approval_detail.auto_approve
+        ')
+            -&gt;from('m_approval_line')
+            -&gt;leftJoin('m_approval_detail', 'm_approval_detail.m_approval_line_id = m_approval_line.id')
+            -&gt;where('m_approval_line.nama', '=', $typeApproval)
+            -&gt;andWhere('m_approval_line.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            -&gt;findAll()
+        ;
+        // rule default butuh approve = false
+        $rule = [
+            'status' =&gt; false,
+            'data' =&gt; [],
+        ];
+        // Ambil rule yang berlaku untuk karyawan tersebut
+        $ruleId = 0;
+        foreach ($getSettingApprove as $key =&gt; $value) {
+            if ('all' == $value-&gt;reff_type) {
+                $ruleId = $value-&gt;id;
+            } else {
+                if (isset($karyawan[$value-&gt;reff_type]) &amp;&amp; $karyawan[$value-&gt;reff_type] == $value-&gt;reff_id) {
+                    // jika auto approve return false
+                    if (0 == $value-&gt;auto_approve) {
+                        $ruleId = $value-&gt;id;
+                    }
+                }
+            }
+        }
+        // Apabila approval line tidak ditemukan dianggap auto approve
+        if (0 == $ruleId) {
+            // auto approve
+        } else {
+            $rule = $this-&gt;setRule($karyawan, $ruleId);
+            $atasanId = $rule['data'];
+        }
+        // input id atasan ke tabel approval
+        if (isset($atasanId) &amp;&amp; !empty($atasanId)) {
+            // Input ke tabel t_approval
+            foreach ($atasanId as $key =&gt; $value) {
+                $dataApproval['k_pengajuan_id'] = $karyawan['karyawan_id'];
+                $dataApproval['k_approval_id'] = $value['id'];
+                $dataApproval['reff_type'] = $reff_type;
+                $dataApproval['reff_id'] = $reff_id;
+                $dataApproval['keterangan'] = isset($karyawan['keterangan']) ? $karyawan['keterangan'] : '';
+                $dataApproval['level_approve'] = $key + 1;
+                $dataApproval['is_aktif'] = 0 == $key ? 1 : 0;
+                $dataApproval['is_read'] = 0;
+                $dataApproval['status'] = 0;
+
+                // Simpan device atasan yang approve
+                if (1 == $dataApproval['is_aktif']) {
+                    $data[] = [
+                        'idKaryawan' =&gt; $value['idKaryawan'],
+                    ];
+                }
+                // Simpan
+                $model = $this-&gt;db-&gt;insert('t_approval', $dataApproval);
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $data,
+            ];
+        }
+        // tidak butuh approval
+        return [
+            'status' =&gt; false,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data master approval line.
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    public function saveApproval($data)
+    {
+        try {
+            $this-&gt;db-&gt;startTransaction();
+            $approvalLine = $this-&gt;db-&gt;update('m_approval_line', $data, ['id' =&gt; $data['id']]);
+            $idDetail = $idRule = [];
+            foreach ($data['detail'] as $key =&gt; $value) {
+                // Simpan approval detail
+                if (isset($value['id']) &amp;&amp; $value['id'] &gt; 0) {
+                    // Update approva; detail
+                    $approvalDetail = $this-&gt;db-&gt;update('m_approval_detail', $value, ['id' =&gt; $value['id']]);
+                } else {
+                    // Insert approval detail
+                    $approvalDetail = $this-&gt;db-&gt;insert('m_approval_detail', $value);
+                }
+                if (!isset($approvalDetail-&gt;id) &amp;&amp; !empty($approvalDetail-&gt;id)) {
+                    $idDetail[$approvalDetail-&gt;id] = $approvalDetail-&gt;id;
+                }
+                // Simpan approval rule
+                foreach ($value['detail'] as $k =&gt; $v) {
+                    $v['m_approval_detail_id'] = $approvalDetail-&gt;id;
+                    if (isset($v['id']) &amp;&amp; $v['id'] &gt; 0) {
+                        // Update approval detail
+                        $approvalRule = $this-&gt;db-&gt;update('m_approval_rule', $v, ['id' =&gt; $v['id']]);
+                    } else {
+                        // Insert approval detail
+                        $approvalRule = $this-&gt;db-&gt;insert('m_approval_rule', $v);
+                    }
+                    if (!isset($approvalRule-&gt;id) &amp;&amp; !empty($approvalRule-&gt;id)) {
+                        $idRule[$approvalRule-&gt;id] = $approvalRule-&gt;id;
+                    }
+                }
+            }
+            // Hapus approval detail &amp; Rule yang tidak digunakan
+            if (!empty($idDetail)) {
+                $this-&gt;db-&gt;run('delete from m_approval_detail where id NOT IN ('.implode(',', $idDetail).') and m_approval_line_id = &quot;'.$approvalLine-&gt;id.'&quot;');
+            }
+            if (!empty($idRule)) {
+                $this-&gt;db-&gt;run('delete from m_approval_rule where id NOT IN ('.implode(',', $idRule).') and m_approval_detail_id = &quot;'.$approvalDetail-&gt;id.'&quot;');
+            }
+            $this-&gt;db-&gt;endTransaction();
+            // Ambil data approval
+            $data = $this-&gt;getAll(['id' =&gt; $data['id']]);
+            $approvalLine = isset($data['data'][0]) ? $data['data'][0] : [];
+            // Return data approvalLine
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $approvalLine,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Generate Default Approval Line.
+     *
+     * @param int $perusahaanId id perusahaan
+     *
+     * @return bool
+     */
+    public function generateDefault($perusahaanId)
+    {
+        $arr = $this-&gt;listApproval();
+        foreach ($arr as $key =&gt; $value) {
+            $this-&gt;db-&gt;startTransaction();
+            // Simpan Approval Line
+            $approvalLine = $this-&gt;db-&gt;insert('m_approval_line', [
+                'm_perusahaan_id' =&gt; $perusahaanId,
+                'nama' =&gt; $value,
+                'kode' =&gt; $key,
+            ]);
+            // Simpan Approval Detail
+            $approvalDetail = $this-&gt;db-&gt;insert('m_approval_detail', [
+                'm_approval_line_id' =&gt; $approvalLine-&gt;id,
+                'reff_type' =&gt; 'all',
+                'reff_id' =&gt; '',
+                'auto_approve' =&gt; 0,
+            ]);
+            // Simpan Approval Rule
+            $approvalRule = $this-&gt;db-&gt;insert('m_approval_rule', [
+                'm_approval_detail_id' =&gt; $approvalDetail-&gt;id,
+                'reff_type' =&gt; 'atasan',
+                'reff_id' =&gt; 1,
+            ]);
+            $this-&gt;db-&gt;endTransaction();
+        }
+
+        return true;
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' =&gt; 'required',
+            'kode' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

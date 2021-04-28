@@ -1,0 +1,166 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class Pesangon extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_pesangon';
+    }
+
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('*')
+            ->from('m_status_terminasi')
+        ;
+
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function getDetail($data = [])
+    {
+        $pesangon = $this->db->select('id, nama as nama_kompensasi, m_status_terminasi_id, m_perusahaan_id')
+            ->from($this->table)
+            ->where('m_status_terminasi_id', '=', $data['id'])
+            ->findAll()
+        ;
+
+        $detail = $this->db->select('*')
+            ->from('m_pesangon_det')
+            ->orderBy('min_masa_kerja ASC')
+            ->findAll()
+        ;
+
+        $arrDetail = [];
+        foreach ($detail as $key => $val) {
+            $arrDetail[$val->m_pesangon_id][] = $val;
+        }
+
+        foreach ($pesangon as $key => $val) {
+            $val->children = $arrDetail[$val->id];
+        }
+
+        return [
+            'data' => $pesangon,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data pelatihan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data = [])
+    {
+        try {
+            $status_terminasi = $data['pesangon'];
+            $detail = $data['detail'];
+
+            $this->db->startTransaction();
+
+            foreach ($detail as $key => $val) {
+                if (!isset($val['id'])) {
+                    $val['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : null;
+                    $val['m_status_terminasi_id'] = $status_terminasi['id'];
+                    $val['nama'] = $val['nama_kompensasi'];
+
+                    $model = $this->db->insert($this->table, $val);
+
+                    foreach ($val['children'] as $keys => $vals) {
+                        $vals['m_pesangon_id'] = $model->id;
+                        $detail = $this->db->insert('m_pesangon_det', $vals);
+                    }
+                } else {
+                    foreach ($val['children'] as $keys => $vals) {
+                        $delete_pesangon = $this->db->delete($this->table, ['id' => $val['id']]);
+                        $delete_det_pesangon = $this->db->delete('m_pesangon_det', ['id' => $vals['id']]);
+
+                        $val['nama'] = $val['nama_kompensasi'];
+
+                        $model = $this->db->insert($this->table, $val);
+
+                        if (1 == $vals['tipe']) {
+                            unset($vals['nominal']);
+                        } else {
+                            unset($vals['gaji']);
+                        }
+
+                        $vals['m_pesangon_id'] = $model->id;
+                        $detail = $this->db->insert('m_pesangon_det', $vals);
+                    }
+                }
+            }
+
+            $this->db->endTransaction();
+
+            // Return data pelatihan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

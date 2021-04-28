@@ -1,0 +1,36 @@
+<?php
+
+use Model\LaporanBpjs;
+
+// Ambil semua bpjs
+$app->get('/l_bpjs/getAll', function ($request, $response) {
+    $params = $request->getParams();
+    $laporan_bpjs = new LaporanBpjs();
+    $getDataBpjs = $laporan_bpjs->getAll($params);
+
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/bpjs.html', [
+            'data' => $getDataBpjs['data'],
+            'periode' => $getDataBpjs['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getDataBpjs['periode']) {
+            header('Content-Disposition: attachment;Filename="Laporan BPJS ('.$getDataBpjs['periode'].').xls"');
+        } else {
+            header('Content-Disposition: attachment;Filename="Laporan BPJS (Semua Periode).xls"');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/bpjs.html', [
+            'data' => $getDataBpjs['data'],
+            'periode' => $getDataBpjs['periode'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, ['list' => array_values($getDataBpjs['data']), 'periode' => $getDataBpjs['periode']]);
+    }
+});
+

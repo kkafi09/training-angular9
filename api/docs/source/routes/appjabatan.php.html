@@ -1,0 +1,216 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Jabatan;
+use Service\Landa;
+
+// Ambil semua jabatan
+$app-&gt;get('/appjabatan/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $jabatan = new Jabatan();
+    $getDataJabatan = $jabatan-&gt;getAll($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataJabatan['data'],
+        'totalItems' =&gt; $getDataJabatan['totalItem'],
+    ]);
+});
+
+// Ambil struktur jabatan
+$app-&gt;get('/appjabatan/dataStruktur', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $jabatan = new Jabatan();
+    $landa = new Landa();
+    $data = $jabatan-&gt;getAll();
+
+    $models = $data['data'];
+    $arrChild = [];
+
+    foreach ($models as $key =&gt; $value) {
+        $arrChild[] = [
+            'id' =&gt; $value-&gt;id,
+            'type' =&gt; '',
+            'name' =&gt; $value-&gt;nama,
+            'parent_id' =&gt; $value-&gt;parent_id,
+        ];
+    }
+
+    if (!empty($arrChild)) {
+        $tree = $landa-&gt;buildTree($arrChild);
+    } else {
+        $tree = [];
+    }
+
+    return successResponse($response, ['list' =&gt; isset($tree[0]) ? $tree[0] : []]);
+});
+
+// Ambil jabatan
+$app-&gt;get('/appjabatan/getall', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $jabatan = new Jabatan();
+    $getJabatan = $jabatan-&gt;getJabatan($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getJabatan['data'],
+        'totalItems' =&gt; $getJabatan['totalItem'],
+    ]);
+});
+
+// Ambil tugas
+$app-&gt;get('/appjabatan/getTugas', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $jabatan = new Jabatan();
+    $getTugas = $jabatan-&gt;getTugas($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getTugas['data'],
+    ]);
+});
+
+// Ambil standar
+$app-&gt;get('/appjabatan/getStandar', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $jabatan = new Jabatan();
+    $getStandar = $jabatan-&gt;getStandar($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getStandar['data'],
+    ]);
+});
+
+// Save jabatan
+$app-&gt;post('/appjabatan/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $jabatan = new Jabatan();
+    if (isset($data['id']) &amp;&amp; !empty($data['id']) &amp;&amp; empty($data['parent_id'])) {
+        $validasi = $jabatan-&gt;validasi($data['jabatan'], [], $data['id']);
+    } else {
+        $validasi = $jabatan-&gt;validasi($data['jabatan']);
+    }
+    $validasiKode = $jabatan-&gt;validasiKode($data['jabatan']);
+
+    if (true === $validasi) {
+        if (true === $validasiKode) {
+            // simpan jabatan ke database
+            $save = $jabatan-&gt;save($data);
+
+            // Return sukses
+            if ($save['status']) {
+                return successResponse($response, $save);
+            }
+
+            return unprocessResponse($response, [$save['error']]);
+        }
+
+        return unprocessResponse($response, 'Kode sudah digunakan');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus jabatan
+$app-&gt;post('/appjabatan/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $jabatan = new Jabatan();
+    $model = $jabatan-&gt;save(['is_deleted' =&gt; 1, 'id' =&gt; $data['id']]);
+
+    // Return sukses
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Hapus jabatan
+$app-&gt;post('/appjabatan/delete-all', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $jabatan = new Jabatan();
+    $model = $jabatan-&gt;deleteAll(['is_deleted' =&gt; 1]);
+
+    if ($model['status']) {
+        return successResponse($response, $model['data']);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Import excel jabatan
+$app-&gt;post('/appjabatan/import', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $jabatan = new Jabatan();
+    $landa = new Landa();
+
+    $save = $landa-&gt;base64ToFile($data);
+    $excel = $save['data'];
+
+    $insert_excel = $jabatan-&gt;import($excel);
+    $getDataJabatan = $jabatan-&gt;getAll($data);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataJabatan['data'],
+        'totalItems' =&gt; $getDataJabatan['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app-&gt;get('/appjabatan/downloadFormatExcel', function ($request, $response) {
+    $jabatan = new Jabatan();
+    $file = 'assets/formatExcel/Jabatan.xlsx';
+    $save = $jabatan-&gt;download($file);
+
+    return successResponse($response, $save);
+});
+
+// Generate kode sertifikat
+$app-&gt;get('/appjabatan/generatekode', function ($request, $response) {
+    $jabatan = new Jabatan();
+
+    $kode = $jabatan-&gt;generateKode();
+
+    return successResponse($response, $kode['data']);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

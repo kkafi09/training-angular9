@@ -1,0 +1,91 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+$app-&gt;add(function ($request, $response, $next) {
+    if ('OPTIONS' !== $request-&gt;getMethod()) {
+        /**
+         * Get route name.
+         */
+        $route = $request-&gt;getAttribute('route');
+
+        $routeName = '';
+        if (null !== $route) {
+            $routeName = $route-&gt;getName();
+        }
+        /**
+         * Set Global route.
+         */
+        $publicRoutesArray = [
+            'login',
+            'session',
+            'logout',
+            'getJam',
+            'setSession',
+            'formatExcelKaryawan',
+            'getStatusPresensi',
+        ];
+        $headers = $request-&gt;getHeaders();
+        if (isset($headers['HTTP_AUTHORIZATION'][0]) &amp;&amp; !empty($headers['HTTP_AUTHORIZATION'][0]) &amp;&amp; ('Bearer null' != $headers['HTTP_AUTHORIZATION'][0] &amp;&amp; 'Bearer bnVsbA==' != $headers['HTTP_AUTHORIZATION'][0])) {
+            $token = str_replace('Bearer ', '', $headers['HTTP_AUTHORIZATION'][0]);
+            $_SESSION['user'] = json_decode(base64_decode($token), true);
+        }
+
+        // Check session
+        if (!isset($_SESSION['user']['userId']) &amp;&amp; !in_array($routeName, $publicRoutesArray)) {
+            // return unauthorizedResponse($response, ['Mohon maaf, anda tidak mempunyai akses']);
+        }
+
+        return $next($request, $response);
+    }
+
+    // $response = $response-&gt;withHeader('Access-Control-Allow-Origin', 'http://localhost:4200');
+    // $response = $response-&gt;withHeader('Access-Control-Allow-Credentials', 'true');
+    // $response = $response-&gt;withHeader('Access-Control-Allow-Methods', $request-&gt;getHeaderLine('Access-Control-Request-Method'));
+    // $response = $response-&gt;withHeader('Access-Control-Allow-Headers', $request-&gt;getHeaderLine('Access-Control-Request-Headers'));
+
+    return $next($request, $response);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

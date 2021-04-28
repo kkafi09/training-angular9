@@ -1,0 +1,94 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Inventaris;
+
+// List Inventaris
+$app-&gt;get('/appinventaris/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $inventaris = new Inventaris();
+    $getDataInventaris = $inventaris-&gt;getAll($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataInventaris['data'],
+        'totalItems' =&gt; $getDataInventaris['totalItem'],
+    ]);
+});
+
+// Simpan inventaris
+$app-&gt;post('/appinventaris/save', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $inventaris = new Inventaris();
+    $validasi = $inventaris-&gt;validasi($params);
+
+    if (true === $validasi) {
+        $save = $inventaris-&gt;save($params);
+
+        // Return sukses
+        if ($save['status']) {
+            return successResponse($response, [$save['data']]);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus Inventaris
+$app-&gt;post('/appinventaris/delete', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $inventaris = new Inventaris();
+    $delete = $inventaris-&gt;delete($params);
+
+    // return sukses
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

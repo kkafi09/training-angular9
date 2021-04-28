@@ -1,0 +1,95 @@
+<?php
+
+use Model\SaldoCuti;
+
+// Ambil semua saldocuti
+$app->get('/appsaldocuti/index', function ($request, $response) {
+    $params = $request->getParams();
+    $saldocuti = new SaldoCuti();
+    $getDatasaldocuti = $saldocuti->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDatasaldocuti['data'],
+        'totalItems' => $getDatasaldocuti['totalItem'],
+    ]);
+});
+// Ambil semua Saldo Detail
+$app->get('/appsaldocuti/getallid', function ($request, $response) {
+    $params = $request->getParams();
+    $saldocuti = new SaldoCuti();
+    $getDatasaldocuti = $saldocuti->getAllid($params);
+
+    return successResponse($response, [
+        'list' => $getDatasaldocuti['data'],
+    ]);
+});
+// Ambil list time off
+$app->get('/appsaldocuti/listcuti', function ($request, $response) {
+    $params = $request->getParams();
+    $saldocuti = new SaldoCuti();
+    $getDatasaldocuti = $saldocuti->getTimeOff($params);
+
+    return successResponse($response, [
+        'list' => $getDatasaldocuti['data'],
+    ]);
+});
+// Ambil list all karyawan
+$app->get('/appsaldocuti/getallkaryawan', function ($request, $response) {
+    $params = $request->getParams();
+    $saldocuti = new SaldoCuti();
+    $getDatasaldocuti = $saldocuti->getAllKaryawan($params);
+
+    return successResponse($response, [
+        'list' => $getDatasaldocuti['data'],
+    ]);
+});
+// Ambil semua KaryawanNewDetail
+$app->post('/appsaldocuti/getlistKaryawannew', function ($request, $response) {
+    $params = $request->getParams();
+    $saldocuti = new SaldoCuti();
+    $getDatasaldocuti = $saldocuti->getAllKaryawanNew($params);
+
+    return successResponse($response, [
+        'list' => $getDatasaldocuti['data'],
+    ]);
+});
+// Save saldocuti
+$app->post('/appsaldocuti/save', function ($request, $response) {
+    $data = $request->getParams();
+    $saldocuti = new SaldoCuti();
+    $validasi = $saldocuti->validasi($data['model']);
+    if (true === $validasi) {
+        $save = $saldocuti->save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Delete Saldocuti
+$app->post('/appsaldocuti/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $saldocuti = new SaldoCuti();
+    $delete = $saldocuti->delete($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Delete Saldo Cuti Detail Karyawan
+$app->post('/appsaldocuti/deletedetail', function ($request, $response) {
+    $data = $request->getParams();
+    $saldocuti = new SaldoCuti();
+    $delete = $saldocuti->deletedetail($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+

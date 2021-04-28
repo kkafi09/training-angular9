@@ -1,0 +1,97 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanMutasiKaryawan
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_jabatan';
+    }
+
+    /**
+     * Ambil semua data Pengajuan Reimbursement.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+        if ('null' != $params['periode_mulai'] && 'null' != $params['periode_selesai']) {
+            $tanggal_awal = date('Y-m-d', strtotime($params['periode_mulai']));
+            $tanggal_akhir = date('Y-m-d', strtotime($params['periode_selesai']));
+        } else {
+            $tanggal_awal = null;
+            $tanggal_akhir = null;
+        }
+
+        $this->db->select('k_jabatan.*,karyawan_data.nama as namaKaryawan, karyawan.m_perusahaan_id, m_organisasi.nama as organisasi, m_jabatan_level.nama as levelJabatan, m_jabatan.nama as jabatan')
+            ->from('k_jabatan')
+            ->leftJoin('karyawan', 'karyawan.id = k_jabatan.karyawan_id')
+            ->leftJoin('karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            ->leftJoin('m_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+            ->leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->leftJoin('m_jabatan_level', 'm_jabatan_level.id = m_jabatan.m_jabatan_level_id')
+            ->where('k_jabatan.is_deleted', '=', 0)
+//            ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->where('k_jabatan.k_jabatan_lama_id', '>', 0)
+            ->orderBy('k_jabatan.id DESC')
+            ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+
+        ;
+
+        if (null != $tanggal_awal && null != $tanggal_akhir) {
+            $this->db->andWhere($this->table.'.tgl_mulai', '>=', $tanggal_awal)
+                ->andWhere($this->table.'.tgl_mulai', '<=', $tanggal_akhir)
+            ;
+        }
+
+        if ('null' != $params['karyawan_id'] && '' != $params['karyawan_id']) {
+            $this->db->andWhere($this->table.'.karyawan_id', '=', $params['karyawan_id']);
+        }
+
+        if ('null' != $params['status'] && '' != $params['status']) {
+            $this->db->andWhere($this->table.'.aktif', '=', $params['status']);
+        }
+
+        $models = $this->db->findAll();
+        $this->db->select('k_jabatan.*, m_organisasi.nama as organisasi, m_jabatan_level.nama as levelJabatan, m_jabatan.nama as jabatan')
+            ->from('k_jabatan')
+            ->leftJoin('m_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+            ->leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->leftJoin('m_jabatan_level', 'm_jabatan_level.id = m_jabatan.m_jabatan_level_id')
+        ;
+        $jabatanLama = $this->db->findAll();
+
+        foreach ($models as $key => $val) {
+            foreach ($jabatanLama as $keys => $vals) {
+                if (isset($val->k_jabatan_lama_id) && $val->k_jabatan_lama_id == $vals->id) {
+                    $val->jabatan_lama = $vals->jabatan;
+                    $val->organisasi_lama = $vals->organisasi;
+                }
+            }
+        }
+
+        return [
+            'status' => true,
+            'list' => array_values($models),
+            'periode' => null != $tanggal_awal && null != $tanggal_akhir ? date('d/m/Y', strtotime($tanggal_awal)).' s/d '.date('d/m/Y', strtotime($tanggal_akhir)) : null,
+        ];
+    }
+}
+

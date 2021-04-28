@@ -1,0 +1,58 @@
+<?php
+
+use Model\LaporanLembur;
+
+$app->get('/l_lembur/getAll', function ($request, $response) {
+    $params = $request->getParams();
+    $laporan_lembur = new LaporanLembur();
+    $getDataLembur = $laporan_lembur->getAll($params);
+
+    $arr = $arrTotal = [];
+    foreach ($getDataLembur['data'] as $key => $value) {
+        $arr[$value->karyawan_id]['nama_karyawan'] = $value->nama_karyawan;
+        $arr[$value->karyawan_id]['nama_jabatan'] = $value->nama_jabatan;
+        $arr[$value->karyawan_id]['total'] = (isset($arr[$value->karyawan_id]['total']) ? $arr[$value->karyawan_id]['total'] : 0) + $value->nominal;
+        $arr[$value->karyawan_id]['detail'][] = (array) $value;
+
+        if (!isset($arrTotal['total_interval']) && !isset($arrTotal['total_nominal'])) {
+            $arrTotal['total_interval'] = $value->interval;
+            $arrTotal['total_nominal'] = $value->nominal;
+        } else {
+            $arrTotal['total_interval'] += $value->interval;
+            $arrTotal['total_nominal'] += $value->nominal;
+        }
+    }
+
+    $minutes = floor(($arrTotal['total_interval'] % 3600) / 60);
+    $hours = floor($arrTotal['total_interval'] / 3600);
+
+    $arrTotal['total_jam'] = $hours.' Jam '.$minutes.' Menit';
+
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/lembur.html', [
+            'data' => $getDataLembur['data'],
+            'total' => $arrTotal,
+            'periode' => $getDataLembur['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getDataLembur['periode']) {
+            header('Content-Disposition: attachment;Filename="Laporan lembur ('.$getDataLembur['periode'].').xls"');
+        } else {
+            header('Content-Disposition: attachment;Filename="Laporan lembur (Semua Periode).xls"');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/lembur.html', [
+            'data' => $arr,
+            'total' => $arrTotal,
+            'periode' => $getDataLembur['periode'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, ['list' => array_values($arr), 'total' => $arrTotal, 'periode' => $getDataLembur['periode']]);
+    }
+});
+

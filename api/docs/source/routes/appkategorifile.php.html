@@ -1,0 +1,144 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\KategoriFile;
+use Service\Landa;
+
+// Ambil semua data kategori
+$app-&gt;get('/appkategorifile/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $KategoriFile = new KategoriFile();
+
+    $params['filter'] = isset($params['filter']) ? $params['filter'] : [];
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : '';
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : '';
+
+    $getDataKategoriFile = $KategoriFile-&gt;getAll($params, $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKategoriFile['data'],
+        'totalItems' =&gt; $getDataKategoriFile['totalItem'],
+    ]);
+});
+
+// Simpan kategori file
+$app-&gt;post('/appkategorifile/save', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $KategoriFile = new KategoriFile();
+    $validasi = $KategoriFile-&gt;validasi($params);
+//    $validasiKode = $KategoriFile-&gt;validasiKode($params['kode']);
+
+    if (true === $validasi) {
+//        if (true == $validasiKode) {
+        $save = $KategoriFile-&gt;save($params);
+
+        // return status sukses
+        if ($save['status']) {
+            return successResponse($response, [$save['data']]);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+//        }
+
+//        return unprocessResponse($response, 'Kode Telah Tersedia');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus kategori file
+$app-&gt;post('/appkategorifile/delete', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $KategoriFile = new KategoriFile();
+    $delete = $KategoriFile-&gt;delete($params);
+
+    // return status sukses
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+
+// Import excel kategori file
+$app-&gt;post('/appkategorifile/import', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $kategoriFile = new KategoriFile();
+    $landa = new Landa();
+
+    $save = $landa-&gt;base64ToFile($data);
+    $excel = $save['data'];
+
+    $dataKategoriFile = $kategoriFile-&gt;getAll($data);
+    $insert_excel = $kategoriFile-&gt;import($excel, $dataKategoriFile);
+
+    return successResponse($response, [
+        'list' =&gt; $dataKategoriFile['data'],
+        'totalItems' =&gt; $dataKategoriFile['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app-&gt;get('/appkategorifile/downloadFormatExcel', function ($request, $response) {
+    $kategoriFile = new KategoriFile();
+    $file = 'assets/formatExcel/ExportKategoriFile.xlsx';
+    $save = $kategoriFile-&gt;download($file);
+
+    return successResponse($response, $save);
+});
+// Generate default kode organisasi
+$app-&gt;get('/appkategorifile/generate_kode', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $kategoriFile = new KategoriFile();
+    $model = $kategoriFile-&gt;generateKode();
+
+    if ($model['status']) {
+        return successResponse($response, $model['data']);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

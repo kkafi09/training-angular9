@@ -1,0 +1,82 @@
+<?php
+
+function arr_date_to_string($date)
+{
+    $combine_date = $date['day'].'-'.$date['month'].'-'.$date['year'];
+
+    return date('Y-m-d', strtotime($combine_date));
+}
+
+function twigView()
+{
+    return new \Slim\Views\Twig('src/views');
+}
+function generate_kodegaji($tahun, $bulan)
+{
+    $config = config('DB');
+    $db = new Cahkampung\Landadb($config['db']);
+    $cekKode = $db->select('kode')
+        ->from('t_payroll')
+        ->orderBy('kode DESC')
+        ->find()
+    ;
+    if ($cekKode) {
+        $kode_terakhir = $cekKode->kode;
+    } else {
+        $kode_terakhir = 0;
+    }
+
+    $tipe = 'PYR';
+    $kode_item = (substr($kode_terakhir, -4) + 1);
+    $kode = substr('0000'.$kode_item, strlen($kode_item));
+
+    return $tipe.$tahun.$bulan.$kode;
+}
+function sendMailreg($subjek, $nama_penerima, $email_penerima, $template)
+{
+    $body = $template;
+    // $db   = new Cahkampung\Landadb(Db());
+    $config = config('DB');
+    $db = new Cahkampung\Landadb($config['db']);
+    $mail = new PHPMailer\PHPMailer\PHPMailer();
+    $mail->isSMTP();
+    $mail->SMTPDebug = 0;
+    $mail->SMTPOptions = [
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+            'allow_self_signed' => true,
+        ],
+    ];
+    $mail->Host = 'smtp.gmail.com';
+    $mail->SMTPAuth = true;
+//    $mail->Username = "erliomedia@gmail.com";
+    // $mail->Password = "bismillah17";
+    // $mail->Username = "noreplyinfosystems@gmail.com";
+    // $mail->Password = "bismillah2018";
+    $mail->Username = 'giromarutori@gmail.com';
+    $mail->Password = 'bvojyztqsdpvzpie';
+//        $mail->Username = $getEmail->email_smtp;
+    //        $mail->Password = $getEmail->password_smtp;
+    $mail->SMTPSecure = 'tls';
+    $mail->Port = 587;
+    $mail->setFrom('noreplyinfosystems@gmail.com', 'HUMANIS APP');
+    $mail->addAddress($email_penerima, "{$nama_penerima}");
+    $mail->isHTML(true);
+    $mail->Subject = $subjek;
+    $mail->Body = $body;
+    // if ($file != false) {
+    //     $mail->AddAttachment($file, "laporan-data-nup.pdf");
+    // }
+    if (!$mail->send()) {
+        return [
+            'status' => false,
+            'error' => $mail->ErrorInfo,
+        ];
+    }
+
+    return [
+        'status' => true,
+    ];
+}
+

@@ -1,0 +1,69 @@
+{
+    "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+    "index": "/index.html",
+    "dataGroups": [
+        {
+            "name": "api",
+            "urls": ["/api"],
+            "cacheConfig": {
+                "maxSize": 0,
+                "maxAge": "0u",
+                "strategy": "freshness"
+            }
+        },
+        {
+            "name": "excludeapi",
+            "urls": ["!/api"],
+            "cacheConfig": {
+                "maxSize": 0,
+                "maxAge": "0u",
+                "strategy": "freshness"
+            }
+        },
+        {
+            "name": "db",
+            "urls": ["/db"],
+            "cacheConfig": {
+                "maxSize": 0,
+                "maxAge": "0u",
+                "strategy": "freshness"
+            }
+        },
+        {
+            "name": "mobile",
+            "urls": ["/mobile"],
+            "cacheConfig": {
+                "maxSize": 0,
+                "maxAge": "0u",
+                "strategy": "freshness"
+            }
+        }
+    ],
+    "assetGroups": [
+        {
+            "name": "app",
+            "installMode": "prefetch",
+            "resources": {
+                "files": [
+                    "/favicon.ico",
+                    "/index.html",
+                    "/manifest.webmanifest",
+                    "/*.css",
+                    "/*.js",
+                    "!/*-sw.js"
+                ]
+            }
+        },
+        {
+            "name": "assets",
+            "installMode": "lazy",
+            "updateMode": "prefetch",
+            "resources": {
+                "files": [
+                    "/assets/**",
+                    "/*.(eot|svg|cur|jpg|png|webp|gif|otf|ttf|woff|woff2|ani)"
+                ]
+            }
+        }
+    ]
+}

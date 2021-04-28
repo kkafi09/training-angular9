@@ -1,0 +1,456 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class Perusahaan extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'm_perusahaan';
+    }
+
+    public function getByIdArr($id = [])
+    {
+        $this-&gt;db-&gt;select($this-&gt;table.'.*, 
+                induk.nama as nm_induk, 
+                '.$this-&gt;table.'.logo as logo_perusahaan')
+            -&gt;from($this-&gt;table)
+            -&gt;leftJoin('m_perusahaan as induk', 'induk.id = '.$this-&gt;table.'.parent_id')
+            -&gt;where($this-&gt;table.'.is_deleted', '=', 0)
+        ;
+
+        if (!empty($id)) {
+            $this-&gt;db-&gt;customWhere('m_perusahaan.id IN ('.implode(',', $id).')', 'AND');
+        }
+
+        return $this-&gt;db-&gt;findAll();
+    }
+
+    /**
+     * Ambil semua data perusahaan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select($this-&gt;table.'.*, 
+                induk.nama as nm_induk, 
+                '.$this-&gt;table.'.logo as logo_perusahaan')
+            -&gt;from($this-&gt;table)
+            -&gt;leftJoin('m_perusahaan as induk', 'induk.id = '.$this-&gt;table.'.parent_id')
+            -&gt;where($this-&gt;table.'.is_deleted', '=', 0)
+        ;
+        // Filter
+        if (isset($params) &amp;&amp; !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) &amp;&amp; is_array($params)) {
+            $filter = $params;
+        }
+        // set parameter
+        if (isset($params) &amp;&amp; !empty($params)) {
+            foreach ($filter as $key =&gt; $val) {
+                if (!empty($val)) {
+                    if ('nama' == $key) {
+                        $this-&gt;db-&gt;where('m_perusahaan.nama', 'like', $val);
+                    } elseif ('kode' == $key) {
+                        $this-&gt;db-&gt;where('m_perusahaan.kode', 'like', $val);
+                    } elseif ('induk' == $key) {
+                        $this-&gt;db-&gt;where('induk.nama', 'like', $val);
+                    }
+                }
+            }
+        }
+        // Set limit
+        if (isset($limit) &amp;&amp; !empty($limit)) {
+            $this-&gt;db-&gt;limit($limit);
+        }
+        // Set offset
+        if (isset($offset) &amp;&amp; !empty($offset)) {
+            $this-&gt;db-&gt;offset($offset);
+        }
+        // Order
+        if (!empty($order)) {
+            $this-&gt;db-&gt;orderBy($order);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        $perusahaan_child = $this-&gt;db-&gt;select('id, nama, parent_id')
+            -&gt;from($this-&gt;table)
+            -&gt;customWhere('parent_id IS NOT NULL')
+            -&gt;andWhere('is_deleted', '=', 0)
+            -&gt;findAll()
+        ;
+
+        $arrChild = [];
+        foreach ($perusahaan_child as $key =&gt; $val) {
+            $arrChild[$val-&gt;parent_id][] = $val;
+        }
+
+        foreach ($models as $key =&gt; $val) {
+            $val-&gt;child = isset($arrChild[$val-&gt;id]) ? $arrChild[$val-&gt;id] : null;
+        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function generateKode()
+    {
+        $cekKode = $this-&gt;db-&gt;select('kode')
+            -&gt;from($this-&gt;table)
+            -&gt;orderBy('kode DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('000'.$kode_item, strlen($kode_item));
+            $kode = $kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    public function getLegalitas($data)
+    {
+        try {
+            $legalitas = $this-&gt;db-&gt;select('id as m_legalitas_id, nama as nama_legalitas')
+                -&gt;from('m_legalitas')
+                -&gt;findAll()
+            ;
+
+            if ('null' != $data['id']) {
+                $legalitas_perusahaan = $this-&gt;db-&gt;select('id, m_legalitas_id, nama')
+                    -&gt;from('m_perusahaan_legalitas')
+                    -&gt;where('m_perusahaan_id', '=', $data['id'])
+                    -&gt;findAll()
+                ;
+
+                $arrLegalitasPerusahaan = [];
+                foreach ($legalitas_perusahaan as $key =&gt; $val) {
+                    $arrLegalitasPerusahaan[$val-&gt;m_legalitas_id]['id'] = $val-&gt;id;
+                    $arrLegalitasPerusahaan[$val-&gt;m_legalitas_id]['nama'] = $val-&gt;nama;
+                }
+            } else {
+                $arrLegalitasPerusahaan = [];
+            }
+
+            foreach ($legalitas as $key =&gt; $val) {
+                $val-&gt;id = isset($arrLegalitasPerusahaan[$val-&gt;m_legalitas_id]['id']) ? $arrLegalitasPerusahaan[$val-&gt;m_legalitas_id]['id'] : null;
+                $val-&gt;nama = isset($arrLegalitasPerusahaan[$val-&gt;m_legalitas_id]['nama']) ? $arrLegalitasPerusahaan[$val-&gt;m_legalitas_id]['nama'] : null;
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $legalitas,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menyimpan data perusahaan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = [])
+    {
+        try {
+            if (!isset($data['id']) || (isset($data['id']) &amp;&amp; empty($data['id']))) {
+                $data['is_deleted'] = 0;
+
+                $this-&gt;db-&gt;startTransaction();
+
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $data);
+                foreach ($data['listLegalitas'] as $key =&gt; $val) {
+                    if (isset($val['fileUpload'])) {
+                        $val['m_perusahaan_id'] = $model-&gt;id;
+                        $legalitas = $this-&gt;db-&gt;insert('m_perusahaan_legalitas', $val);
+                    }
+                }
+
+                // Generate default approval line
+                $approveLine = new ApprovalLine();
+                $approveLine-&gt;generateDefault($model-&gt;id);
+
+                $this-&gt;db-&gt;endTransaction();
+            } elseif (empty($customParams)) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, ['id' =&gt; $data['id']]);
+                $delete_legalitas = $this-&gt;db-&gt;delete('m_perusahaan_legalitas', ['m_perusahaan_id' =&gt; $data['id']]);
+
+                foreach ($data['listLegalitas'] as $key =&gt; $val) {
+                    if (null != $val['nama']) {
+                        $val['m_perusahaan_id'] = $model-&gt;id;
+                        $legalitas = $this-&gt;db-&gt;insert('m_perusahaan_legalitas', $val);
+                    }
+                }
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, $customParams);
+            }
+            // Return data perusahaan
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function deleteAll($data)
+    {
+        try {
+            $perusahaan = $this-&gt;db-&gt;select('id')
+                -&gt;from($this-&gt;table)
+                -&gt;findAll()
+            ;
+
+            foreach ($perusahaan as $key =&gt; $val) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; $data['is_deleted']], ['id' =&gt; $val-&gt;id]);
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Import excel.
+     *
+     * @param array $data
+     * @param mixed $dataPerusahaan
+     * @param mixed $removeExcel
+     */
+    public function import($data, $removeExcel = false)
+    {
+        try {
+            try {
+                $inputFileType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($data['filePath']);
+                $objReader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
+                $objPhpSpreadsheet = $objReader-&gt;load($data['filePath']);
+            } catch (Exception $e) {
+                exit('Error loading file : &quot;'.pathinfo($data['filePath'], PATHINFO_BASENAME).'&quot;: '.$e-&gt;getMessage());
+            }
+
+            // Ambil semua perusahaan
+            $dataPerusahaan = $this-&gt;getAll();
+            $arrPerusahaan = [];
+            $lastId = 0;
+            foreach ($dataPerusahaan['data'] as $key =&gt; $val) {
+                $arrPerusahaan[$val-&gt;kode] = $val-&gt;id;
+                if ($val-&gt;id &gt; $lastId) {
+                    $lastId = $val-&gt;id;
+                }
+            }
+
+            $sheet = $objPhpSpreadsheet-&gt;getSheet(0);
+            $highestRow = $sheet-&gt;getHighestRow();
+            $highestColumn = $sheet-&gt;getHighestColumn();
+
+            $perusahaan = [];
+            $lastId = $lastId + 1;
+            for ($row = 2; $row &lt;= $highestRow; ++$row) {
+                if (!empty($sheet-&gt;getCell('B'.$row)-&gt;getFormattedValue())) {
+                    $perusahaan[$lastId]['kode'] = $sheet-&gt;getCell('A'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['parent_id'] = $sheet-&gt;getCell('B'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['nama'] = $sheet-&gt;getCell('C'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['telepon'] = $sheet-&gt;getCell('D'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['fax'] = $sheet-&gt;getCell('E'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['email'] = $sheet-&gt;getCell('F'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['no_bpjs_k'] = $sheet-&gt;getCell('G'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['jkk'] = $sheet-&gt;getCell('H'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['no_npwp'] = $sheet-&gt;getCell('I'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['no_asuransi'] = $sheet-&gt;getCell('J'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['alamat'] = $sheet-&gt;getCell('K'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['kode_pos'] = $sheet-&gt;getCell('P'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['tp_nama'] = $sheet-&gt;getCell('Q'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['tp_npwp'] = $sheet-&gt;getCell('R'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['pj_jht'] = $sheet-&gt;getCell('S'.$row)-&gt;getFormattedValue();
+                    $perusahaan[$lastId]['pj_bpjs_k'] = $sheet-&gt;getCell('T'.$row)-&gt;getFormattedValue();
+
+                    // Memasukkan kode baru ke arrPerusahaan
+                    if (!isset($arrPerusahaan[$perusahaan[$lastId]['kode']])) {
+                        $arrPerusahaan[$perusahaan[$lastId]['kode']] = $lastId;
+                    }
+
+                    ++$lastId;
+                }
+            }
+
+            if ($removeExcel) {
+                unlink($data['filePath']);
+            }
+
+            foreach ($perusahaan as $key =&gt; $val) {
+                // Set value untuk diinput ke m_perusahaan
+                $val['parent_id'] = $arrPerusahaan[$val['parent_id']];
+
+                // Input ke m_perusahaan
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $val);
+            }
+
+            // Return data
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Download format excel.
+     *
+     * @param string $file
+     */
+    public function download($file)
+    {
+        parent::downloadFile($file);
+
+        return true;
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     * @param mixed $perusahaanId
+     */
+    public function validasi($data, $custom = [], $perusahaanId = 0)
+    {
+        $perusahaan = $this-&gt;db-&gt;select('*')-&gt;from($this-&gt;table)-&gt;where('is_deleted', '=', 0)-&gt;count();
+
+        // check perusahaan holding, jika holding parent boleh kosong
+        if ($perusahaanId &gt; 0) {
+            $isHolding = $this-&gt;db-&gt;select('parent_id')-&gt;from($this-&gt;table)-&gt;where('id', '=', $perusahaanId)-&gt;find();
+            $allowEmptyParent = empty($isHolding-&gt;parent_id) ? true : false;
+        } else {
+            $allowEmptyParent = false;
+        }
+
+        $validasi = [
+            'nama' =&gt; 'required',
+            'kode' =&gt; 'required',
+        ];
+
+        if ($perusahaan &gt; 0 &amp;&amp; false == $allowEmptyParent) {
+            $validasi['parent_id'] = 'required';
+        }
+
+        return validate($data, $validasi, $custom);
+    }
+
+    /**
+     * Validasi Kode tersedia.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasiKode($data)
+    {
+        return parent::validasiKodeCore($data, 'm_perusahaan');
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,36 @@
+<?php
+
+use Model\LaporanTerminasi;
+
+// Ambil semua terminasi
+$app->get('/l_terminasi/getAll', function ($request, $response) {
+    $params = $request->getParams();
+    $laporan_terminasi = new LaporanTerminasi();
+    $getDataTerminasi = $laporan_terminasi->getAll($params);
+
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/terminasi.html', [
+            'data' => $getDataTerminasi['data'],
+            'periode' => $getDataTerminasi['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getDataTerminasi['periode']) {
+            header('Content-Disposition: attachment;Filename="Laporan Terminasi ('.$getDataTerminasi['periode'].').xls"');
+        } else {
+            header('Content-Disposition: attachment;Filename="Laporan Terminasi (Semua Periode).xls"');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/terminasi.html', [
+            'data' => $getDataTerminasi['data'],
+            'periode' => $getDataTerminasi['periode'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, ['list' => $getDataTerminasi['data'], 'periode' => $getDataTerminasi['periode']]);
+    }
+});
+

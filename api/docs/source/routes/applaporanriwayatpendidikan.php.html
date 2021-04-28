@@ -1,0 +1,113 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\LaporanRiwayatPendidikan;
+
+$app-&gt;get('/applaporanriwayatpendidikan/getAll', function ($request, $response) {
+    $params = $request-&gt;getParams();
+//    echo json_encode($params);die();
+
+    $laporanPendidikan = new LaporanRiwayatPendidikan();
+    $getDataLaporanPendidikan = $laporanPendidikan-&gt;getAll($params);
+//    echo json_encode($getDataLaporanPendidikan);die();
+    if (isset($params['is_export']) &amp;&amp; 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view-&gt;fetch('laporan/riwayat_pendidikan.html', [
+            'data' =&gt; $getDataLaporanPendidikan['data'],
+            'periode' =&gt; $params['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;Filename=&quot;Laporan Kasbon ('.$params['periode'].').xls&quot;');
+        echo $content;
+    } elseif (isset($params['is_print']) &amp;&amp; 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view-&gt;fetch('laporan/riwayat_pendidikan.html', [
+            'data' =&gt; $getDataLaporanPendidikan['data'],
+            'periode' =&gt; $params['periode'],
+        ]);
+        echo $content;
+        echo '&lt;script type=&quot;text/javascript&quot;&gt;window.print();setTimeout(function () { window.close(); }, 500);&lt;/script&gt;';
+    } else {
+        return successResponse($response, [
+            'list' =&gt; $getDataLaporanPendidikan['data'],
+            'totalItems' =&gt; $getDataLaporanPendidikan['totalItem'],
+        ]);
+    }
+});
+
+$app-&gt;get('/applaporanriwayatpendidikan/getPendidikan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $laporanPendidikan = new LaporanRiwayatPendidikan();
+    $getDataLaporanPendidikan = $laporanPendidikan-&gt;getPendidikan();
+
+    return successResponse($response, [
+        'list' =&gt; $getDataLaporanPendidikan['data'],
+        'totalItems' =&gt; $getDataLaporanPendidikan['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app-&gt;get('/applaporanriwayatpendidikan/downloadFormatExcel', function ($request, $response) {
+    $laporanPendidikan = new LaporanRiwayatPendidikan();
+
+    $file = 'assets/formatExcel/Laporan-Riwayat-Pendidikan.xlsx';
+    $save = $laporanPendidikan-&gt;download($file);
+
+    return successResponse($response, $save);
+});
+
+// print
+$app-&gt;post('/applaporanriwayatpendidikan/print', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $laporanPendidikan = new LaporanRiwayatPendidikan();
+    $print = $laporanPendidikan-&gt;print($params);
+
+    return successResponse($response, [
+        'list' =&gt; $print['data'],
+        'status' =&gt; $print['status'],
+    ]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,257 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class KFile
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'k_file';
+    }
+
+    /**
+     * Ambil semua data KFile.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('k_file.*, m_kategori_file.id as id_file, m_kategori_file.nama as nama_jfile')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'm_kategori_file', 'm_kategori_file.id = k_file.m_kategori_file')
+            -&gt;where('k_file.is_deleted', '=', 0)
+            -&gt;andWhere('karyawan_id', '=', $params['idkaryawan'])
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key =&gt; $val) {
+                $this-&gt;db-&gt;where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        foreach ($models as $key =&gt; $value) {
+            $value-&gt;tgl_upload = date('d/m/Y', $value-&gt;created_at);
+            $value-&gt;fileUrl = config('SITE_URL').'assets/filekaryawan/'.$value-&gt;file;
+        }
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data KFile.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        $data['m_kategori_file'] = isset($data['m_kategori_file']) ? $data['m_kategori_file'] : '';
+
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, ['id' =&gt; $data['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, $customParams);
+            }
+            // Return data KFile
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menghapus data KFile.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function hapus($data, $customParams = '')
+    {
+        try {
+            $model = $this-&gt;db-&gt;delete('k_file', ['id' =&gt; $data['id']]);
+            // Return data KFile
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'm_kategori_file' =&gt; 'required',
+            'file' =&gt; 'required',
+            'keterangan' =&gt; 'required',
+        ];
+
+        \GUMP::set_field_name('m_kategori_file', 'Jenis File');
+        \GUMP::set_field_name('file', 'File');
+        \GUMP::set_field_name('keterangan', 'Keterangan File');
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function getKfile($params = [])
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('m_kategori_file')
+            -&gt;where('is_deleted', '=', 0)
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+
+        return [
+            'data' =&gt; $models,
+        ];
+    }
+
+    public function generate_kode()
+    {
+        $this-&gt;dbModel = Db::db();
+        $cekKode = $this-&gt;db-&gt;select('id')
+            -&gt;from($this-&gt;table)
+            -&gt;orderBy('id DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $tipe = 'F';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    public function download($file)
+    {
+        if (file_exists($file)) {
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename='.basename($file));
+            header('Content-Transfer-Encoding: binary');
+            header('Expires: 0');
+            header('Cache-Control: private');
+            header('Pragma: private');
+            header('Content-Length: '.filesize($file));
+            ob_clean();
+            flush();
+            readfile($file);
+
+            exit;
+        }
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

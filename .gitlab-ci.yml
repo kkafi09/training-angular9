@@ -1,0 +1,77 @@
+image: node:10.19.0
+
+cache:
+  paths:
+    - node_modules/
+    - dist/skote/
+
+stages:
+  - deploy
+  - cleanup
+
+  # runBuild:
+  #   before_script:
+  #    - npm install angular-cli
+  #    - npm install
+  #   stage: build
+  #   script:
+  #     - ./node_modules/@angular/cli/bin/ng build --prod
+  #   only:
+  #     - master
+
+  # manualBuild:
+  #   before_script:
+  #    - npm install angular-cli
+  #    - npm install
+  #   stage: build
+  #   script:
+  #     - ./node_modules/@angular/cli/bin/ng build --prod
+  #   only:
+  #     - tags
+  #   when: manual
+
+deployMaster:
+  before_script:
+    - apt-get update
+    - apt-get install -y lftp
+    - npm install angular-cli
+    - npm install webpack@4.3.0
+    - npm install
+    - ./node_modules/@angular/cli/bin/ng build --prod --aot --vendor-chunk --common-chunk --delete-output-path --build-optimizer
+  stage: deploy
+  only:
+    - master
+  artifacts:
+    name: "$CI_BUILD_NAME/$CI_BUILD_REF_NAME"
+    paths:
+      - dist/skote/
+    expire_in: 2d
+  script:
+    - lftp -c "set ftp:ssl-allow no; open -u $FTP_DEPLOY_USER,$FTP_DEPLOY_PASSWORD $FTP_DEPLOY_HOST; mirror -Rev -x ^api/ dist/skote/ /  --transfer-all --ignore-time --parallel=10 .git* --exclude .git/ --exclude .htaccess"
+  when: manual
+
+deployTag:
+  before_script:
+    - apt-get update
+    - apt-get install -y lftp
+    - npm install angular-cli
+    - npm install
+    - ./node_modules/@angular/cli/bin/ngng build --prod --aot --vendor-chunk --common-chunk --delete-output-path --build-optimizer
+  stage: deploy
+  only: 
+    - tags
+  artifacts:
+    name: "$CI_BUILD_NAME/$CI_BUILD_REF_NAME"
+    paths:
+        - dist/skote/
+    expire_in: 2d
+  script:
+    - lftp -c "set ftp:ssl-allow no; open -u $FTP_DEPLOY_USER,$FTP_DEPLOY_PASSWORD $FTP_DEPLOY_HOST; mirror -Rev -x ^api/ dist/skote/ /  --delete --ignore-time --parallel=10 .git* --exclude .git/ --exclude .htaccess"
+  when: manual
+
+cleanup:
+  stage: cleanup
+  script:
+  - rm -rf ./dist
+  - rm -rf ./node_modules
+  when: manual

@@ -1,0 +1,112 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class KStatus
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_status';
+    }
+
+    /**
+     * Ambil semua data riwayat jabatan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    //Ambil Semua
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('k_status.*, t_kontrak.tipe')
+            ->from('k_status')
+            ->where('k_status.is_deleted', '=', 0)
+            ->andWhere('k_status.karyawan_id', '=', $params['idkaryawan'])
+            ->leftJoin('t_kontrak', 'k_status.t_kontrak_id = t_kontrak.id')
+            ->orderBy('k_status.tgl_mulai DESC')
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        foreach ($models as $key => $value) {
+            if ('0000-00-00' == $value->tgl_selesai) {
+                $value->tgl_selesai = '-';
+            }
+            $value->tgl_selesai = '0000-00-00' == $value->tgl_selesai ? '-' : $value->tgl_selesai;
+            if (isset($value->status) && '' != $value->status) {
+                $value->txtStatus = 2 == $value->status ? 'PKWTT' : 'PKWT';
+            } else {
+                $value->txtStatus = $value->status;
+            }
+        }
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data riwayat jabatan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $model = $this->db->insert($this->table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+            } else {
+                $model = $this->db->update($this->table, $data, $customParams);
+            }
+            // Return data riwayat jabatan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+}
+

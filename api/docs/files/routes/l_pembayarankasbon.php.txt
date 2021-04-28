@@ -1,0 +1,43 @@
+<?php
+
+use Model\LaporanPembayaranKasbon;
+
+// Ambil semua kasbon
+$app->get('/l_pembayarankasbon/getAll', function ($request, $response) {
+    $params = $request->getParams();
+    $l_pembayarankasbon = new LaporanPembayaranKasbon();
+    $getRiwayatBayar = $l_pembayarankasbon->getAll($params);
+    $arr = [];
+    foreach ($getRiwayatBayar['data'] as $key => $value) {
+        $arr[$value->karyawan_id]['nama_karyawan'] = $value->nama_karyawan;
+        $arr[$value->karyawan_id]['nama_jabatan'] = $value->nama_jabatan;
+        $arr[$value->karyawan_id]['total'] = (isset($arr[$value->karyawan_id]['total']) ? $arr[$value->karyawan_id]['total'] : 0) + $value->total_bayar;
+        $arr[$value->karyawan_id]['detail'][] = (array) $value;
+    }
+
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/pembayaran_kasbon.html', [
+            'data' => array_values($arr),
+            'periode' => $getRiwayatBayar['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getRiwayatBayar['periode']) {
+            header('Content-Disposition: attachment;Filename="Laporan Pembayaran Kasbon ('.$getRiwayatBayar['periode'].').xls"');
+        } else {
+            header('Content-Disposition: attachment;Filename="Laporan Pembayaran Kasbon (Semua Periode).xls"');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/pembayaran_kasbon.html', [
+            'data' => array_values($arr),
+            'periode' => $getRiwayatBayar['periode'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, ['list' => array_values($arr), 'periode' => $getRiwayatBayar['periode']]);
+    }
+});
+

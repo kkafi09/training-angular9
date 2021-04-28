@@ -1,0 +1,559 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+
+class PengajuanReimbursement extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 't_reimbursement';
+    }
+
+    /**
+     * Ambil semua data pelatihan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select($this-&gt;table.'.*,t_reimbursement.tgl as tanggal ,m_reimbursement.nama as namaReimbursement,m_reimbursement.tgl_expired,m_reimbursement.bulan_expired, m_reimbursement.is_expired,karyawan_data.nama as namaKaryawan')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'm_reimbursement', $this-&gt;table.'.m_reimbursement_id = m_reimbursement.id')
+            -&gt;join('left join', 'karyawan', $this-&gt;table.'.karyawan_id = karyawan.id')
+            -&gt;join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            -&gt;where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+
+        ;
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this-&gt;db-&gt;andWhere('m_reimbursement.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        // Filter
+        if (isset($params) &amp;&amp; !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) &amp;&amp; is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($filter) &amp;&amp; !empty($filter)) {
+            foreach ($filter as $key =&gt; $val) {
+                if (!empty($val)) {
+                    if ('id' == $key || 't_reimbursement_id' == $key) {
+                        $this-&gt;db-&gt;where('t_reimbursement.id', '=', $val);
+                    } elseif ('m_reimbursement_id' == $key) {
+                        $this-&gt;db-&gt;where('t_reimbursement.m_reimbursement_id', '=', $val);
+                    } elseif ('karyawan_id' == $key) {
+                        $this-&gt;db-&gt;where('karyawan_id', '=', $val);
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) &amp;&amp; !empty($limit)) {
+            $this-&gt;db-&gt;limit($limit);
+        }
+        // Set offset
+        if (isset($offset) &amp;&amp; !empty($offset)) {
+            $this-&gt;db-&gt;offset($offset);
+        }
+
+        $this-&gt;db-&gt;orderBy('created_at DESC');
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+//        foreach ($models as $key =&gt; $val) {
+//            $models[$key]-&gt;tipe_expired = isset($val-&gt;tgl_expired) ? '2' : '1';
+//            if (isset($val-&gt;bulan_expired)) {
+//                $monthName = date('F', mktime(0, 0, 0, $val-&gt;bulan_expired, 10)); // March
+//                $models[$key]-&gt;expired_in = isset($val-&gt;tgl_expired) ? $val-&gt;tgl_expired.' '.$monthName : $val-&gt;bulan_expired.' Bulan';
+//            }
+//            if (isset($val-&gt;tipe)) {
+//                if (1 == $val-&gt;tipe) {
+//                    $models[$key]-&gt;tipe_saldo = 'Assign';
+//                } elseif (2 == $val-&gt;tipe) {
+//                    $models[$key]-&gt;tipe_saldo = 'Update';
+//                } else {
+//                    $models[$key]-&gt;tipe_saldo = 'Expired';
+//                }
+//            }
+//        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data pelatihan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        $landa = new Landa();
+        $dataModel = $data['model'];
+        $list_pengajuan_rem_det = $data['list_pengajuan_rem_det'];
+        $list_file = $data['fileUpload'];
+
+        try {
+            $this-&gt;db-&gt;startTransaction();
+            if (isset($dataModel['sumber']) &amp;&amp; 1 == $dataModel['sumber']) {
+                $dataModel['is_approve'] = 1;
+            }
+            if (!empty($dataModel) &amp;&amp; isset($dataModel)) {
+                $dataModel['tgl'] = isset($dataModel['tgl']) ? ($landa-&gt;arrayToDate($dataModel['tgl'])) : null;
+            }
+            if (isset($dataModel['id']) &amp;&amp; !empty($dataModel['id']) &amp;&amp; '' != $dataModel['id']) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $dataModel, ['id' =&gt; $dataModel['id']]);
+            } else {
+                $kode = $this-&gt;generate_kode();
+                $dataModel['kode'] = $kode['data'];
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $dataModel);
+            }
+            if (!empty($model) &amp;&amp; isset($data['list_pengajuan_rem_det']) &amp;&amp; '' != $data['list_pengajuan_rem_det'] &amp;&amp; [] != $data['list_pengajuan_rem_det']) {
+                if (isset($dataModel['id']) &amp;&amp; !empty($dataModel['id']) &amp;&amp; '' != $dataModel['id']) {
+                    $this-&gt;db-&gt;delete('t_reimbursement_det', ['t_reimbursement_id' =&gt; $dataModel['id']]);
+                }
+                $t_reimbursement_id = $model-&gt;id;
+                foreach ($list_pengajuan_rem_det as $k_Rdet =&gt; $v_RDet) {
+                    $v_RDet['t_reimbursement_id'] = $t_reimbursement_id;
+                    $modelRDet = $this-&gt;db-&gt;insert('t_reimbursement_det', $v_RDet);
+                }
+            }
+            if (!empty($model) &amp;&amp; isset($data['fileUpload']) &amp;&amp; '' != $data['fileUpload'] &amp;&amp; [] != $data['fileUpload']) {
+                if (isset($dataModel['id']) &amp;&amp; !empty($dataModel['id']) &amp;&amp; '' != $dataModel['id']) {
+                    $this-&gt;db-&gt;delete('t_reimbursement_file', ['t_reimbursement_id' =&gt; $dataModel['id']]);
+                }
+                $t_reimbursement_id = $model-&gt;id;
+                foreach ($list_file as $k_Rfile =&gt; $v_RFile) {
+                    $v_RFile['nama_file'] = isset($v_RFile['File']) ? $this-&gt;saveFile($v_RFile['File']) : $v_RFile['nama_file'];
+                    $v_RFile['t_reimbursement_id'] = $t_reimbursement_id;
+                    $modelRDet = $this-&gt;db-&gt;insert('t_reimbursement_file', $v_RFile);
+                }
+            }
+            $this-&gt;db-&gt;endTransaction();
+
+            return [
+                'status' =&gt; true,
+                //                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            $this-&gt;db-&gt;startTransaction();
+            $this-&gt;db-&gt;delete($this-&gt;table, ['id' =&gt; $params['id']]);
+            $this-&gt;db-&gt;delete('t_reimbursement_det', ['t_reimbursement_id' =&gt; $params['id']]);
+            $this-&gt;db-&gt;delete('t_reimbursement_file', ['t_reimbursement_id' =&gt; $params['id']]);
+            $this-&gt;db-&gt;endTransaction();
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $this-&gt;table,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function deleteFile($params)
+    {
+        try {
+            $this-&gt;db-&gt;startTransaction();
+
+            $this-&gt;db-&gt;delete('t_reimbursement_file', ['t_reimbursement_id' =&gt; $params['id']]);
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; 'file',
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'karyawan_id' =&gt; 'required',
+            'm_reimbursement_id' =&gt; 'required',
+            'tgl' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiDetail($data, $custom = [])
+    {
+        $validasi = [
+            'list_pengajuan_rem_det' =&gt; 'required',
+            'fileUpload' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiKode($data)
+    {
+        return parent::validasiKodeCore($data, $this-&gt;table);
+    }
+
+    public function getDetail($id)
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('t_reimbursement_det')
+            -&gt;where('t_reimbursement_id', '=', $id)
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function getFile($reff_table, $reff_type, $id, $folder)
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from($reff_table)
+            -&gt;where($reff_type, '=', $id)
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+        foreach ($models as $key =&gt; $val) {
+            $models[$key]-&gt;fileUrl = config('SITE_URL').'assets/'.$folder.'/'.$val-&gt;nama_file;
+        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function saveFile($params)
+    {
+        $landa = new Landa();
+        if (isset($params['base64']) &amp;&amp; !empty($params['base64'])) {
+            $path = 'assets/filePengajuanReimbursement/';
+            $kode = $this-&gt;generate_kode_file();
+            $batas = strpos($params['base64'], 'base64,');
+            $batas_potong = $batas + 7;
+            $file['filename'] = $params['filename'];
+            $file['base64'] = substr($params['base64'], $batas_potong);
+            $uploadFile = $landa-&gt;base64ToFilePath($file, $path, $kode['data']);
+            $customnamafile = $uploadFile['data']['fileName'];
+            if ($uploadFile['status']) {
+                return  $customnamafile;
+            }
+
+            return unprocessResponse('gagal', [$uploadFile['error']]);
+        }
+    }
+
+    public function checkBatasFormula($data, $karyawan_id, $m_reimbursement_id, $tanggal)
+    {
+        $landa = new Landa();
+        $tanggal = isset($tanggal) ? ($landa-&gt;arrayToDate($tanggal)) : null;
+        $reim = $this-&gt;getReimbursementDet($m_reimbursement_id);
+
+        $this-&gt;db-&gt;select('*,t_reimbursement_det.nilai_act')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 't_reimbursement_det', $this-&gt;table.'.id = t_reimbursement_det.t_reimbursement_id')
+            -&gt;where('m_reimbursement_id', '=', $m_reimbursement_id)
+            -&gt;andWhere('is_approve', '!=', 0)
+            -&gt;andWhere('karyawan_id', '=', $karyawan_id)
+        ;
+        $pengajuan = $this-&gt;db-&gt;findAll();
+
+        $this-&gt;db-&gt;select('*,asg_reimbursement_det.nilai')
+            -&gt;from('asg_reimbursement')
+            -&gt;join('left join', 'asg_reimbursement_det', 'asg_reimbursement.id = asg_reimbursement_det.asg_reimbursement_id')
+            -&gt;where('m_reimbursement_id', '=', $m_reimbursement_id)
+            -&gt;andWhere('asg_reimbursement_det.karyawan_id', '=', $karyawan_id)
+            -&gt;andWhere('asg_reimbursement_det.tgl_mulai', '&lt;=', $tanggal)
+        ;
+        if (1 == $reim-&gt;is_expired) {
+            $this-&gt;db-&gt;andWhere('asg_reimbursement_det.tgl_selesai', '&gt;=', $tanggal);
+        }
+        $saldo = $this-&gt;db-&gt;findAll();
+
+        $totalPengajuan = 0;
+        if (isset($pengajuan) &amp;&amp; [] != $pengajuan) {
+            foreach ($pengajuan as $key =&gt; $value) {
+                @$totalPengajuan += $value-&gt;nilai_act;
+            }
+        }
+        $totalSaldo = 0;
+        if (isset($saldo) &amp;&amp; [] != $saldo) {
+            foreach ($saldo as $key =&gt; $value) {
+                @$totalSaldo += $value-&gt;nilai;
+            }
+        }
+
+        $totalReq = 0;
+        foreach ($data as $key =&gt; $val) {
+            @$totalReq += $val['nilai_req'];
+        }
+        if (1 == $reim-&gt;is_unlimited) {
+            return [
+                'status' =&gt; true,
+            ];
+        }
+        if (($totalReq + $totalPengajuan) &gt; $totalSaldo) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Total Pengajuan Melebihi batas Nominal',
+            ];
+        }
+
+        return [
+            'status' =&gt; true,
+        ];
+    }
+
+    public function checkTanggalSaldo($karyawan_id, $m_reimbursement_id, $tanggal)
+    {
+        $landa = new Landa();
+        $tanggal = isset($tanggal) ? ($landa-&gt;arrayToDate($tanggal)) : null;
+        $reim = $this-&gt;getReimbursementDet($m_reimbursement_id);
+
+        $this-&gt;db-&gt;select('*,asg_reimbursement_det.nilai')
+            -&gt;from('asg_reimbursement')
+            -&gt;join('left join', 'asg_reimbursement_det', 'asg_reimbursement.id = asg_reimbursement_det.asg_reimbursement_id')
+            -&gt;where('m_reimbursement_id', '=', $m_reimbursement_id)
+            -&gt;andWhere('asg_reimbursement_det.karyawan_id', '=', $karyawan_id)
+            -&gt;andWhere('asg_reimbursement_det.tgl_mulai', '&lt;=', $tanggal)
+        ;
+        if (1 == $reim-&gt;is_expired) {
+            $this-&gt;db-&gt;andWhere('asg_reimbursement_det.tgl_selesai', '&gt;=', $tanggal);
+        }
+        $saldo = $this-&gt;db-&gt;findAll();
+//        echo json_encode($saldo);die();
+        if ([] == $saldo || !isset($saldo)) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Tanggal Pengajuan tidak tersedia !',
+            ];
+        }
+
+        return [
+            'status' =&gt; true,
+        ];
+    }
+
+    public function generate_kode_file()
+    {
+        $this-&gt;dbModel = Db::db();
+        $cekKode = $this-&gt;db-&gt;select('id')
+            -&gt;from($this-&gt;table)
+            -&gt;orderBy('id DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $tipe = 'F';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    public function generate_kode()
+    {
+        $this-&gt;dbModel = Db::db();
+        $cekKode = $this-&gt;db-&gt;select('id')
+            -&gt;from($this-&gt;table)
+            -&gt;orderBy('id DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $tahun = date('y');
+            $bulan = date('m');
+            $tipe = 'PRM';
+            $kode_item = (substr($kode_terakhir, -5) + 1);
+            $kode = substr('00000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$tahun.$bulan.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    public function getReimbursementDet($id)
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('m_reimbursement')
+            -&gt;where('id', '=', $id)
+        ;
+
+        return $this-&gt;db-&gt;find();
+    }
+
+    public function getReimbursementPenggajian($params = [])
+    {
+        $this-&gt;db-&gt;select($this-&gt;table.'.*,t_reimbursement.tgl as tanggal ,m_reimbursement.nama as namaReimbursement,m_reimbursement.tgl_expired,m_reimbursement.bulan_expired, m_reimbursement.is_expired,karyawan_data.nama as namaKaryawan')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'm_reimbursement', $this-&gt;table.'.m_reimbursement_id = m_reimbursement.id')
+            -&gt;join('left join', 'karyawan', $this-&gt;table.'.karyawan_id = karyawan.id')
+            -&gt;join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            -&gt;where($this-&gt;table.'.is_dibayar_gaji', '=', 1)
+        ;
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this-&gt;db-&gt;andWhere('m_reimbursement.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            if (isset($filter['tgl_mulai'])) {
+                $this-&gt;db-&gt;where($this-&gt;table.'.tgl', '&gt;=', $filter['tgl_mulai']);
+            } elseif (isset($filter['tgl_selesai'])) {
+                $this-&gt;db-&gt;where($this-&gt;table.'.tgl', '&lt;=', $filter['tgl_selesai']);
+            }
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+        if (count($models) &gt; 0) {
+            foreach ($models as $key =&gt; $val) {
+                $PengajuanId[] = $val-&gt;id;
+            }
+            $this-&gt;db-&gt;select('t_reimbursement_det.*')
+                -&gt;from('t_reimbursement_det')
+                -&gt;customWhere('t_reimbursement_det.t_reimbursement_id IN('.implode(', ', $PengajuanId).')', 'AND')
+                    ;
+            $karyawanAll = $this-&gt;db-&gt;findAll();
+            foreach ($models as $key =&gt; $val) {
+                foreach ($karyawanAll as $keys =&gt; $vals) {
+                    if ($val-&gt;id == $vals-&gt;t_reimbursement_id) {
+                        $val-&gt;detail[] = $vals;
+                    }
+                }
+            }
+        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

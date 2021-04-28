@@ -1,0 +1,86 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Service;
+
+/**
+ * Inialisasi koneksi database.
+ */
+class Db
+{
+    /**
+     * Database utama.
+     */
+    public static function db()
+    {
+        if (1 == config('PRODUCTION') || true == config('PRODUCTION')) {
+            $landa = new Landa();
+            $db['db'] = [
+                'DB_HOST' =&gt; $landa-&gt;unsafeString($_SESSION['user']['safeEmail']['safeEmail1']),
+                'DB_NAME' =&gt; $landa-&gt;unsafeString($_SESSION['user']['safeEmail']['safeEmail2']),
+                'DB_PASS' =&gt; $landa-&gt;unsafeString($_SESSION['user']['safeEmail']['safeEmail3']),
+                'DB_USER' =&gt; $landa-&gt;unsafeString($_SESSION['user']['safeEmail']['safeEmail4']),
+                'DB_CHARSET' =&gt; 'utf8',
+                'CREATED_USER' =&gt; 'created_by',
+                'CREATED_TIME' =&gt; 'created_at',
+                'CREATED_TYPE' =&gt; 'int',
+                'MODIFIED_USER' =&gt; 'modified_by',
+                'MODIFIED_TIME' =&gt; 'modified_at',
+                'MODIFIED_TYPE' =&gt; 'int',
+                'DISPLAY_ERRORS' =&gt; true,
+                'USER_ID' =&gt; isset($_SESSION['user']['userId']) ? $_SESSION['user']['userId'] : 0,
+                'USER_NAMA' =&gt; isset($_SESSION['user']['nama']) ? $_SESSION['user']['nama'] : 'User belum disetting',
+                'USER_LOG' =&gt; false,
+                'LOG_FOLDER' =&gt; 'userlog',
+            ];
+
+            return new \Cahkampung\Landadb($db['db']);
+        }
+
+        return new \Cahkampung\Landadb(config('DB')['db']);
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

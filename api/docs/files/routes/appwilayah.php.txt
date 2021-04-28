@@ -1,0 +1,38 @@
+<?php
+
+use Model\Wilayah;
+
+// Ambil semua perusahaan
+$app->get('/appwilayah/getProvinsi', function ($request, $response) {
+    $params = $request->getParams();
+
+    $wilayah = new Wilayah();
+    $data = $wilayah->getDataProvinsi();
+
+    return successResponse($response, ['list' => $data['data'], 'totalItems' => $data['totalItem']]);
+});
+$app->get('/appwilayah/getKota/{id}', function ($request, $response) {
+    $params = $request->getParams();
+    $id = $request->getAttribute('id');
+    $wilayah = new Wilayah();
+    $data = $wilayah->getDataKota($id);
+
+    return successResponse($response, ['list' => $data['data'], 'totalItems' => $data['totalItem']]);
+});
+$app->get('/appwilayah/getKecamatan/{id}', function ($request, $response) {
+    $params = $request->getParams();
+    $id = $request->getAttribute('id');
+    $wilayah = new Wilayah();
+    $data = $wilayah->getDataKecamatan($id);
+
+    return successResponse($response, ['list' => $data['data'], 'totalItems' => $data['totalItem']]);
+});
+$app->get('/appwilayah/getDesa/{id}', function ($request, $response) {
+    $params = $request->getParams();
+    $id = $request->getAttribute('id');
+    $wilayah = new Wilayah();
+    $data = $wilayah->getDataDesa($id);
+
+    return successResponse($response, ['list' => $data['data'], 'totalItems' => $data['totalItem']]);
+});
+

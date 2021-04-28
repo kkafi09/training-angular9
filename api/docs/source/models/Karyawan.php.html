@@ -1,0 +1,963 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+
+class Karyawan extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * Konstruktor panggil library landa DB dan deklarasi tabel karyawan.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'karyawan';
+    }
+
+    /**
+     * Hitung masa kerja karyawan.
+     *
+     * @param date $tglNow        format Y-m-d
+     * @param date $tglMulaiKerja format Y-m-d
+     *
+     * @return array
+     */
+    public function getMasaKerja($tglNow, $tglMulaiKerja)
+    {
+        $d1 = new \DateTime($tglNow);
+        $d2 = new \DateTime($tglMulaiKerja);
+        $interval = $d2-&gt;diff($d1);
+
+        $bln = (int) $interval-&gt;format('%m');
+        $yr = (int) $interval-&gt;format('%y');
+
+        $jBulan = $bln + ($yr * 12);
+        $nBulan = $jBulan % 12;
+        $nYear = floor($jBulan / 12);
+
+        return ['tahun' =&gt; $nYear, 'bulan' =&gt; $nBulan];
+    }
+
+    /**
+     * Ambil list semua bank.
+     *
+     * @return array
+     */
+    public function getAllBank()
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('m_bank')
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'status' =&gt; true,
+        ];
+    }
+
+    /**
+     * Ambil data karyawan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     *
+     * @return array
+     */
+    public function getAllKaryawan($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $landa = new Landa();
+
+        $this-&gt;db-&gt;select('
+                karyawan_data.*,
+                karyawan.*,
+                k_jabatan.m_organisasi_id,
+                k_jabatan.m_jabatan_id,
+                k_jabatan.keterangan,
+                m_jabatan.nama as nama_jabatan,
+                m_jabatan.m_jabatan_level_id,
+                m_organisasi.nama as nama_org,
+                m_perusahaan.nama as m_perusahaan_nama
+            ')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            -&gt;join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id and aktif = 1 and k_jabatan.is_deleted = 0')
+            -&gt;join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;join('left join', 'm_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+            -&gt;join('left join', 'm_perusahaan', 'm_perusahaan.id = karyawan.m_perusahaan_id')
+            -&gt;where('karyawan.is_deleted', '=', 0)
+        ;
+        // Filter
+        if (isset($params) &amp;&amp; !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) &amp;&amp; is_array($params)) {
+            $filter = $params;
+        }
+        // set parameter
+        if (isset($params) &amp;&amp; !empty($params)) {
+            foreach ($filter as $key =&gt; $val) {
+                if (!empty($val)) {
+                    if ('uid' == $key) {
+                        $this-&gt;db-&gt;where($key, '=', $val);
+                    } elseif ('nama' == $key) {
+                        $this-&gt;db-&gt;where('karyawan_data.nama', 'LIKE', $val);
+                    } elseif ('nik' == $key) {
+                        $this-&gt;db-&gt;where('karyawan.nik', '=', $val);
+                    } elseif ('organisasi' == $key) {
+                        $this-&gt;db-&gt;where('m_organisasi.nama', '=', $val);
+                    } elseif ('id' == $key) {
+                        $this-&gt;db-&gt;where('karyawan.id', '=', $val);
+                    } elseif ('jabatan' == $key) {
+                        $this-&gt;db-&gt;where('m_jabatan.nama', '=', $val);
+                    }
+                }
+            }
+        }
+        // Set limit
+        if (isset($limit) &amp;&amp; !empty($limit)) {
+            $this-&gt;db-&gt;limit($limit);
+        }
+        // set offset
+        if (isset($offset) &amp;&amp; !empty($offset)) {
+            $this-&gt;db-&gt;offset($offset);
+        }
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id']) &amp;&amp; $_SESSION['user']['m_perusahaan']['id'] &gt; 0) {
+            $this-&gt;db-&gt;andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        foreach ($models as $key =&gt; $value) {
+            $value-&gt;foto = !empty($value-&gt;foto) ? $landa-&gt;idKaryawan('foto').'/'.$value-&gt;foto : null;
+        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil 1 data karyawan.
+     *
+     * @param array $params
+     *
+     * @return array 1 data karyawan
+     */
+    public function getKaryawan($params)
+    {
+        $this-&gt;db-&gt;select('
+                karyawan_data.*,
+                karyawan.*,
+                k_jabatan.m_organisasi_id,
+                k_jabatan.m_jabatan_id,
+                k_jabatan.keterangan,
+                m_jabatan.nama as nama_jabatan,
+                m_jabatan.m_jabatan_level_id,
+                m_organisasi.nama as nama_org,
+                m_perusahaan.nama as m_perusahaan_nama
+            ')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            -&gt;join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id and aktif = 1 and k_jabatan.is_deleted = 0')
+            -&gt;join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;join('left join', 'm_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+            -&gt;join('left join', 'm_perusahaan', 'm_perusahaan.id = karyawan.m_perusahaan_id')
+            -&gt;where('karyawan.is_deleted', '=', 0)
+        ;
+        if (isset($params) &amp;&amp; !empty($params)) {
+            foreach ($params as $key =&gt; $val) {
+                if (!empty($val)) {
+                    if ('uid' == $key) {
+                        $this-&gt;db-&gt;where($key, '=', $val);
+                    } elseif ('nama' == $key) {
+                        $this-&gt;db-&gt;where('karyawan_data.nama', 'LIKE', $val);
+                    } elseif ('nik' == $key) {
+                        $this-&gt;db-&gt;where('karyawan.nik', '=', $val);
+                    } elseif ('organisasi' == $key) {
+                        $this-&gt;db-&gt;where('m_organisasi.nama', '=', $val);
+                    } elseif ('id' == $key) {
+                        $this-&gt;db-&gt;where('karyawan.id', '=', $val);
+                    } elseif ('jabatan' == $key) {
+                        $this-&gt;db-&gt;where('m_jabatan.nama', '=', $val);
+                    }
+                }
+            }
+        }
+
+        return $this-&gt;db-&gt;find();
+    }
+
+    public function getKaryawanAktif($params = [])
+    {
+        $this-&gt;db-&gt;select('karyawan_data.*, karyawan.*')
+            -&gt;from('karyawan_data')
+            -&gt;join('left join', 'karyawan', 'karyawan_data.id = karyawan.karyawan_data_id')
+            -&gt;where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+
+        if (isset($params['id']) &amp;&amp; 'null' != $params['id']) {
+            $this-&gt;db-&gt;customWhere('karyawan.id = '.$params['id'], 'AND');
+        } else {
+            $this-&gt;db-&gt;where('karyawan.is_deleted', '=', 0)
+                -&gt;andWhere('karyawan.status', '=', 1)
+            ;
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+
+        return [
+            'data' =&gt; $models,
+        ];
+    }
+
+    public function cekemail($data)
+    {
+        try {
+            // $cekemail = $this-&gt;db-&gt;select('uid,email')
+            //     -&gt;from($this-&gt;table)
+            //     -&gt;where('is_deleted', '=', 0)
+            //     -&gt;andWhere('email', '=', $data['email'])
+            //     -&gt;find()
+            // ;
+            // if ($cekemail-&gt;uid == $data['uid']) {
+            //     return [
+            //         'status' =&gt; true,
+            //         'data' =&gt; 'ok',
+            //     ];
+            // }
+            //  if ($cekemail &amp;&amp; $cekemail-&gt;uid !== $data['uid']) {
+            //     return [
+            //         'status' =&gt; false,
+            //         'error' =&gt; 'Email sudah terdaftar',
+            //     ];
+            // }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; 'ok',
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Cek apakah data karyawan sudah ada berdasarkan email &amp; no KTP.
+     *
+     * @param string $email
+     * @param string $noIdentitas
+     *
+     * @return array
+     */
+    public function cekParentKaryawan($email, $noIdentitas)
+    {
+        $karyawanData = $this-&gt;db-&gt;select('id, no_identitas, email')
+            -&gt;from('karyawan_data')
+            -&gt;customWhere('
+                (email = &quot;'.$email.'&quot; and email != &quot;&quot; and email IS NOT NULL) or 
+                (no_identitas = &quot;'.$noIdentitas.'&quot; and no_identitas != &quot;&quot; and no_identitas IS NOT NULL)
+            ')-&gt;find()
+        ;
+
+        // return
+        if (isset($karyawanData-&gt;id)) {
+            return [
+                'status' =&gt; true,
+                'data' =&gt; (array) $karyawanData,
+            ];
+        }
+
+        return [
+            'status' =&gt; false,
+            'data' =&gt; '',
+        ];
+    }
+
+    /**
+     * cek apakah data karyawan sudah ada.
+     *
+     * @param string $noIdentitas
+     * @param string $karyawanDataId
+     *
+     * @return array
+     */
+    public function cekKaryawan($noIdentitas, $karyawanDataId)
+    {
+        $karyawan = $this-&gt;db-&gt;select('id')
+            -&gt;from('karyawan')
+            -&gt;customWhere('
+                (no_identitas = &quot;'.$noIdentitas.'&quot; and no_identitas != &quot;&quot; and no_identitas IS NOT NULL) and 
+                karyawan_data_id = &quot;'.$karyawanDataId.'&quot;
+            ')-&gt;find()
+        ;
+
+        // return
+        if (isset($karyawan-&gt;id)) {
+            return [
+                'status' =&gt; true,
+                'data' =&gt; (array) $karyawan,
+            ];
+        }
+
+        return [
+            'status' =&gt; false,
+            'data' =&gt; '',
+        ];
+    }
+
+    /**
+     * Simpan data karyawan.
+     *
+     * @param array $karyawan
+     * @param array $jabatanKaryawan
+     * @param array $statusKaryawan
+     * @param array $komponenGaji
+     *
+     * @return array
+     */
+    public function saveKaryawan($karyawan, $jabatanKaryawan, $statusKaryawan, $komponenGaji = [])
+    {
+        try {
+            $this-&gt;db-&gt;startTransaction();
+            // print_r($karyawan);die;
+            // Simpan data karyawan ke tabel parent (karyawan_data)
+            if (isset($karyawan['id']) &amp;&amp; !empty($karyawan['id'])) {
+                $updateKaryawanData = $karyawan;
+                unset($updateKaryawanData['id'], $updateKaryawanData['email']);
+
+                $idkaryawan_data = $this-&gt;db-&gt;select('karyawan_data_id as karyawan_data_id')-&gt;from('karyawan')-&gt;where('id', '=', $karyawan['id'])-&gt;find();
+
+                $modelData = $this-&gt;db-&gt;update('karyawan_data', $updateKaryawanData, ['id' =&gt; $idkaryawan_data-&gt;karyawan_data_id]);
+                $karyawan['karyawan_data_id'] = $modelData-&gt;id;
+            } else {
+                // Ambil data karyawan berdasarkan email / no KTP
+                $email = isset($karyawan['email']) ? $karyawan['email'] : '';
+                $noIdentitas = isset($karyawan['no_identitas']) ? $karyawan['no_identitas'] : '';
+                $karyawanData = $this-&gt;cekParentKaryawan($email, $noIdentitas);
+                if ($karyawanData['status']) {
+                    $updateKaryawanData = $karyawan;
+                    unset($updateKaryawanData['id'], $updateKaryawanData['email']);
+
+                    $modelData = $this-&gt;db-&gt;update('karyawan_data', $updateKaryawanData, ['id' =&gt; $karyawanData['data']['id']]);
+                    $karyawan['karyawan_data_id'] = $modelData-&gt;id;
+                } else {
+                    $insertKaryawanData = $karyawan;
+                    unset($insertKaryawanData['id']);
+                    $modelData = $this-&gt;db-&gt;insert('karyawan_data', $insertKaryawanData);
+                    $karyawan['karyawan_data_id'] = $modelData-&gt;id;
+                }
+            }
+
+            // Simpan detail karyawan per perusahaan
+            if (isset($karyawan['id']) &amp;&amp; !empty($karyawan['id'])) {
+                // Edit karyawan yang sudah ada
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $karyawan, ['id' =&gt; $karyawan['id']]);
+            } else {
+                // Input karyawan baru
+                $karyawan['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : '';
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $karyawan);
+                $jabatanKaryawan['karyawan_id'] = $model-&gt;id;
+                $statusKaryawan['karyawan_id'] = $model-&gt;id;
+                $komponenGaji['karyawan_id'] = $model-&gt;id;
+                $komponenGaji['m_komponen_id'] = 1;
+                $modelJabatan = $this-&gt;db-&gt;insert('k_jabatan', $jabatanKaryawan);
+                $modelStatus = $this-&gt;db-&gt;insert('k_status', $statusKaryawan);
+                $modelKomponen = $this-&gt;db-&gt;insert('t_komponen_gaji', $komponenGaji);
+            }
+
+            $this-&gt;db-&gt;endTransaction();
+
+            // Return data karyawan
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Update email karyawan.
+     *
+     * @param array $data data Karyawan
+     *
+     * @return array
+     */
+    public function updateEmail($data)
+    {
+        // print_r($data);die;
+        try {
+            $this-&gt;db-&gt;startTransaction();
+            if (isset($data['karyawan_data_id']) &amp;&amp; !empty($data['karyawan_data_id'])) {
+                // Edit karyawan yang sudah ada
+                $model = $this-&gt;db-&gt;update('karyawan_data', $data, ['id' =&gt; $data['karyawan_data_id']]);
+            }
+            $this-&gt;db-&gt;endTransaction();
+            // Return data perusahaan
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Update status Karyawan.
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    public function saveStatus($data)
+    {
+        try {
+            if (null != $data['id']) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; $data['is_deleted']], ['id' =&gt; $data['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; $data['is_deleted']], ['m_perusahaan_id' =&gt; $_SESSION['user']['m_perusahaan']['id']]);
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Import excel.
+     *
+     * @param array $data
+     * @param mixed $organisasi
+     * @param mixed $jabatan
+     */
+    public function import($data, $organisasi, $jabatan)
+    {
+        try {
+            error_reporting(E_ALL &amp; ~E_NOTICE &amp; ~E_WARNING);
+
+            try {
+                $inputFileType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($data['filePath']);
+                $objReader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
+                $objPhpSpreadsheet = $objReader-&gt;load($data['filePath']);
+            } catch (Exception $e) {
+                exit('Error loading file : &quot;'.pathinfo($data['filePath'], PATHINFO_BASENAME).'&quot;: '.$e-&gt;getMessage());
+            }
+
+            $sheet = $objPhpSpreadsheet-&gt;getSheet(0);
+            $highestRow = $sheet-&gt;getHighestRow();
+            $highestColumn = $sheet-&gt;getHighestColumn();
+
+            // Siapkan data Organisasi
+            $arrOrg = [];
+            foreach ($organisasi['data'] as $key =&gt; $val) {
+                $arrOrg[$val-&gt;kode] = $val-&gt;id;
+            }
+
+            // Siapkan data Jabatan
+            $arrJbtn = [];
+            foreach ($jabatan['data'] as $key =&gt; $val) {
+                $arrJbtn[$val-&gt;kode] = $val-&gt;id;
+            }
+
+            $input = $rJabatan = $rStatus = $komponenGaji = [];
+            $index = 0;
+            for ($row = 2; $row &lt;= $highestRow; ++$row) {
+                $input[$index]['jenis_identitas'] = 1;
+                $input[$index]['status_jht'] = 2;
+                $input[$index]['status_jp'] = 2;
+                $input[$index]['status_kesehatan'] = 2;
+                $input[$index]['nik'] = $sheet-&gt;getCell('A'.$row)-&gt;getFormattedValue();
+                $input[$index]['nama'] = $sheet-&gt;getCell('B'.$row)-&gt;getFormattedValue();
+                $input[$index]['gelar_depan'] = $sheet-&gt;getCell('C'.$row)-&gt;getFormattedValue();
+                $input[$index]['gelar_belakang'] = $sheet-&gt;getCell('D'.$row)-&gt;getFormattedValue();
+                $input[$index]['jenkel'] = $sheet-&gt;getCell('E'.$row)-&gt;getFormattedValue();
+                $input[$index]['tempat_lahir'] = $sheet-&gt;getCell('F'.$row)-&gt;getFormattedValue();
+                $input[$index]['tgl_lahir'] = $sheet-&gt;getCell('G'.$row)-&gt;getFormattedValue();
+                $input[$index]['status_nikah'] = $sheet-&gt;getCell('H'.$row)-&gt;getFormattedValue();
+                $input[$index]['agama'] = $sheet-&gt;getCell('I'.$row)-&gt;getFormattedValue();
+                $input[$index]['kewarganegaraan'] = $sheet-&gt;getCell('J'.$row)-&gt;getFormattedValue();
+                $input[$index]['no_identitas'] = $sheet-&gt;getCell('K'.$row)-&gt;getFormattedValue();
+                $input[$index]['alamat_detail'] = $sheet-&gt;getCell('L'.$row)-&gt;getFormattedValue();
+                $input[$index]['tgl_mulai_kerja'] = $sheet-&gt;getCell('M'.$row)-&gt;getFormattedValue();
+                $input[$index]['tipe'] = $sheet-&gt;getCell('P'.$row)-&gt;getFormattedValue();
+                $input[$index]['m_ptkp_id'] = $sheet-&gt;getCell('Q'.$row)-&gt;getFormattedValue();
+                $input[$index]['no_npwp'] = $sheet-&gt;getCell('R'.$row)-&gt;getFormattedValue();
+                $input[$index]['gaji_pokok'] = $sheet-&gt;getCell('S'.$row)-&gt;getFormattedValue();
+                $input[$index]['tipe_gaji'] = $sheet-&gt;getCell('T'.$row)-&gt;getFormattedValue();
+                $input[$index]['m_bank_id'] = $sheet-&gt;getCell('U'.$row)-&gt;getFormattedValue();
+                $input[$index]['no_rekening'] = $sheet-&gt;getCell('V'.$row)-&gt;getFormattedValue();
+                $input[$index]['atas_nama'] = $sheet-&gt;getCell('W'.$row)-&gt;getFormattedValue();
+                $input[$index]['no_bpjs_kesehatan'] = $sheet-&gt;getCell('X'.$row)-&gt;getFormattedValue();
+                $input[$index]['no_bpjs_ketenagakerjaan'] = $sheet-&gt;getCell('Y'.$row)-&gt;getFormattedValue();
+                $input[$index]['email'] = $sheet-&gt;getCell('Z'.$row)-&gt;getFormattedValue();
+                $input[$index]['no_hp'] = $sheet-&gt;getCell('AA'.$row)-&gt;getFormattedValue();
+
+                $rJabatan[$index]['tgl_mulai'] = $sheet-&gt;getCell('M'.$row)-&gt;getFormattedValue();
+                $rJabatan[$index]['m_organisasi_id'] = $sheet-&gt;getCell('N'.$row)-&gt;getFormattedValue();
+                $rJabatan[$index]['m_jabatan_id'] = $sheet-&gt;getCell('O'.$row)-&gt;getFormattedValue();
+                $rJabatan[$index]['aktif'] = 1;
+
+                $rStatus[$index]['tgl_mulai'] = $sheet-&gt;getCell('M'.$row)-&gt;getFormattedValue();
+                $rStatus[$index]['status'] = $sheet-&gt;getCell('P'.$row)-&gt;getFormattedValue();
+
+                $komponenGaji[$index]['nominal'] = $sheet-&gt;getCell('S'.$row)-&gt;getFormattedValue();
+
+                ++$index;
+            }
+
+            unlink($data['filePath']);
+
+            $this-&gt;db-&gt;startTransaction();
+            // Input ke tabel karyawan
+            foreach ($input as $key =&gt; $val) {
+                // Update data karyawan di tabel karyawan induk (karyawan_data)
+                $email = isset($val['email']) ? $val['email'] : '';
+                $noIdentitas = isset($val['no_identitas']) ? $val['no_identitas'] : '';
+                $karyawanData = $this-&gt;cekParentKaryawan($email, $noIdentitas);
+                if ($karyawanData['status']) {
+                    $updateKaryawanData = $val;
+                    unset($updateKaryawanData['id'], $updateKaryawanData['email']);
+
+                    $modelData = $this-&gt;db-&gt;update('karyawan_data', $updateKaryawanData, ['id' =&gt; $karyawanData['data']['id']]);
+                    $val['karyawan_data_id'] = $modelData-&gt;id;
+                } else {
+                    $insertKaryawanData = $val;
+                    unset($insertKaryawanData['id']);
+                    $modelData = $this-&gt;db-&gt;insert('karyawan_data', $insertKaryawanData);
+                    $val['karyawan_data_id'] = $modelData-&gt;id;
+                }
+
+                // Simpan data karyawan
+                $val['m_perusahaan_id'] = $_SESSION['user']['m_perusahaan']['id'];
+                $karyawan = $this-&gt;db-&gt;insert($this-&gt;table, $val);
+
+                // Input ke tabel k_jabatan
+                $rJabatan[$key]['m_organisasi_id'] = isset($arrOrg[$rJabatan[$key]['m_organisasi_id']]) ? $arrOrg[$rJabatan[$key]['m_organisasi_id']] : '';
+                $rJabatan[$key]['m_jabatan_id'] = isset($arrJbtn[$rJabatan[$key]['m_jabatan_id']]) ? $arrJbtn[$rJabatan[$key]['m_jabatan_id']] : '';
+                $rJabatan[$key]['karyawan_id'] = $karyawan-&gt;id;
+                $jabatan = $this-&gt;db-&gt;insert('k_jabatan', $rJabatan[$key]);
+
+                // Input ke tabel k_status
+                $rStatus[$key]['karyawan_id'] = $karyawan-&gt;id;
+                $status = $this-&gt;db-&gt;insert('k_status', $rStatus[$key]);
+
+                // Input ke tabel komponen gaji
+                $komponenGaji[$key]['karyawan_id'] = $karyawan-&gt;id;
+                $komponenGaji[$key]['m_komponen_id'] = 1;
+                $komponen_gaji = $this-&gt;db-&gt;insert('t_komponen_gaji', $komponenGaji[$key]);
+            }
+
+            $this-&gt;db-&gt;endTransaction();
+
+            // Return data
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $karyawan,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Download format excel untuk import data karyawan.
+     *
+     * @param array $file
+     * @param array $org
+     * @param array $jbtn
+     * @param array $bank
+     * @param array $ptkp
+     *
+     * @return array
+     */
+    public function download($file, $org, $jbtn, $bank, $ptkp)
+    {
+        $xls = \PhpOffice\PhpSpreadsheet\IOFactory::load('assets/formatExcel/Karyawan.xlsx');
+
+        $sheet_org = $xls-&gt;getSheet(1);
+        $sheet_jbtn = $xls-&gt;getSheet(2);
+        $sheet_ptkp = $xls-&gt;getSheet(3);
+        $sheet_bank = $xls-&gt;getSheet(4);
+        $index_org = 2;
+        $index_jbtn = 2;
+        $index_ptkp = 2;
+        $index_bank = 2;
+
+        foreach ($org['data'] as $key =&gt; $val) {
+            $val = (array) $val;
+
+            $sheet_org-&gt;getCell('A'.$index_org)-&gt;setValue($val['kode']);
+            $sheet_org-&gt;getCell('B'.$index_org)-&gt;setValue($val['nama']);
+            ++$index_org;
+        }
+
+        foreach ($jbtn['data'] as $key =&gt; $val) {
+            $val = (array) $val;
+
+            $sheet_jbtn-&gt;getCell('A'.$index_jbtn)-&gt;setValue($val['kode']);
+            $sheet_jbtn-&gt;getCell('B'.$index_jbtn)-&gt;setValue($val['nama']);
+            ++$index_jbtn;
+        }
+
+        foreach ($ptkp['data'] as $key =&gt; $val) {
+            $val = (array) $val;
+
+            $sheet_ptkp-&gt;getCell('A'.$index_ptkp)-&gt;setValue($val['id']);
+            $sheet_ptkp-&gt;getCell('B'.$index_ptkp)-&gt;setValue($val['nama']);
+            ++$index_ptkp;
+        }
+
+        foreach ($bank['data'] as $key =&gt; $val) {
+            $val = (array) $val;
+
+            $sheet_bank-&gt;getCell('A'.$index_bank)-&gt;setValue($val['id']);
+            $sheet_bank-&gt;getCell('B'.$index_bank)-&gt;setValue($val['nama']);
+            ++$index_bank;
+        }
+
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($xls, 'Xlsx');
+        ob_end_clean();
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; Filename=&quot;Karyawan.xlsx&quot;');
+        $writer-&gt;save('php://output');
+
+        exit;
+    }
+
+    /**
+     * Export data karyawan ke file excel.
+     *
+     * @param array $data
+     * @param array $org
+     * @param array $jbtn
+     * @param array $bank
+     * @param array $ptkp
+     *
+     * @return array
+     */
+    public function export($data, $org, $jbtn, $bank, $ptkp)
+    {
+        $arrOrg = [];
+        foreach ($org['data'] as $key =&gt; $val) {
+            $arrOrg[$val-&gt;id] = $val-&gt;nama;
+        }
+
+        $arrJbtn = [];
+        foreach ($jbtn['data'] as $key =&gt; $val) {
+            $arrJbtn[$val-&gt;id] = $val-&gt;nama;
+        }
+
+        $arrBank = [];
+        foreach ($bank['data'] as $key =&gt; $val) {
+            $arrBank[$val-&gt;id] = $val-&gt;nama;
+        }
+
+        $arrPtkp = [];
+        foreach ($ptkp['data'] as $key =&gt; $val) {
+            $arrPtkp[$val-&gt;id] = $val-&gt;nama;
+        }
+
+        $xls = \PhpOffice\PhpSpreadsheet\IOFactory::load('assets/formatExcel/ExportKaryawan.xlsx');
+
+        $sheet = $xls-&gt;getSheet(0);
+        $index = 2;
+
+        foreach ($data as $key =&gt; $val) {
+            $sheet-&gt;getCell('A'.$index)-&gt;setValue($val-&gt;nik);
+            $sheet-&gt;getCell('B'.$index)-&gt;setValue($val-&gt;nama);
+            $sheet-&gt;getCell('C'.$index)-&gt;setValue($val-&gt;gelar_depan);
+            $sheet-&gt;getCell('D'.$index)-&gt;setValue($val-&gt;gelar_belakang);
+            $sheet-&gt;getCell('E'.$index)-&gt;setValue(1 == $val-&gt;jenkel ? 'Laki - Laki' : 'Perempuan');
+            $sheet-&gt;getCell('F'.$index)-&gt;setValue($val-&gt;tempat_lahir);
+            $sheet-&gt;getCell('G'.$index)-&gt;setValue($val-&gt;tgl_lahir);
+
+            if (1 == $val-&gt;status_nikah) {
+                $sheet-&gt;getCell('H'.$index)-&gt;setValue('Belum Menikah');
+            } elseif (2 == $val-&gt;status_nikah) {
+                $sheet-&gt;getCell('H'.$index)-&gt;setValue('Menikah');
+            } elseif (3 == $val-&gt;status_nikah) {
+                $sheet-&gt;getCell('H'.$index)-&gt;setValue('Janda');
+            } else {
+                $sheet-&gt;getCell('H'.$index)-&gt;setValue('Duda');
+            }
+
+            if ('1' == $val-&gt;agama) {
+                $sheet-&gt;getCell('I'.$index)-&gt;setValue('Islam');
+            } elseif ('2' == $val-&gt;agama) {
+                $sheet-&gt;getCell('I'.$index)-&gt;setValue('Kristen');
+            } elseif ('3' == $val-&gt;agama) {
+                $sheet-&gt;getCell('I'.$index)-&gt;setValue('Katolik');
+            } elseif ('4' == $val-&gt;agama) {
+                $sheet-&gt;getCell('I'.$index)-&gt;setValue('Hindu');
+            } elseif ('5' == $val-&gt;agama) {
+                $sheet-&gt;getCell('I'.$index)-&gt;setValue('Budha');
+            } else {
+                $sheet-&gt;getCell('I'.$index)-&gt;setValue('Konghuchu');
+            }
+
+            $sheet-&gt;getCell('J'.$index)-&gt;setValue(1 == $val-&gt;kewarganegaraan ? 'WNI' : 'WNA');
+            $sheet-&gt;getCell('K'.$index)-&gt;setValue($val-&gt;no_identitas);
+            $sheet-&gt;getCell('L'.$index)-&gt;setValue($val-&gt;alamat_detail);
+            $sheet-&gt;getCell('M'.$index)-&gt;setValue($val-&gt;tgl_mulai_kerja);
+            $sheet-&gt;getCell('N'.$index)-&gt;setValue($arrOrg[$val-&gt;m_organisasi_id]);
+            $sheet-&gt;getCell('O'.$index)-&gt;setValue($arrJbtn[$val-&gt;m_jabatan_id]);
+            $sheet-&gt;getCell('P'.$index)-&gt;setValue('1' == $val-&gt;tipe ? 'PKWT' : 'PKWTT');
+            $sheet-&gt;getCell('Q'.$index)-&gt;setValue($arrPtkp[$val-&gt;m_ptkp_id]);
+            $sheet-&gt;getCell('R'.$index)-&gt;setValue($val-&gt;no_npwp);
+            $sheet-&gt;getCell('S'.$index)-&gt;setValue($val-&gt;gaji_pokok);
+            $sheet-&gt;getCell('T'.$index)-&gt;setValue(1 == $val-&gt;tipe_gaji ? 'Bulanan' : 'Mingguan');
+            $sheet-&gt;getCell('U'.$index)-&gt;setValue($arrBank[$val-&gt;m_bank_id]);
+            $sheet-&gt;getCell('V'.$index)-&gt;setValue($val-&gt;no_rekening);
+            $sheet-&gt;getCell('W'.$index)-&gt;setValue($val-&gt;atas_nama);
+            $sheet-&gt;getCell('W'.$index)-&gt;setValue($val-&gt;atas_nama);
+            $sheet-&gt;getCell('W'.$index)-&gt;setValue($val-&gt;no_bpjs_kesehatan);
+            $sheet-&gt;getCell('W'.$index)-&gt;setValue($val-&gt;no_bpjs_ketenagakerjaan);
+
+            ++$index;
+        }
+
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($xls, 'Xlsx');
+        ob_end_clean();
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; Filename=&quot;Karyawan.xlsx&quot;');
+        $writer-&gt;save('php://output');
+    }
+
+    /**
+     * Validasi data karyawan.
+     *
+     * @param array $data
+     * @param array $custom
+     *
+     * @return bool
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' =&gt; 'required',
+            'nik' =&gt; 'required',
+            // 'tgl_lahir' =&gt; 'required',
+            // 'tempat_lahir' =&gt; 'required',
+            'jenkel' =&gt; 'required',
+            'kewarganegaraan' =&gt; 'required',
+            'jenis_identitas' =&gt; 'required',
+            // 'no_identitas' =&gt; 'required',
+            'm_organisasi_id' =&gt; 'required',
+            'm_jabatan_id' =&gt; 'required',
+            'tipe' =&gt; 'required',
+            'tgl_mulai_kerja' =&gt; 'required',
+            'm_ptkp_id' =&gt; 'required',
+            // 'gaji_pokok' =&gt; 'required',
+            'status_pph' =&gt; 'required',
+            'tipe_gaji' =&gt; 'required',
+            // 'boleh_lembur' =&gt; 'required',
+            'status_jht' =&gt; 'required',
+            'status_jp' =&gt; 'required',
+            'status_kesehatan' =&gt; 'required',
+            // 'email' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    /**
+     * Update password akun firebase.
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    public function updatePass($data)
+    {
+        try {
+            $newdata = [];
+            $newdata['uid'] = $_SESSION['user']['uid'];
+            $newdata['password'] = $data['model']['password'];
+            // Return data uid
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $newdata,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function checkIdentitas($params)
+    {
+        $email = isset($params['email']) &amp;&amp; !empty($params['email']) ? $params['email'] : '';
+        $no_identitas = isset($params['no_identitas']) &amp;&amp; !empty($params['no_identitas']) ? $params['no_identitas'] : '';
+        if (empty($email) &amp;&amp; empty($no_identitas)) {
+            return [];
+        }
+        $this-&gt;db-&gt;select('
+                karyawan_data.*,
+                m_jabatan.nama as nama_jabatan,
+                m_organisasi.nama as nama_org,
+                m_perusahaan.nama as nama_perusahaan
+            ')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            -&gt;join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id and aktif = 1')
+            -&gt;join('left join', 'k_status', 'k_status.karyawan_id = karyawan.id')
+            -&gt;join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;join('left join', 'm_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+            -&gt;join('left join', 'm_perusahaan', 'm_perusahaan.id = karyawan.m_perusahaan_id')
+            -&gt;where('karyawan.is_deleted', '=', 0)
+        ;
+        if (isset($params['no_identitas']) &amp;&amp; !empty($params['no_identitas'])) {
+            $this-&gt;db-&gt;where('karyawan_data.no_identitas', '=', $params['no_identitas']);
+        }
+        if (isset($params['email']) &amp;&amp; !empty($params['email'])) {
+            $this-&gt;db-&gt;orWhere('karyawan_data.email', '=', $params['email']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        $arr = [];
+        foreach ($models as $key =&gt; $val) {
+            $arr[$val-&gt;id]['list'] = $val;
+            $arr[$val-&gt;id]['keterangan'][$key]-&gt;perusahaan = $val-&gt;nama_perusahaan;
+            $arr[$val-&gt;id]['keterangan'][$key]-&gt;organisasi = $val-&gt;nama_org;
+            $arr[$val-&gt;id]['keterangan'][$key]-&gt;jabatan = $val-&gt;nama_jabatan;
+        }
+        if (isset($arr) &amp;&amp; !empty($arr)) {
+            return array_values($arr)[0];
+        }
+
+        return [];
+    }
+
+    /**
+     * Generate kode NIK.
+     *
+     * @return array
+     */
+    public function generateKodenik()
+    {
+        //AMBIL KODE PERUSAHAAN
+        $idperusahaan = $_SESSION['user']['m_perusahaan']['id'];
+        $cekkodeperusahaan = $this-&gt;db-&gt;select('kode')
+            -&gt;from('m_perusahaan')
+            -&gt;where('id', '=', $idperusahaan)
+            -&gt;find()
+        ;
+        $kodeperusahaan = $cekkodeperusahaan-&gt;kode;
+
+        $cekKode = $this-&gt;db-&gt;select('nik')
+            -&gt;from($this-&gt;table)
+            -&gt;orderBy('nik DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;nik;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $tipe = 'EMP';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kodenya = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$kodeperusahaan.$kodenya;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode NIK',
+            ];
+        }
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

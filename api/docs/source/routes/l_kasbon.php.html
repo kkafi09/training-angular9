@@ -1,0 +1,101 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\LaporanKasbon;
+
+// Ambil semua kasbon
+$app-&gt;get('/l_kasbon/getAll', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $laporan_kasbon = new LaporanKasbon();
+    $getDataKasbon = $laporan_kasbon-&gt;getAll($params);
+
+    $arr = $arrTotal = [];
+    foreach ($getDataKasbon['data'] as $key =&gt; $value) {
+        $arr[$value-&gt;karyawan_id]['nama_karyawan'] = $value-&gt;nama_karyawan;
+        $arr[$value-&gt;karyawan_id]['nama_jabatan'] = $value-&gt;nama_jabatan;
+        $arr[$value-&gt;karyawan_id]['total'] = (isset($arr[$value-&gt;karyawan_id]['total']) ? $arr[$value-&gt;karyawan_id]['total'] : 0) + $value-&gt;total_hutang;
+        $arr[$value-&gt;karyawan_id]['total_bayar'] = (isset($arr[$value-&gt;karyawan_id]['total_bayar']) ? $arr[$value-&gt;karyawan_id]['total_bayar'] : 0) + $value-&gt;total_bayar;
+        $arr[$value-&gt;karyawan_id]['detail'][] = (array) $value;
+
+        if (!isset($arrTotal['total']) &amp;&amp; !isset($arrTotal['total_terbayar']) &amp;&amp; !isset($arrTotal['total_sisa'])) {
+            $arrTotal['total'] = $arr[$value-&gt;karyawan_id]['total'];
+            $arrTotal['total_terbayar'] = $arr[$value-&gt;karyawan_id]['total_bayar'];
+            $arrTotal['total_sisa'] = $arr[$value-&gt;karyawan_id]['total'] - $arr[$value-&gt;karyawan_id]['total_bayar'];
+        } else {
+            $arrTotal['total'] += $arr[$value-&gt;karyawan_id]['total'];
+            $arrTotal['total_terbayar'] += $arr[$value-&gt;karyawan_id]['total_bayar'];
+            $arrTotal['total_sisa'] += $arr[$value-&gt;karyawan_id]['total'] - $arr[$value-&gt;karyawan_id]['total_bayar'];
+        }
+    }
+
+    if (isset($params['is_export']) &amp;&amp; 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view-&gt;fetch('laporan/kasbon.html', [
+            'data' =&gt; $arr,
+            'total' =&gt; $arrTotal,
+            'periode' =&gt; $getDataKasbon['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getDataKasbon['periode']) {
+            header('Content-Disposition: attachment;Filename=&quot;Laporan Kasbon ('.$getDataKasbon['periode'].').xls&quot;');
+        } else {
+            header('Content-Disposition: attachment;Filename=&quot;Laporan Kasbon (Semua Periode).xls&quot;');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) &amp;&amp; 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view-&gt;fetch('laporan/kasbon.html', [
+            'data' =&gt; $arr,
+            'total' =&gt; $arrTotal,
+            'periode' =&gt; $getDataKasbon['periode'],
+        ]);
+        echo $content;
+        echo '&lt;script type=&quot;text/javascript&quot;&gt;window.print();setTimeout(function () { window.close(); }, 500);&lt;/script&gt;';
+    } else {
+        return successResponse($response, ['list' =&gt; array_values($arr), 'total' =&gt; $arrTotal,  'periode' =&gt; $getDataKasbon['periode']]);
+    }
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,49 @@
+<?php
+
+use Model\Pesangon;
+
+// Ambil semua pelatihan
+$app->get('/apppesangon/index', function ($request, $response) {
+    $params = $request->getParams();
+    $pesangon = new Pesangon();
+    $getDataPesangon = $pesangon->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDataPesangon['data'],
+        'totalItems' => $getDataPesangon['totalItem'],
+    ]);
+});
+
+// Ambil semua pelatihan
+$app->get('/apppesangon/getDetail', function ($request, $response) {
+    $params = $request->getParams();
+    $pesangon = new Pesangon();
+    $getDetail = $pesangon->getDetail($params);
+
+    return successResponse($response, [
+        'list' => $getDetail['data'],
+    ]);
+});
+
+// Save pesangon
+$app->post('/apppesangon/save', function ($request, $response) {
+    $data = $request->getParams();
+    $pesangon = new Pesangon();
+    $validasi = $pesangon->validasi($data['pesangon']);
+
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $pesangon->save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+

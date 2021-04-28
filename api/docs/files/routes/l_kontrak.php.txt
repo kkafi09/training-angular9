@@ -1,0 +1,37 @@
+<?php
+
+use Model\LaporanKontrak;
+
+// Ambil semua kasbon
+$app->get('/l_kontrak/getAll', function ($request, $response) {
+    $params = $request->getParams();
+    $laporanKontrak = new LaporanKontrak();
+    $getLaporanKontrak = $laporanKontrak->getAll($params);
+//    echo json_encode($getLaporanKontrak);die();
+
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/perubahan_kontrak.html', [
+            'data' => $getLaporanKontrak['list'],
+            'periode' => $getLaporanKontrak['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getLaporanKontrak['periode']) {
+            header('Content-Disposition: attachment;Filename="Laporan Perubahan Kontrak ('.$getLaporanKontrak['periode'].').xls"');
+        } else {
+            header('Content-Disposition: attachment;Filename="Laporan Perubahan Kontrak (Semua Periode).xls"');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/perubahan_kontrak.html', [
+            'data' => $getLaporanKontrak['list'],
+            'periode' => $getLaporanKontrak['periode'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, ['list' => $getLaporanKontrak['list'], 'periode' => $getLaporanKontrak['periode']]);
+    }
+});
+

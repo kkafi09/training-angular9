@@ -1,0 +1,156 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanPenggajian
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_payroll';
+    }
+
+    /**
+     * Ambil semua data penggajian.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+        if ('null' != $params['periode_mulai'] && 'null' != $params['periode_selesai']) {
+            $tanggal_awal = date('Y-m-d', strtotime($params['periode_mulai']));
+            $tanggal_akhir = date('Y-m-d', strtotime($params['periode_selesai']));
+        } else {
+            $tanggal_awal = null;
+            $tanggal_akhir = null;
+        }
+
+        $idperusahaan = $_SESSION['user']['m_perusahaan']['id'];
+        $this->db->select('t_payroll.kode as kd_gaji, t_payroll.tgl as tgl_gaji, t_payroll_det.*, t_payroll_det.karyawan_id as kid_payroll_det, t_payroll_komponen.*, m_komponen_gaji.nama, m_komponen_gaji.is_pokok, karyawan_data.nama as nama_karyawan, karyawan.nik, karyawan.m_bank_id, karyawan.no_rekening, karyawan.atas_nama as nm_anbank, m_bank.nama as nm_bank, k_jabatan.m_jabatan_id, m_jabatan.nama as nm_jabatan')
+            ->from('t_payroll_det')
+            ->join('left join', 'karyawan', 't_payroll_det.karyawan_id = karyawan.id')
+            ->join('left join', 'karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->join('left join', 't_payroll', 't_payroll.id = t_payroll_det.t_payroll_id')
+            ->join('left join', 't_payroll_komponen', 't_payroll_det.id = t_payroll_komponen.t_payroll_det_id')
+            ->join('left join', 'm_komponen_gaji', 'm_komponen_gaji.id = t_payroll_komponen.m_komponen_gaji_id')
+            ->join('left join', 'm_bank', 'm_bank.id = karyawan.m_bank_id')
+            ->where('karyawan.m_perusahaan_id', '=', $idperusahaan)
+            ->andWhere('t_payroll.status', '=', 3)
+        ;
+
+        if (null != $tanggal_awal && null != $tanggal_akhir) {
+            $this->db->andWhere($this->table.'.periode_mulai', '>=', $tanggal_awal)
+                ->andWhere($this->table.'.periode_selesai', '<=', $tanggal_akhir)
+            ;
+        }
+
+        if ('null' != $params['karyawan_id'] && '' != $params['karyawan_id']) {
+            $this->db->andWhere('t_payroll_det'.'.karyawan_id', '=', $params['karyawan_id']);
+        }
+
+        $models = $this->db->findAll();
+
+        // print_r($models);die;
+        $arr_data = [];
+        foreach ($models as $key => $value) {
+            $arr_data[$value->t_payroll_det_id]['idkar'] = $value->kid_payroll_det;
+            $arr_data[$value->t_payroll_det_id]['kode'] = $value->kd_gaji;
+            $arr_data[$value->t_payroll_det_id]['tgl_gaji'] = $value->tgl_gaji;
+            $arr_data[$value->t_payroll_det_id]['nik'] = $value->nik;
+            $arr_data[$value->t_payroll_det_id]['nama'] = $value->nama_karyawan;
+            $arr_data[$value->t_payroll_det_id]['nm_jabatan'] = $value->nm_jabatan;
+            $arr_data[$value->t_payroll_det_id]['nm_bank'] = $value->nm_bank;
+            $arr_data[$value->t_payroll_det_id]['nm_anbank'] = $value->nm_anbank;
+            $arr_data[$value->t_payroll_det_id]['no_rekening'] = $value->no_rekening;
+
+            if (1 == $value->tipe) {
+                $arr_data[$value->t_payroll_det_id]['pendapatan'][] = $value;
+            }
+            if (2 == $value->tipe) {
+                $arr_data[$value->t_payroll_det_id]['potongan'][] = $value;
+            }
+            if (3 == $value->tipe) {
+                $arr_data[$value->t_payroll_det_id]['pph'][] = $value;
+            }
+            // $arr_data[$value->t_payroll_id][$value->karyawan_id]['takehomepay'] = $value->pendapatan;
+        }
+
+        foreach ($arr_data as $key => $value) {
+            $sumdapat = 0;
+            foreach ($value['pendapatan'] as $keys => $val) {
+                $val->nomor = $keys + 1;
+                $sumdapat += $val->nilai;
+                $arr_data[$key]['totaldapat'] = $sumdapat;
+            }
+
+            $sumpotong = 0;
+            foreach ($value['potongan'] as $keys => $val) {
+                $val->nomor = $keys + 1;
+                $sumpotong += $val->nilai;
+                $arr_data[$key]['totalpotong'] = $sumpotong;
+            }
+
+            if (isset($value['pph']) && !empty($value['pph'])) {
+                $sumpph = 0;
+                foreach ($value['pph'] as $keys => $val) {
+                    $val->nomor = $keys + 1;
+                    $sumpph += $val->nilai;
+                    $arr_data[$key]['totalpph'] = $sumpph;
+                }
+            } else {
+                $value['pph'] = 0;
+                $arr_data[$key]['totalpph'] = 0;
+            }
+            // print_r($value);die;
+        }
+        // print_r($arr_data);die;
+        foreach ($arr_data as $key => $value) {
+            $arr_data[$key]['takehomepay'] = $value['totaldapat'] - $value['totalpotong'] - $value['totalpph'];
+        }
+        $arr = [];
+        $i = 0;
+        foreach ($arr_data as $keys => $value) {
+            $arr[$i] = $value;
+            ++$i;
+        }
+
+        $arr_final = [];
+        foreach ($arr as $key => $value) {
+            // print_r($value['idkar']);die;
+            $arr_final[$value['idkar']]['nama'] = $value['nama'];
+            $arr_final[$value['idkar']]['nm_jabatan'] = $value['nm_jabatan'];
+            $arr_final[$value['idkar']]['detail_all'][] = $value;
+        }
+
+        $arr_finals = [];
+        $i = 0;
+        foreach ($arr_final as $keys => $value) {
+            $arr_finals[$i] = $value;
+            ++$i;
+        }
+
+        return [
+            'data' => $arr_finals,
+            'status' => true,
+            'periode' => null != $tanggal_awal && null != $tanggal_akhir ? date('d/m/Y', strtotime($tanggal_awal)).' s/d '.date('d/m/Y', strtotime($tanggal_akhir)) : null,
+        ];
+    }
+}
+

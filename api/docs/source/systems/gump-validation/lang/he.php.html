@@ -1,0 +1,91 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+return [
+    'validate_required' =&gt; 'שדה {field} הינו חובה',
+    'validate_valid_email' =&gt; 'שדה {field} מוכרח להיות כתובת דוא&quot;ל חוקית',
+    'validate_max_len' =&gt; 'שדה {field} מוכרח להיות {param} תווים או פחות',
+    'validate_min_len' =&gt; 'שדה {field} מוכרח להיות לפחות {param} תווים',
+    'validate_exact_len' =&gt; 'שדה {field} מוכרח להיות בדיוק {param} תווים',
+    'validate_alpha' =&gt; 'שדה {field} יכול להכיל אותיות בלבד',
+    'validate_alpha_numeric' =&gt; 'שדה {field} יכול להכיל אותיות ומספרים בלבד',
+    'validate_alpha_numeric_space' =&gt; 'שדה {field} יכול להכיל אותיות, מספרים ורווחים בלבד',
+    'validate_alpha_dash' =&gt; 'שדה {field} יכול להכיל אותיות ומקפים בלבד',
+    'validate_alpha_space' =&gt; 'שדה {field} יכול להכיל אותיות ורווחים בלבד',
+    'validate_numeric' =&gt; 'שדה {field} מוכרח להיות מספר',
+    'validate_integer' =&gt; 'שדה {field} מוכרח להיות מספר שלם',
+    'validate_boolean' =&gt; 'שדה {field} מוכרח להיות אמת או שקר',
+    'validate_float' =&gt; 'שדה {field} מוכרח להיות מספר עם נקודה עשרונית',
+    'validate_valid_url' =&gt; 'שדה {field} מוכרח להיות כתובת אתר',
+    'validate_url_exists' =&gt; 'שדה {field} אינו כתובת אתר קיימת',
+    'validate_valid_ip' =&gt; 'שדה {field} מוכרח להיות כתובת IP חוקית',
+    'validate_valid_ipv4' =&gt; 'שדה {field} מוכרח להכיל כתובת IPv4 חוקית',
+    'validate_valid_ipv6' =&gt; 'שדה {field} מוכרח להכיל כתובת IPv6 חוקית',
+    'validate_guidv4' =&gt; 'שדה {field} מוכרח להכיל GUID תקין',
+    'validate_valid_cc' =&gt; 'שדה {field} אינו מספר כרטיס אשראי חוקי',
+    'validate_valid_name' =&gt; 'שדה {field} מוכרח להכיל שם מלא',
+    'validate_contains' =&gt; 'שדה {field} יכול להכיל רק אחד מן הערכים הבאים: {param}',
+    'validate_contains_list' =&gt; 'שדה {field} אינו אפשרות חוקית',
+    'validate_doesnt_contain_list' =&gt; 'שדה {field} מכיל ערך שאינו מקובל',
+    'validate_street_address' =&gt; 'שדה {field} מוכרח להיות כתובת רחוב חוקית',
+    'validate_date' =&gt; 'שדה {field} מוכרח להיות תאריך חוקי',
+    'validate_min_numeric' =&gt; 'שדה {field} מוכרח להיות ערך מספרי, שווה ל, או גבוה מ {param}',
+    'validate_max_numeric' =&gt; 'שדה {field} מוכרח להיות ערך מספרי, שווה או נמוך מ {param}',
+    'validate_min_age' =&gt; 'שדה {field} מוכרח להיות גיל גדול או שווה ל {param}',
+    'validate_invalid' =&gt; 'שדה {field} אינו חוקי',
+    'validate_starts' =&gt; 'שדה {field} מוכרח להתחיל עם {param}',
+    'validate_extension' =&gt; 'שדה {field} יכול להיות רק אחת מן הסיומות הבאות: {param}',
+    'validate_required_file' =&gt; 'שדה {field} הינו שדה קובץ חובה',
+    'validate_equalsfield' =&gt; 'שדה {field} אינו שווה לשדה {param}',
+    'validate_iban' =&gt; 'שדה {field} מוכרח להכיל IBAN חוקי',
+    'validate_phone_number' =&gt; 'שדה {field} מוכרח להיות מספר טלפון חוקי',
+    'validate_regex' =&gt; 'שדה {field} מוכרח להכיל ערך בפורמט חוקי',
+    'validate_valid_json_string' =&gt; 'שדה {field} להכיל מחרוזת בפורמט JSON חוקי',
+    'validate_valid_array_size_greater' =&gt; 'שדה {field} מוכרח להיות מערך בעל גודל, שווה ל, או גבוה מ {param}',
+    'validate_valid_array_size_lesser' =&gt; 'שדה {field} מוכרח להיות מערך עם גודל, שווה או נמוך מ {param}',
+    'validate_valid_array_size_equal' =&gt; 'שדה {field} מוכרח להיות מערך עם גודל שווה ל {param}',
+];
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

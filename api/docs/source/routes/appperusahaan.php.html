@@ -1,0 +1,246 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\HakAkses;
+use Model\Karyawan;
+use Model\Perusahaan;
+use Service\Landa;
+
+// Ambil semua akses perusahaan
+$app-&gt;get('/appperusahaan/getAkses', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $perusahaan = new Perusahaan();
+
+    if (isset($_SESSION['user']['userId']) &amp;&amp; $_SESSION['user']['userId'] &gt; 0) {
+        $karyawan = new Karyawan();
+        $getKaryawan = $karyawan-&gt;getKaryawan(['id' =&gt; $_SESSION['user']['userId']]);
+        $m_roles_id = isset($getKaryawan-&gt;m_roles_id) ? $getKaryawan-&gt;m_roles_id : 1;
+        // Ambil hak akses
+        $akses = new HakAkses();
+        $getAkses = $akses-&gt;getAll(['id' =&gt; $m_roles_id], 1, 0);
+        $hakAkses = isset($getAkses['data'][0]) ? (array) $getAkses['data'][0] : [];
+        $aksesPerusahaan = isset($hakAkses['akses_perusahaan']) ? $hakAkses['akses_perusahaan'] : [];
+        $list = $perusahaan-&gt;getByIdArr($aksesPerusahaan);
+        $getDataperusahaan['data'] = $list;
+    } else {
+        $getDataperusahaan = $perusahaan-&gt;getAll();
+    }
+
+    return successResponse($response, [
+        'list' =&gt; $getDataperusahaan['data'],
+    ]);
+});
+
+// Ambil semua perusahaan
+$app-&gt;get('/appperusahaan/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $perusahaan = new Perusahaan();
+
+    $params['params'] = isset($params['params']) ? $params['params'] : [];
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : '';
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : '';
+
+    $getDataperusahaan = $perusahaan-&gt;getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataperusahaan['data'],
+        'totalItems' =&gt; $getDataperusahaan['totalItem'],
+    ]);
+});
+
+$app-&gt;get('/appperusahaan/legalitas', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $perusahaan = new Perusahaan();
+
+    $getLegalitas = $perusahaan-&gt;getLegalitas($params);
+
+    return successResponse($response, $getLegalitas['data']);
+});
+
+// Simpan perusahaan
+$app-&gt;post('/appperusahaan/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $landa = new Landa();
+    $perusahaan = new Perusahaan();
+
+    if (isset($data['id']) &amp;&amp; !empty($data['id']) &amp;&amp; empty($data['parent_id'])) {
+        $validasi = $perusahaan-&gt;validasi($data, [], $data['id']);
+    } else {
+        $validasi = $perusahaan-&gt;validasi($data);
+    }
+    $validasiKode = $perusahaan-&gt;validasiKode($data);
+
+    if (true === $validasi) {
+        if (true == $validasiKode) {
+            // Upload logo perusahaan
+            if (isset($data['logo']) &amp;&amp; !empty($data['logo'])) {
+                $path = $_SERVER['DOCUMENT_ROOT'].config('PATH_UPLOAD').'/assets/img/perusahaan/';
+                $uploadFile = $landa-&gt;base64ToImage($path, $data['logo']);
+                if ($uploadFile['status']) {
+                    $data['logo'] = $uploadFile['data'];
+                } else {
+                    return unprocessResponse($response, [$uploadFile['error']]);
+                }
+            }
+
+            // Upload file perusahaan
+            if (isset($data['listLegalitas']) &amp;&amp; !empty($data['listLegalitas'])) {
+                $path = 'assets/fileperusahaan';
+                $kode = $data['kode'];
+
+                foreach ($data['listLegalitas'] as $key =&gt; $val) {
+                    if (isset($val['fileUpload'])) {
+                        $batas = strpos($val['fileUpload'], 'base64,');
+                        $batas_potong = $batas + 7;
+                        $file['filename'] = $val['nama'];
+                        $file['base64'] = substr($val['fileUpload'], $batas_potong);
+
+                        $uploadFile = $landa-&gt;base64ToFilePath($file, $path, $kode);
+                        $customNamafile = $uploadFile['data']['fileName'];
+
+                        if ($uploadFile['status']) {
+                            $val['nama'] = $customNamafile;
+                        } else {
+                            return unprocessResponse($response, [$uploadFile['error']]);
+                        }
+                    }
+                }
+            }
+
+            // Simpan data ke dalam database
+            $save = $perusahaan-&gt;save($data);
+            if ($save['status']) {
+                return successResponse($response, $save['data']);
+            }
+
+            return unprocessResponse($response, [$save['error']]);
+        }
+
+        return unprocessResponse($response, 'Kode Telah Digunakan');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus perusahaan
+$app-&gt;post('/appperusahaan/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $perusahaan = new Perusahaan();
+    $model = $perusahaan-&gt;save(['is_deleted' =&gt; 1, 'id' =&gt; $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Hapus perusahaan
+$app-&gt;post('/appperusahaan/delete-all', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $perusahaan = new Perusahaan();
+    $model = $perusahaan-&gt;deleteAll(['is_deleted' =&gt; 1, 'id' =&gt; $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Ambil struktur organisasi perusahaan
+$app-&gt;get('/appperusahaan/dataStruktur', function ($request, $response) {
+    $perusahaan = new Perusahaan();
+    $landa = new Landa();
+    $models = $perusahaan-&gt;getAll(['is_deleted' =&gt; 0]);
+    $arrChild = [];
+    foreach ($models['data'] as $value) {
+        $arrChild[] = [
+            'id' =&gt; $value-&gt;id,
+            'type' =&gt; '',
+            'name' =&gt; $value-&gt;nama,
+            'parent_id' =&gt; $value-&gt;parent_id,
+        ];
+    }
+    $tree = $landa-&gt;buildTree($arrChild);
+
+    return successResponse($response, ['list' =&gt; isset($tree[0]) ? $tree[0] : [], 'totalItems' =&gt; $models['totalItem']]);
+});
+
+// Import excel perusahaan
+$app-&gt;post('/appperusahaan/import', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $perusahaan = new Perusahaan();
+    $landa = new Landa();
+
+    $save = $landa-&gt;base64ToFile($data);
+    $excel = $save['data'];
+
+    $insert_excel = $perusahaan-&gt;import($excel);
+    $getDataPerusahaan = $perusahaan-&gt;getAll($data);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataPerusahaan['data'],
+        'totalItems' =&gt; $getDataPerusahaan['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app-&gt;get('/appperusahaan/downloadFormatExcel', function ($request, $response) {
+    $perusahaan = new Perusahaan();
+    $file = 'assets/formatExcel/Perusahaan.xlsx';
+    $save = $perusahaan-&gt;download($file);
+
+    return successResponse($response, $save);
+});
+
+// Generate kode sertifikat
+$app-&gt;get('/appperusahaan/generatekode', function ($request, $response) {
+    $perusahaan = new Perusahaan();
+
+    $kode = $perusahaan-&gt;generateKode();
+
+    return successResponse($response, $kode['data']);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

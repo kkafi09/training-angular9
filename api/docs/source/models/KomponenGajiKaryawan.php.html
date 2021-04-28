@@ -1,0 +1,253 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class KomponenGajiKaryawan
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 't_komponen_gaji';
+    }
+
+    /**
+     * Ambil semua data perusahaan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('t_komponen_gaji.*, karyawan.id as idkaryawan, karyawan_data.nama as nm_karyawan, m_komponen_gaji.nama as nama_kg, m_komponen_gaji.m_perusahaan_id, m_komponen_gaji.is_pokok, m_komponen_gaji.tipe as tipe_kg, m_perusahaan.nama as nm_perusahaan')
+            -&gt;from($this-&gt;table)
+            -&gt;leftJoin('karyawan', 't_komponen_gaji.karyawan_id = karyawan.id')
+            -&gt;leftJoin('karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            -&gt;leftJoin('m_komponen_gaji', 't_komponen_gaji.m_komponen_id = m_komponen_gaji.id')
+            -&gt;leftJoin('m_perusahaan', 'm_komponen_gaji.m_perusahaan_id = m_perusahaan.id')
+            -&gt;where('t_komponen_gaji.karyawan_id', '=', $params['idkaryawan'])
+            -&gt;andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key =&gt; $val) {
+                $this-&gt;db-&gt;where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        foreach ($models as $key =&gt; $value) {
+            $value-&gt;nominal_index = number_format($value-&gt;nominal);
+        }
+
+        // print_r($models);die;
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function getPerusahaan()
+    {
+        $this-&gt;db-&gt;select('id, nama')-&gt;from('m_perusahaan');
+        $models = $this-&gt;db-&gt;findAll();
+
+        return ['data' =&gt; $models];
+    }
+
+    public function getKaryawan()
+    {
+        $this-&gt;db-&gt;select('id, nama')-&gt;from('karyawan');
+        $models = $this-&gt;db-&gt;findAll();
+
+        return ['data' =&gt; $models];
+    }
+
+    public function getMKomponengj($karyawanId)
+    {
+        // Ambil data komponen
+        $model = $this-&gt;db-&gt;select('id, nama as nama_kg, is_global, nilai as nominal,tipe')
+            -&gt;from('m_komponen_gaji')
+            -&gt;where('is_global', '=', 0)
+            -&gt;andWhere('id', '!=', 1)
+            -&gt;andWhere('type_kg', '=', 0)
+            -&gt;andWhere('m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            -&gt;findAll()
+        ;
+
+        // Ambil data karyawan
+        $karyawan = new Karyawan();
+        $formula = new Formula();
+        $getKaryawan = $karyawan-&gt;getKaryawan(['karyawan.id' =&gt; $karyawanId]);
+        if (isset($getKaryawan-&gt;id)) {
+            $arrKaryawan = [
+                'm_jabatan_level_id' =&gt; $getKaryawan-&gt;m_jabatan_level_id,
+                'm_jabatan_id' =&gt; $getKaryawan-&gt;m_jabatan_id,
+                'm_time_off_id' =&gt; 0,
+                'm_organisasi_id' =&gt; $getKaryawan-&gt;m_organisasi_id,
+                'jenkel' =&gt; $getKaryawan-&gt;jenkel,
+                'status_nikah' =&gt; $getKaryawan-&gt;status_nikah,
+                'tipe_karyawan' =&gt; $getKaryawan-&gt;tipe,
+                'karyawan_id' =&gt; $getKaryawan-&gt;id,
+            ];
+            // ambil defaul nominal dari formula
+            foreach ($model as $key =&gt; $value) {
+                // print_r($value);die;
+                $listFormula = $formula-&gt;getFormula('m_komponen_gaji_id', $value-&gt;id);
+                $nominal = $formula-&gt;getValue($arrKaryawan, $listFormula['data']);
+                $value-&gt;nominal = $nominal &gt; 0 ? $nominal : $value-&gt;nominal;
+                if (1 == $value-&gt;tipe) {
+                    $value-&gt;nama = ' + '.$value-&gt;nama_kg;
+                } elseif (-1 == $value-&gt;tipe) {
+                    $value-&gt;nama = ' - '.$value-&gt;nama_kg;
+                }
+            }
+        }
+
+        return ['data' =&gt; $model];
+    }
+
+    /**
+     * Method untuk menyimpan data perusahaan.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $params
+     */
+    public function save($params)
+    {
+        try {
+            if (isset($params['id']) &amp;&amp; !empty($params['id'])) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $params, ['id' =&gt; $params['id']]);
+                $input1 = [];
+                if ($model) {
+                    if (isset($params['m_komponen_id']) &amp;&amp; 1 == $params['m_komponen_id']) {
+                        $input1['gaji_pokok'] = $params['nominal'];
+                        $models = $this-&gt;db-&gt;update('karyawan', $input1, ['id' =&gt; $params['idkaryawan']]);
+                    }
+                }
+            } else {
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $params);
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            $model = $this-&gt;db-&gt;delete($this-&gt;table, ['id' =&gt; $params['id']]);
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'karyawan_id' =&gt; 'required',
+            'm_komponen_id' =&gt; 'required',
+            'nominal' =&gt; 'required',
+        ];
+
+        \GUMP::set_field_name('karyawan_id', 'Karyawan');
+        \GUMP::set_field_name('m_komponen_id', 'Komponen Gaji');
+
+        return validate($data, $validasi, $custom);
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

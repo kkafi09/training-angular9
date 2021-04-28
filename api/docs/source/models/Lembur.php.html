@@ -1,0 +1,369 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class Lembur
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 't_lembur';
+    }
+
+    /**
+     * Ambil semua data terminasi.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     *
+     * @return array
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select($this-&gt;table.'.*, karyawan_data.nama as nama_karyawan')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'karyawan', 'karyawan.id = '.$this-&gt;table.'.karyawan_id')
+            -&gt;join('left join', 'karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+        ;
+
+        // Filter
+        if (isset($params) &amp;&amp; !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) &amp;&amp; is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($params) &amp;&amp; !empty($params)) {
+            foreach ($filter as $key =&gt; $val) {
+                if (!empty($val)) {
+                    if ('kode' == $key) {
+                        $this-&gt;db-&gt;where('t_lembur.kode', 'like', $val);
+                    } elseif ('nama' == $key) {
+                        $this-&gt;db-&gt;where('karyawan_data.nama', 'like', $val);
+                    } elseif ('status' == $key) {
+                        $this-&gt;db-&gt;where('t_lembur.is_approve', '=', $val);
+                    } elseif ('lembur_id' == $key) {
+                        $this-&gt;db-&gt;where('t_lembur.id', '=', $val);
+                    } elseif ('karyawan_id' == $key) {
+                        $this-&gt;db-&gt;where('karyawan.id', '=', $val);
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) &amp;&amp; !empty($limit)) {
+            $this-&gt;db-&gt;limit($limit);
+        }
+
+        // Set offset
+        if (isset($offset) &amp;&amp; !empty($offset)) {
+            $this-&gt;db-&gt;offset($offset);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        $arr = [];
+        foreach ($models as $key =&gt; $val) {
+            $arr[$key]['id'] = $val-&gt;id;
+            $arr[$key]['kode'] = $val-&gt;kode;
+            $arr[$key]['karyawan_id'] = $val-&gt;karyawan_id;
+            $arr[$key]['tgl'] = date('d/m/Y', strtotime($val-&gt;tgl));
+            $arr[$key]['nominal'] = $val-&gt;nominal;
+            $arr[$key]['keterangan'] = $val-&gt;keterangan;
+            $arr[$key]['sumber'] = $val-&gt;sumber;
+            $arr[$key]['is_approve'] = $val-&gt;is_approve;
+            $arr[$key]['created_by'] = $val-&gt;created_by;
+            $arr[$key]['created_at'] = $val-&gt;created_at;
+            $arr[$key]['modified_by'] = $val-&gt;modified_by;
+            $arr[$key]['modified_at'] = $val-&gt;modified_at;
+            $arr[$key]['nama_karyawan'] = $val-&gt;nama_karyawan;
+            $arr[$key]['tgl_mulai'] = date('d/m/Y', strtotime(substr($val-&gt;jam_mulai, 0, 10)));
+            $arr[$key]['tgl_selesai'] = date('d/m/Y', strtotime(substr($val-&gt;jam_selesai, 0, 10)));
+
+            $arr[$key]['jam_mulai']['hour'] = (int) substr($val-&gt;jam_mulai, 11, 2);
+            $arr[$key]['jam_mulai']['minute'] = (int) substr($val-&gt;jam_mulai, 14, 2);
+            $arr[$key]['jam_mulai']['second'] = (int) substr($val-&gt;jam_mulai, 17, 2);
+
+            $arr[$key]['jam_selesai']['hour'] = (int) substr($val-&gt;jam_selesai, 11, 2);
+            $arr[$key]['jam_selesai']['minute'] = (int) substr($val-&gt;jam_selesai, 14, 2);
+            $arr[$key]['jam_selesai']['second'] = (int) substr($val-&gt;jam_selesai, 18, 2);
+
+            $arr[$key]['waktu'] = substr($val-&gt;jam_mulai, 11, 5).' - '.substr($val-&gt;jam_selesai, 11, 5);
+        }
+
+        return [
+            'data' =&gt; $arr,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil total jam dan nominal lembur
+     * 
+     * @param  INT $karyawanId id karyawan
+     * @param  Date $date Tanggal untuk periode bulan dan tahun
+     * 
+     * @return array array total jam dan total rupiah
+     */
+    public function getTotal($karyawanId, $date = null){
+        $date = date('Y-m-d');
+        $month = date(&quot;m&quot;, strtotime($date));
+        $year = date(&quot;Y&quot;, strtotime($date));
+
+        $lembur = $this-&gt;db-&gt;select('
+            sum(time_to_sec(timediff(jam_selesai, jam_mulai))) as totalDetik,
+            sum(nominal) as nominal
+        ')
+        -&gt;from('t_lembur')
+        -&gt;where('karyawan_id', '=', $karyawanId)
+        -&gt;andWhere('is_approve', '=', 1)
+        -&gt;customWhere('month(tgl) = &quot;'.$month.'&quot; and year(tgl)=&quot;'.$year.'&quot;', 'AND')
+        -&gt;find();
+
+        $totalDetik = isset($lembur-&gt;totalDetik) ? $lembur-&gt;totalDetik : 0;
+        $nominal = isset($lembur-&gt;nominal) ? $lembur-&gt;nominal : 0;
+
+        $minutes = floor(($totalDetik % 3600) / 60);
+        $hours = floor($totalDetik / 3600);
+
+        return [
+            'totalJam' =&gt; $hours.' Jam '. $minutes.' Menit',
+            'totalRp' =&gt; $nominal
+        ];
+    }
+
+    /**
+     * Ambil gaji karyawan.
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    public function getGaji($data)
+    {
+        $gaji = $this-&gt;db-&gt;select('gaji_pokok')
+            -&gt;from('karyawan')
+            -&gt;where('id', '=', $data['id'])
+            -&gt;find()
+        ;
+
+        return [
+            'data' =&gt; $gaji,
+        ];
+    }
+
+    /**
+     * Ambil nominal lembur berdasarkan periode dan penggajian.
+     *
+     * @param string $mulai
+     * @param string $selesai
+     * @param int    $payrollId
+     *
+     * @return array
+     */
+    public function getLemburByPeriode($mulai, $selesai, $payrollId = null)
+    {
+        $this-&gt;db-&gt;select('sum(nominal) as total, t_lembur.karyawan_id')
+            -&gt;from('t_lembur')
+            -&gt;leftJoin('karyawan', 'karyawan.id = t_lembur.karyawan_id')
+            -&gt;customWhere('t_lembur.tgl &gt;= &quot;'.$mulai.'&quot; and t_lembur.tgl &lt;= &quot;'.$selesai.'&quot;')
+            -&gt;andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            -&gt;groupBy('karyawan_id')
+        ;
+        if (!empty($payrollId)) {
+            $this-&gt;db-&gt;andWhere('t_lembur.t_payroll_id', '=', $payrollId);
+        } else {
+            $this-&gt;db-&gt;customWhere('t_lembur.t_payroll_id = 0 or t_lembur.t_payroll_id is null', 'AND');
+        }
+        $lembur = $this-&gt;db-&gt;findAll();
+        $arr = [];
+        foreach ($lembur as $key =&gt; $value) {
+            $arr[$value-&gt;karyawan_id] = $value-&gt;total;
+        }
+
+        return $arr;
+    }
+
+    /**
+     * Generate kode terminasi.
+     *
+     * @return array
+     */
+    public function generateKode()
+    {
+        $cekKode = $this-&gt;db-&gt;select('kode')
+            -&gt;from($this-&gt;table)
+            -&gt;orderBy('kode DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $tipe = 'LBR';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $tanggal = date('y').date('m');
+            $kode = $tipe.$tanggal.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    /**
+     * Simpan data terminasi.
+     *
+     * @param array  $params
+     * @param string $customParams
+     * @param mixed  $data
+     *
+     * @return array
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (!isset($data['id'])) {
+                $data['is_approve'] = 1;
+                $data['tgl'] = $data['tgl_mulai'];
+                $data['jam_mulai'] = $data['tgl_mulai'].' '.$data['jam_mulai']['hour'].':'.$data['jam_mulai']['minute'].':'.$data['jam_mulai']['second'];
+                $data['jam_selesai'] = $data['tgl_selesai'].' '.$data['jam_selesai']['hour'].':'.$data['jam_selesai']['minute'].':'.$data['jam_selesai']['second'];
+
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $data);
+            } elseif (empty($customParams)) {
+                $data['tgl'] = $data['tgl_mulai'];
+                $data['jam_mulai'] = $data['tgl_mulai'].' '.$data['jam_mulai']['hour'].':'.$data['jam_mulai']['minute'].':'.$data['jam_mulai']['second'];
+                $data['jam_selesai'] = $data['tgl_selesai'].' '.$data['jam_selesai']['hour'].':'.$data['jam_selesai']['minute'].':'.$data['jam_selesai']['second'];
+
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, ['id' =&gt; $data['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, $customParams);
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function delete($data, $karyawan_id = [])
+    {
+        try {
+            if (isset($data['id'])) {
+                $model = $this-&gt;db-&gt;delete($this-&gt;table, ['id' =&gt; $data['id']]);
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            // 'tgl' =&gt; 'required',
+            'karyawan_id' =&gt; 'required',
+            'jam_mulai' =&gt; 'required',
+            'jam_selesai' =&gt; 'required',
+            'nominal' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

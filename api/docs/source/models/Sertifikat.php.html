@@ -1,0 +1,312 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class Sertifikat extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'm_sertifikat';
+    }
+
+    /**
+     * Ambil semua data sertifikat.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from($this-&gt;table)-&gt;where('is_deleted', '=', 0);
+
+        // Filter
+        if (isset($params) &amp;&amp; !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) &amp;&amp; is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($params) &amp;&amp; !empty($params)) {
+            foreach ($filter as $key =&gt; $val) {
+                if (!empty($val)) {
+                    if ('nama' == $key) {
+                        $this-&gt;db-&gt;where('m_sertifikat.nama', 'like', $val);
+                    } elseif ('kode' == $key) {
+                        $this-&gt;db-&gt;where('m_sertifikat.kode', 'like', $val);
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) &amp;&amp; !empty($limit)) {
+            $this-&gt;db-&gt;limit($limit);
+        }
+
+        // Set offset
+        if (isset($offset) &amp;&amp; !empty($offset)) {
+            $this-&gt;db-&gt;offset($offset);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function generateKode()
+    {
+        $cekKode = $this-&gt;db-&gt;select('kode')
+            -&gt;from($this-&gt;table)
+            -&gt;where('kode', 'LIKE', 'SRT')
+            -&gt;orderBy('kode DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $tipe = 'SRT';
+            $kode_item = (substr($kode_terakhir, -3) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menyimpan data sertifikat.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, ['id' =&gt; $data['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, $customParams);
+            }
+            // Return data sertifikat
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function deleteAll($data)
+    {
+        try {
+            $sertifikat = $this-&gt;db-&gt;select('id')
+                -&gt;from($this-&gt;table)
+                -&gt;findAll()
+            ;
+
+            foreach ($sertifikat as $key =&gt; $val) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; $data['is_deleted']], ['id' =&gt; $val-&gt;id]);
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menghapus data sertifikat.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function hapus($data, $customParams = '')
+    {
+        try {
+            $model = $db-&gt;delete('m_sertifikat', ['id' =&gt; $data['id']]);
+            // Return data sertifikat
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Import excel.
+     *
+     * @param array $data
+     */
+    public function import($data)
+    {
+        try {
+            error_reporting(E_ALL &amp; ~E_NOTICE &amp; ~E_WARNING);
+
+            try {
+                $inputFileType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($data['filePath']);
+                $objReader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
+                $objPhpSpreadsheet = $objReader-&gt;load($data['filePath']);
+            } catch (Exception $e) {
+                exit('Error loading file : &quot;'.pathinfo($data['filePath'], PATHINFO_BASENAME).'&quot;: '.$e-&gt;getMessage());
+            }
+
+            $sheet = $objPhpSpreadsheet-&gt;getSheet(0);
+            $highestRow = $sheet-&gt;getHighestRow();
+            $highestColumn = $sheet-&gt;getHighestColumn();
+
+            $pelatihan = [];
+            $index = 0;
+            for ($row = 2; $row &lt;= $highestRow; ++$row) {
+                $pelatihan[$index]['kode'] = $sheet-&gt;getCell('A'.$row)-&gt;getFormattedValue();
+                $pelatihan[$index]['nama'] = $sheet-&gt;getCell('B'.$row)-&gt;getFormattedValue();
+                $pelatihan[$index]['keterangan'] = $sheet-&gt;getCell('C'.$row)-&gt;getFormattedValue();
+                ++$index;
+            }
+            unlink($data['filePath']);
+
+            foreach ($pelatihan as $key =&gt; $val) {
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $val);
+            }
+
+            // Return data
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function download($file)
+    {
+        parent::downloadFile($file);
+
+        return true;
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'kode' =&gt; 'required',
+            'nama' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiKode($data)
+    {
+        return parent::validasiKodeCore($data, 'm_sertifikat');
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

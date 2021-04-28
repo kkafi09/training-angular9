@@ -1,0 +1,207 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanRiwayatPendidikan extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'k_pendidikan';
+    }
+
+    /**
+     * Ambil semua data perusahaan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('k_pendidikan.*,
+         	karyawan_data.nama as karyawan_nama, 
+         	karyawan.nik as karyawan_nik,
+         	m_pendidikan_tingkat.nama as pendidikan_tingkat')
+            -&gt;from($this-&gt;table)
+            -&gt;leftJoin('karyawan', $this-&gt;table.'.karyawan_id = karyawan.id')
+            -&gt;leftJoin('karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            -&gt;leftJoin('m_pendidikan_tingkat', $this-&gt;table.'.m_pendidikan_tingkat_id = m_pendidikan_tingkat.id')
+            -&gt;where($this-&gt;table.'.is_deleted', '=', 0)
+        ;
+        if (isset($params['karyawan']) &amp;&amp; !empty($params['karyawan']) &amp;&amp; '' != $params['karyawan'] &amp;&amp; 'null' != $params['karyawan']) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.karyawan_id', '=', $params['karyawan']);
+        }
+        if (isset($params['pendidikan']) &amp;&amp; !empty($params['pendidikan']) &amp;&amp; '' != $params['pendidikan'] &amp;&amp; 'null' != $params['pendidikan']) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.m_pendidikan_tingkat_id', '=', (int) $params['pendidikan']);
+        }
+        if (isset($params['jurusan']) &amp;&amp; !empty($params['jurusan']) &amp;&amp; '' != $params['jurusan'] &amp;&amp; 'null' != $params['jurusan']) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.jurusan', 'LIKE', $params['jurusan']);
+        }
+        if (isset($params['tahun_awal']) &amp;&amp; !empty($params['tahun_awal']) &amp;&amp; '' != $params['tahun_awal'] &amp;&amp; 'null' != $params['tahun_awal']) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.tahun_selesai', '&gt;=', $params['tahun_awal']);
+        }
+        if (isset($params['tahun_akhir']) &amp;&amp; !empty($params['tahun_akhir']) &amp;&amp; '' != $params['tahun_akhir'] &amp;&amp; 'null' != $params['tahun_akhir']) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.tahun_selesai', '&lt;=', $params['tahun_akhir']);
+        }
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this-&gt;db-&gt;andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key =&gt; $val) {
+                $this-&gt;db-&gt;where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function getPendidikan()
+    {
+        $this-&gt;db-&gt;select('*')-&gt;from('m_pendidikan_tingkat');
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function download($file)
+    {
+        parent::downloadFile($file);
+
+        return true;
+    }
+
+    public function print($params)
+    {
+        $print = '&lt;html&gt;&lt;body onload=&quot;window.print()&quot;&gt;';
+        $print .= '&lt;style type=&quot;text/css&quot;&gt; table, th, td {border: 1px solid black;} &lt;/style&gt;';
+        $print .= '&lt;div&quot;&gt;&lt;h4&gt;Laporan Riwayat Pendidikan&lt;/h4&gt;&lt;/div&gt;';
+        $print .= '&lt;table&gt;
+                            &lt;thead class=&quot;thead-light&quot;&gt;
+                                &lt;tr&gt;
+                                    &lt;th&gt;NIK&lt;/th&gt;
+                                    &lt;th&gt;Nama Karyawan&lt;/th&gt;
+                                    &lt;th&gt;Tingkat Pendidikan&lt;/th&gt;
+                                    &lt;th&gt;Instansi&lt;/th&gt;
+                                    &lt;th&gt;Jurusan&lt;/th&gt;
+                                    &lt;th&gt;Nilai&lt;/th&gt;
+                                    &lt;th&gt;Tahun Lulus&lt;/th&gt;
+                                &lt;/tr&gt;
+                            &lt;/thead&gt;
+                            &lt;tbody&gt;';
+        foreach ($params as $key) {
+            $print .= '&lt;tr&gt;';
+            $print .= '&lt;td&gt;'.$key['karyawan_nama'].'&lt;/td&gt;';
+            $print .= '&lt;td&gt;'.$key['karyawan_nik'].'&lt;/td&gt;';
+            $print .= '&lt;td&gt;'.$key['pendidikan_tingkat'].'&lt;/td&gt;';
+            $print .= '&lt;td&gt;'.$key['institusi'].'&lt;/td&gt;';
+            $print .= '&lt;td&gt;'.$key['jurusan'].'&lt;/td&gt;';
+            $print .= '&lt;td&gt;'.$key['nilai'].'&lt;/td&gt;';
+            $print .= '&lt;td&gt;'.$key['tahun_selesai'].'&lt;/td&gt;';
+            $print .= '&lt;/tr&gt;';
+        }
+        $print .= '&lt;/tbody&gt;&lt;/table&gt;';
+        $print .= '&lt;/body&gt;&lt;/html&gt;';
+
+        return [
+            'data' =&gt; $print,
+            'status' =&gt; true,
+        ];
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

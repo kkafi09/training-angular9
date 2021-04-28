@@ -1,0 +1,88 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanPembayaranKasbon
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_kasbon_bayar_det';
+    }
+
+    /**
+     * Ambil semua data kasbon.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+        if ('null' != $params['periode_mulai'] && 'null' != $params['periode_selesai']) {
+            $tanggal_awal = date('Y-m-d', strtotime($params['periode_mulai']));
+            $tanggal_akhir = date('Y-m-d', strtotime($params['periode_selesai']));
+        } else {
+            $tanggal_awal = null;
+            $tanggal_akhir = null;
+        }
+
+        $this->db->select(
+            $this->table.'.*, 
+                karyawan_data.nama as nama_karyawan, 
+                t_kasbon.karyawan_id,
+                t_kasbon.kode as kode_kasbon,
+                m_jabatan.nama as nama_jabatan
+            '
+        )
+            ->from($this->table)
+            ->join('left join', 't_kasbon', 't_kasbon.id = '.$this->table.'.t_kasbon_id')
+            ->join('left join', 'karyawan', 'karyawan.id = t_kasbon.karyawan_id')
+            ->join('left join', 'karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            ->join('left join', 'k_jabatan', 'karyawan_data.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+        ;
+
+        if (null != $tanggal_awal && null != $tanggal_akhir) {
+            $this->db->andWhere($this->table.'.tgl_bayar', '>=', $tanggal_awal)
+                ->andWhere($this->table.'.tgl_bayar', '<=', $tanggal_akhir)
+            ;
+        }
+
+        if ('null' != $params['karyawan_id'] && '' != $params['karyawan_id']) {
+            $this->db->andWhere('t_kasbon.karyawan_id', '=', $params['karyawan_id']);
+        }
+
+        if (isset($params['t_kasbon_id']) && $params['t_kasbon_id'] > 0) {
+            $this->db->andWhere('t_kasbon.id', '=', $params['t_kasbon_id']);
+        }
+
+        $models = $this->db->findAll();
+
+        foreach ($models as $key => $val) {
+            // $val->total_bayar = $val->bayar + ($val->bayar * $val->bunga / 100);
+            $val->total_bayar = $val->bayar + $val->bunga;
+            $val->tgl_bayar = date('d/m/Y', strtotime($val->tgl_bayar));
+        }
+
+        return [
+            'status' => true,
+            'data' => $models,
+            'periode' => null != $tanggal_awal && null != $tanggal_akhir ? date('d/m/Y', strtotime($tanggal_awal)).' s/d '.date('d/m/Y', strtotime($tanggal_akhir)) : null,
+        ];
+    }
+}
+

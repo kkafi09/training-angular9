@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <!-- <link rel="stylesheet" href="./bootstrap.min.css"> -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+</head>
+<style class="text/css">
+  * {
+    -webkit-print-color-adjust: exact !important;
+    /*Chrome, Safari */
+    color-adjust: exact !important;
+    /*Firefox*/
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .table td,
+  .table th {
+    font-size: 12px;
+    border: 1px solid black;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    /* margin-right: -12px;
+  margin-left: -12px; */
+  }
+
+  .col {
+    flex-basis: 0;
+    flex-grow: 1;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .col-1 {
+    flex: 0 0 40%;
+    max-width: 40%
+  }
+
+  .col-2 {
+    flex: 0 0 20%;
+    max-width: 20%
+  }
+
+  .col-3 {
+    flex: 0 0 70%;
+    max-width: 70%
+  }
+
+  .col-4 {
+    flex: 0 0 30%;
+    max-width: 30%
+  }
+
+  .col-5 {
+    flex: 0 0 28%;
+    max-width: 28%
+  }
+
+  .footer {
+    border: 2px solid black;
+
+  }
+
+  .table-top {
+    border: 2px solid black;
+    width: fit-content;
+
+  }
+
+  .top {
+    width: 150px;
+    height: 100px;
+  }
+</style>
+
+<body>
+
+  <table class="table-top">
+    <tr>
+      <td style="width: 150px;border-right: 2px solid black;">
+        <img src="./././assets/img/setting_aplikasi/{{gbr.logo_laporan}}" alt="symfony" srcset="" class="top"></td>
+      <td style="color:#21209c;">
+        <h3 style="text-align: center;">HASIL PANEN</h5>
+          <h3 style="text-align: center;">{{kode.kode}}</h5>
+            {% if kab is not empty %}
+            <h5 style="margin-top: 0px;">Wilayah {{kab.nama}}</h5>
+            {% endif %}
+      </td>
+      <!-- <td>
+        {% if kab is not empty %}
+        <h5 style="margin-top: 0px;">Wilayah {{kab.nama}}</h5>
+        {% endif %}
+      </td> -->
+
+    </tr>
+  </table>
+  <table>
+    <tr>
+      <td style="padding:0.5em"></td>
+      <td style="text-align: right; font-size: 12px;">{{tanggal}}</td>
+    </tr>
+  </table>
+  <div style="font-size: 12px;">
+    <br><br>
+    <table>
+      <tr>
+        <td style="font-weight: bold;">Provinsi : </td>
+        <td>{{list.prov}}</td>
+
+        <td style="font-weight: bold;">Kabupaten : </td>
+        <td>{{list.kab}}</td>
+
+
+      </tr>
+      <tr>
+        <td style="font-weight: bold;">Kode Tambak : </td>
+        <td>{{list.kode_tambak}}</td>
+        <td style="font-weight: bold;">Nama Tambak :</td>
+        <td>{{list.nama_tambak}}</td>
+      </tr>
+      <tr>
+        <td style="font-weight: bold;">Nama Petani : </td>
+        <td>{{list.nama_petani}}</td>
+        <td style="font-weight: bold;">Periode Panen :</td>
+        <td>{{list.jadwal_kode}}({{list.tanggal_mulai_jadwal}} / {{list.tanggal_selesai}})</td>
+      </tr>
+      <tr>
+        <td style="font-weight: bold;">Nama Spesies : </td>
+        <td>{{list.nama_spesies}}</td>
+        <td style="font-weight: bold;">Harvest :</td>
+        <td>({{list.tanggal_mulai}} - {{list.tanggal_selesai}})</td>
+      </tr>
+
+      <tr>
+        <td style="font-weight: bold;">Kode Kor Pembelian : </td>
+        <td>{{list.kode_kor}}</td>
+        <td style="font-weight: bold;">Nama Kor Pembelian :</td>
+        <td>{{list.nama_kor}}</td>
+      </tr>
+      <tr>
+        <td style="font-weight: bold;">Kode Sub Pembelian : </td>
+        <td>{{list.kode_sub}}</td>
+
+      </tr>
+
+    </table>
+
+
+    <br><br>
+    <table class="table" style="margin-top: 2em;width: 50%;">
+      <thead>
+        <tr>
+          <th>
+            <div style="text-align: center;">Timbangan</div>
+          </th>
+          <th>
+            <div style="text-align: center;">Grade</div>
+          </th>
+          <th>
+            <div style="text-align: center;">Size</div>
+          </th>
+          <th>
+
+            <div style="text-align: center;">Kuantiti(kg)</div>
+          </th>
+        </tr>
+
+
+      </thead>
+      <tbody>
+        {% if detail is defined %}
+        {% for key, val in detail %}
+        <tr>
+          <td style="text-align: center;">{{key + 1}}</td>
+          <td style="text-align: center;">{{val.nama_grade}}</td>
+          <td style="text-align: center;">{{val.nama_size}}</td>
+          <td style="text-align: center;">{{val.kuantiti}}</td>
+
+        </tr>
+        {% endfor %}
+        {% endif%}
+
+
+    </table>
+
+    <br><br>
+    <table border="1" style="margin-top: 2em;width: 50%;">
+      <tr>
+        <th>Grade</th>
+        <th>Total</th>
+      </tr>
+      {% if Total is defined %}
+      {% for key, val in Total %}
+      <tr>
+        <td>{{val.grade}}</td>
+        <td>{{val.total}}</td>
+      </tr>
+      <tr>
+        <td>Grand Total</td>
+        <td>{{list.grandTotal}}</td>
+
+      </tr>
+      {% endfor %}
+      {% endif%}
+    </table>
+
+    <!-- {% if Total is defined %}
+      {% for key, val in Total %}
+      <div class="row" style="margin-top: 0.5em;">
+        <div class="col-1" style="font-weight: bold;">Total {{val.grade}}</div>
+        <div class="col-1">{{val.total}}</div>
+      </div>
+
+
+      {% endfor %}
+      {% endif%}
+
+      <div class="row" style="margin-top: 2em;">
+        <div class="col-1" style="font-weight: bold;">Grand Total</div>
+        <div class="col-1">{{list.grandTotal}}</div>
+      </div> -->
+  </div>
+  </div>
+
+
+
+  </div>

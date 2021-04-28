@@ -1,0 +1,220 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanBpjs
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 't_payroll';
+    }
+
+    /**
+     * Ambil semua data bpjs.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+        if ('null' != $params['periode_mulai'] &amp;&amp; 'null' != $params['periode_selesai']) {
+            $tanggal_awal = date('Y-m-d', strtotime($params['periode_mulai']));
+            $tanggal_akhir = date('Y-m-d', strtotime($params['periode_selesai']));
+        } else {
+            $tanggal_awal = null;
+            $tanggal_akhir = null;
+        }
+
+        // Ambil list bpjs
+        $this-&gt;db-&gt;select('t_payroll.*,t_payroll_det.id as idpayrolldet, t_payroll_det.karyawan_id, t_payroll_bpjs.*, karyawan_data.nama as nama_karyawan, m_jabatan.nama as nama_jabatan')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 't_payroll_det', 't_payroll.id = t_payroll_det.t_payroll_id')
+            -&gt;join('left join', 't_payroll_bpjs', 't_payroll_det.id = t_payroll_bpjs.t_payroll_det_id')
+            -&gt;join('left join', 'karyawan', 'karyawan.id = t_payroll_det.karyawan_id')
+            -&gt;join('left join', 'karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            -&gt;join('left join', 'k_jabatan', 'karyawan_data.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1')
+            -&gt;join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;where('t_payroll.status', '=', 3)
+            -&gt;andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+
+        if (null != $tanggal_awal &amp;&amp; null != $tanggal_akhir) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.periode_mulai', '&gt;=', $tanggal_awal)
+                -&gt;andWhere($this-&gt;table.'.periode_selesai', '&lt;=', $tanggal_akhir)
+            ;
+        }
+
+        if ('null' != $params['karyawan_id'] &amp;&amp; '' != $params['karyawan_id']) {
+            $this-&gt;db-&gt;andWhere('t_payroll_det.karyawan_id', '=', $params['karyawan_id']);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $bpjsId = [];
+        foreach ($models as $key =&gt; $val) {
+            $bpjsId[$val-&gt;karyawan_id]['id'] = $val-&gt;karyawan_id;
+            $bpjsId[$val-&gt;karyawan_id]['nama_karyawan'] = $val-&gt;nama_karyawan;
+            $bpjsId[$val-&gt;karyawan_id]['nama_jabatan'] = $val-&gt;nama_jabatan;
+            $bpjsId[$val-&gt;karyawan_id]['detbpjs'][] = $val;
+        }
+
+        foreach ($bpjsId as $key =&gt; $value) {
+            $sumjkk = 0;
+            $sumjkk_perusahaan = 0;
+            $sumjht = 0;
+            $sumjht_perusahaan = 0;
+            $sumjkm = 0;
+            $sumjkm_perusahaan = 0;
+            $sumjp = 0;
+            $sumjp_perusahaan = 0;
+            $sumjk = 0;
+            $sumjk_perusahaan = 0;
+            foreach ($value['detbpjs'] as $keys =&gt; $val) {
+                $val-&gt;tgl = date('d/m/Y', strtotime($val-&gt;tgl));
+                if ('' == $val-&gt;jkk) {
+                    $val-&gt;jkk = 0;
+                }
+                if ('' == $val-&gt;jkk_perusahaan) {
+                    $val-&gt;jkk_perusahaan = 0;
+                }
+                if ('' == $val-&gt;jht) {
+                    $val-&gt;jht = 0;
+                }
+                if ('' == $val-&gt;jht_perusahaan) {
+                    $val-&gt;jht_perusahaan = 0;
+                }
+                if ('' == $val-&gt;jkm) {
+                    $val-&gt;jkm = 0;
+                }
+                if ('' == $val-&gt;jkm_perusahaan) {
+                    $val-&gt;jkm_perusahaan = 0;
+                }
+                if ('' == $val-&gt;jp) {
+                    $val-&gt;jp = 0;
+                }
+                if ('' == $val-&gt;jp_perusahaan) {
+                    $val-&gt;jp_perusahaan = 0;
+                }
+                if ('' == $val-&gt;jk) {
+                    $val-&gt;jk = 0;
+                }
+                if ('' == $val-&gt;jk_perusahaan) {
+                    $val-&gt;jk_perusahaan = 0;
+                }
+
+                $sumjkk += $val-&gt;jkk;
+                $bpjsId[$key]['totaljkk'] = $sumjkk;
+
+                $sumjkk_perusahaan += $val-&gt;jkk_perusahaan;
+                $bpjsId[$key]['totaljkkperusahaan'] = $sumjkk_perusahaan;
+
+                $sumjht += $val-&gt;jht;
+                $bpjsId[$key]['totaljht'] = $sumjht;
+
+                $sumjht_perusahaan += $val-&gt;jht_perusahaan;
+                $bpjsId[$key]['totaljhtperusahaan'] = $sumjht_perusahaan;
+
+                $sumjkm += $val-&gt;jkm;
+                $bpjsId[$key]['totaljkm'] = $sumjkm;
+
+                $sumjkm_perusahaan += $val-&gt;jkm_perusahaan;
+                $bpjsId[$key]['totaljkmperusahaan'] = $sumjkm_perusahaan;
+
+                $sumjp += $val-&gt;jp;
+                $bpjsId[$key]['totaljp'] = $sumjp;
+
+                $sumjp_perusahaan += $val-&gt;jp_perusahaan;
+                $bpjsId[$key]['totaljpperusahaan'] = $sumjp_perusahaan;
+
+                $sumjk += $val-&gt;jk;
+                $bpjsId[$key]['totaljk'] = $sumjk;
+
+                $sumjk_perusahaan += $val-&gt;jk_perusahaan;
+                $bpjsId[$key]['totaljkperusahaan'] = $sumjk_perusahaan;
+
+                $val-&gt;alljkk = $val-&gt;jkk + $val-&gt;jkk_perusahaan;
+                $val-&gt;alljkm = $val-&gt;jkm + $val-&gt;jkm_perusahaan;
+                $val-&gt;alljht = $val-&gt;jht + $val-&gt;jht_perusahaan;
+                $val-&gt;alljp = $val-&gt;jp + $val-&gt;jp_perusahaan;
+                $val-&gt;alljk = $val-&gt;jk + $val-&gt;jk_perusahaan;
+            }
+            $bpjsId[$key]['alljkk'] = $bpjsId[$key]['totaljkk'] + $bpjsId[$key]['totaljkkperusahaan'];
+            $bpjsId[$key]['alljht'] = $bpjsId[$key]['totaljht'] + $bpjsId[$key]['totaljhtperusahaan'];
+            $bpjsId[$key]['alljkm'] = $bpjsId[$key]['totaljkm'] + $bpjsId[$key]['totaljkmperusahaan'];
+            $bpjsId[$key]['alljp'] = $bpjsId[$key]['totaljp'] + $bpjsId[$key]['totaljpperusahaan'];
+            $bpjsId[$key]['alljk'] = $bpjsId[$key]['totaljk'] + $bpjsId[$key]['totaljkperusahaan'];
+        }
+
+        $arr = [];
+        $i = 0;
+        foreach ($bpjsId as $keys =&gt; $value) {
+            $arr[$i] = $value;
+            ++$i;
+        }
+
+        return [
+            'status' =&gt; true,
+            'data' =&gt; $arr,
+            'periode' =&gt; null != $tanggal_awal &amp;&amp; null != $tanggal_akhir ? date('d/m/Y', strtotime($tanggal_awal)).' s/d '.date('d/m/Y', strtotime($tanggal_akhir)) : null,
+        ];
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

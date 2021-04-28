@@ -1,0 +1,37 @@
+<?php
+
+use Model\LaporanMutasiKaryawan;
+
+// Ambil semua kasbon
+$app->get('/l_mutasi_karyawan/getAll', function ($request, $response) {
+    $params = $request->getParams();
+    $laporanMutasiKaryawan = new LaporanMutasiKaryawan();
+    $getDataMutasiKaryawan = $laporanMutasiKaryawan->getAll($params);
+//    echo json_encode($getDataMutasiKaryawan);die();
+
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/mutasi_karyawan.html', [
+            'data' => $getDataMutasiKaryawan['list'],
+            'periode' => $getDataMutasiKaryawan['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getDataMutasiKaryawan['periode']) {
+            header('Content-Disposition: attachment;Filename="Laporan Mutasi Karyawan ('.$getDataMutasiKaryawan['periode'].').xls"');
+        } else {
+            header('Content-Disposition: attachment;Filename="Laporan Mutasi Karyawan (Semua Periode).xls"');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/mutasi_karyawan.html', [
+            'data' => $getDataMutasiKaryawan['list'],
+            'periode' => $getDataMutasiKaryawan['periode'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, ['list' => $getDataMutasiKaryawan['list'], 'periode' => $getDataMutasiKaryawan['periode']]);
+    }
+});
+

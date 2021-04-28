@@ -1,0 +1,326 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Formula;
+use Model\HakAkses;
+use Model\Karyawan;
+use Model\Perusahaan;
+use Service\Firebase;
+use Service\Landa;
+
+$app-&gt;get('/', function ($request, $response) {
+    $firebase = new Firebase();
+    $formula = new Formula();
+    $karyawan = [
+        'm_level_jabatan_id' =&gt; 2,
+        'm_jabatan_id' =&gt; 2,
+        'm_time_off_id' =&gt; 0,
+        'm_organisasi_id' =&gt; 1,
+        'jenkel' =&gt; 1,
+        'status_nikah' =&gt; 1,
+        'tipe_karyawan' =&gt; 3,
+        'karyawan_id' =&gt; 1,
+    ];
+    $listFormula = $formula-&gt;getFormula(['id' =&gt; 1]);
+    $value = $formula-&gt;getValue($karyawan, $listFormula['data']);
+    echo $value;
+    $firebase = new Firebase();
+    $firebase-&gt;sendNotif('all', 'HAI', 'TES');
+});
+
+// Ambil set sessions
+$app-&gt;post('/site/setSessions', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    if (isset($params['accessToken'])) {
+        error_reporting(0);
+        $firebase = new Firebase();
+        $landa = new Landa();
+
+        // Ambil data user dari firebase
+        $getUser = $firebase-&gt;getUserByUid($params['uid']);
+        // Ambil client dari firebase untuk setting koneksi database
+        if (isset($params['client']) &amp;&amp; !empty($params['client']) &amp;&amp; isset($_SESSION['user']['client'])) {
+            $client = $_SESSION['user']['client'];
+        } else {
+            $client = $getUser['data']['client'];
+        }
+        $getClient = $firebase-&gt;getClientByUid($client);
+        // set database ke session
+        if (isset($getClient['data']['db'])) {
+            $_SESSION['user']['safeEmailId'] = $getUser['data']['client'];
+            $_SESSION['user']['safeEmail'] = [
+                'safeEmail1' =&gt; $getClient['data']['db']['DB_HOST'],
+                'safeEmail2' =&gt; $getClient['data']['db']['DB_NAME'],
+                'safeEmail3' =&gt; $getClient['data']['db']['DB_PASS'],
+                'safeEmail4' =&gt; $getClient['data']['db']['DB_USER'],
+            ];
+        }
+
+        $_SESSION['user']['client'] = $client;
+
+        try {
+            // Ambil karyawan berdasarkan UID
+            $karyawan = new Karyawan();
+            $getKaryawan = $karyawan-&gt;getAllKaryawan(['uid' =&gt; $params['uid']]);
+            $m_roles_id = isset($getKaryawan['data'][0]-&gt;m_roles_id) ? $getKaryawan['data'][0]-&gt;m_roles_id : 1;
+            // Ambil hak akses
+            $akses = new HakAkses();
+            $getAkses = $akses-&gt;getAll(['id' =&gt; $m_roles_id], 1, 0);
+            $hakAkses = isset($getAkses['data'][0]) ? (array) $getAkses['data'][0] : [];
+            $aksesPerusahaan = isset($hakAkses['akses_perusahaan']) ? $hakAkses['akses_perusahaan'] : [];
+        } catch (PDOException $e) {
+            return unprocessResponse($response, $e-&gt;getMessage());
+        }
+
+        // Jika tipe super admin Ambil list semua perusahaan
+        if (isset($getUser['data']['tipe']) &amp;&amp; ('admin' == $getUser['data']['tipe'] || 'super admin' == $getUser['data']['tipe'])) {
+            $user = $getUser;
+            $perusahaan = new Perusahaan();
+            $allPerusahaan = $perusahaan-&gt;getAll([], '', '', 'id asc');
+            foreach ($allPerusahaan['data'] as $key =&gt; $value) {
+                $getPerusahaan['data'][] = [
+                    'id' =&gt; $value-&gt;id,
+                    'nama' =&gt; $value-&gt;nama,
+                ];
+
+                break;
+            }
+            // Jika tipe karyawan ambil list perusahaan berdasarkan akses / jabatan
+        } elseif (count($getKaryawan['data']) &gt;= 1) {
+            // set data karyawan ke variable user
+            $user['data']['userId'] = $getKaryawan['data'][0]-&gt;id;
+            $user['data']['nik'] = $getKaryawan['data'][0]-&gt;nik;
+            $user['data']['statusTxt'] = '1' == $getKaryawan['data'][0]-&gt;tipe ? 'Kontrak' : 'Tetap';
+            $user['data']['jabatanTxt'] = $getKaryawan['data'][0]-&gt;nama_jabatan;
+            $user['data']['nama'] = $getKaryawan['data'][0]-&gt;nama;
+            $user['data']['email'] = $getKaryawan['data'][0]-&gt;email;
+            $user['data']['uid'] = $getKaryawan['data'][0]-&gt;uid;
+            $user['data']['client'] = $getUser['data']['client'];
+            $user['data']['foto'] = config('SITE_IMG').'karyawan/'.$getKaryawan['data'][0]-&gt;foto;
+            if ($m_roles_id &gt; 1) {
+                $perusahaan = new Perusahaan();
+                $list = $perusahaan-&gt;getByIdArr($aksesPerusahaan);
+                foreach ($list as $key =&gt; $value) {
+                    $getPerusahaan['data'][] = [
+                        'id' =&gt; $value-&gt;id,
+                        'nama' =&gt; $value-&gt;nama,
+                    ];
+
+                    break;
+                }
+            } else {
+                foreach ($getKaryawan['data'] as $key =&gt; $value) {
+                    $getPerusahaan['data'][] = [
+                        'id' =&gt; $value-&gt;m_perusahaan_id,
+                        'nama' =&gt; $value-&gt;m_perusahaan_nama,
+                    ];
+
+                    break;
+                }
+            }
+        }
+
+        // set perusahaan aktif ke session
+        if (!empty($getPerusahaan['data'])) {
+            foreach ($getPerusahaan['data'] as $key =&gt; $value) {
+                $_SESSION['user']['m_perusahaan'] = [
+                    'id' =&gt; $value['id'],
+                    'nama' =&gt; $value['nama'],
+                ];
+
+                break;
+            }
+        } else {
+            $_SESSION['user']['m_perusahaan'] = [
+                'id' =&gt; 0,
+                'nama' =&gt; 'Unknown Company',
+            ];
+        }
+
+        // jika user ditemukan, simpan ke session, jika tidak tampilkan login gagal
+        if (isset($user['data']['uid']) &amp;&amp; !empty($user['data']['uid'])) {
+            // set subscribe untuk notifikasi
+            $perusahaan = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : 0;
+
+            // set PHP Session
+            $_SESSION['user']['userId'] = isset($user['data']['userId']) ? $user['data']['userId'] : 0;
+            $_SESSION['user']['client'] = $user['data']['client'];
+            $_SESSION['user']['nik'] = isset($user['data']['nik']) ? $user['data']['nik'] : '-';
+            $_SESSION['user']['statusTxt'] = isset($user['data']['statusTxt']) ? $user['data']['statusTxt'] : '-';
+            $_SESSION['user']['jabatanTxt'] = isset($user['data']['jabatanTxt']) ? $user['data']['jabatanTxt'] : '-';
+            $_SESSION['user']['uid'] = $user['data']['uid'];
+            $_SESSION['user']['accessToken'] = $params['accessToken'];
+            $_SESSION['user']['nama'] = $user['data']['nama'];
+            $_SESSION['user']['email'] = $user['data']['email'];
+            $_SESSION['user']['tipe'] = isset($user['data']['tipe']) ? $user['data']['tipe'] : 'karyawan';
+            $_SESSION['user']['foto'] = isset($user['data']['foto']) ? $user['data']['foto'] : img_url().'default.png';
+            $_SESSION['user']['id'] = $_SESSION['user']['userId'];
+
+            // $firebase-&gt;subscribeTopic($params['accessToken'], $params['uid']);
+            if (isset($params['registrationToken']) &amp;&amp; !empty($params['registrationToken'])) {
+                $topic = $firebase-&gt;subscribeTopic($params['registrationToken'], $landa-&gt;idKaryawan($_SESSION['user']['userId'], $_SESSION['user']['client']));
+                $topic = $firebase-&gt;subscribeTopic($params['registrationToken'], 'all_'.$user['data']['client']);
+            }
+
+            $json = json_encode($_SESSION['user']);
+            $base64 = base64_encode($json);
+
+            // Masukkan hak akses ke session
+            $_SESSION['user']['akses'] = $hakAkses['akses'];
+
+            return successResponse($response, ['user' =&gt; $_SESSION['user'], 'base64' =&gt; $base64]);
+        }
+
+        return unprocessResponse($response, ['User belum terdaftar pada sistem']);
+    }
+
+    return unprocessResponse($response, ['undefined']);
+})-&gt;setName('setSession');
+
+// Cek status presensi WFH / WFO dan koordinat untuk absensi
+$app-&gt;get('/site/checkStatusPresensi', function ($request, $response) {
+    $data['lokasi_presensi']['lat'] = '-7.852517';
+    $data['lokasi_presensi']['long'] = '112.607099';
+    $data['status_presensi'] = 1; // 1 WFO, 2 WFH
+
+    return successResponse($response, $data);
+})-&gt;setName('getStatusPresensi');
+
+// Ambil session user
+$app-&gt;get('/site/session', function ($request, $response) {
+    if (isset($_SESSION['user']['userId'])) {
+        return successResponse($response, $_SESSION['user']);
+    }
+
+    return unprocessResponse($response, ['undefined']);
+})-&gt;setName('session');
+
+// Set session perusahaan
+$app-&gt;post('/site/setPerusahaan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+
+    $akses = new HakAkses();
+    $getAkses = $akses-&gt;getAll([], 1, 0);
+    $hakAkses = isset($getAkses['data'][0]) ? (array) $getAkses['data'][0] : [];
+
+    $_SESSION['user']['m_perusahaan'] = [
+        'id' =&gt; $params['id'],
+        'nama' =&gt; $params['nama'],
+        'kode' =&gt; $params['kode'],
+    ];
+
+    $_SESSION['user']['akses'] = $hakAkses['akses'];
+
+    return successResponse($response, ['user' =&gt; $_SESSION['user']]);
+});
+
+// Hapus semua session
+$app-&gt;get('/site/logout', function ($request, $response) {
+    session_destroy();
+
+    return successResponse($response, []);
+})-&gt;setName('logout');
+
+// Menampilkan jam server
+$app-&gt;get('/site/getJam', function ($request, $response) {
+    $date = strtotime(date('Y-m-d H:i:s'));
+
+    return successResponse($response, $date);
+})-&gt;setName('getJam');
+$app-&gt;post('/site/uploadImage', function ($request, $response) {
+    $namaFile = '';
+    $base64Ret = '';
+    $res = false;
+    if (isset($_FILES['image']['name'])) {
+        $imageSampel = $_POST['sampel'];
+        $target_dir = 'assets/img/';
+        $namaFile = md5(time()).'.'.$_POST['ext'];
+        $target_file = $target_dir.$namaFile;
+        $check = getimagesize($_FILES['image']['tmp_name']);
+        if (false !== $check) {
+            if (move_uploaded_file($_FILES['image']['tmp_name'], $target_file)) {
+                $ret = true;
+            } else {
+                $ret = false;
+            }
+        } else {
+            $ret = false;
+        }
+    } else {
+        $ret = false;
+    }
+    if (true == $ret) {
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL =&gt; 'https://us-central1-humanis-2020.cloudfunctions.net/app/face-recognition',
+            CURLOPT_RETURNTRANSFER =&gt; true,
+            CURLOPT_ENCODING =&gt; '',
+            CURLOPT_MAXREDIRS =&gt; 10,
+            CURLOPT_TIMEOUT =&gt; 0,
+            CURLOPT_FOLLOWLOCATION =&gt; true,
+            CURLOPT_HTTP_VERSION =&gt; CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST =&gt; 'POST',
+            CURLOPT_POSTFIELDS =&gt; 'link_sampel='.$imageSampel.'&amp;base64=https://app.humanis.id/api/assets/img/'.$namaFile,
+            CURLOPT_HTTPHEADER =&gt; [
+                'Content-Type: application/x-www-form-urlencoded',
+            ],
+        ]);
+
+        $_respon = json_decode(curl_exec($curl));
+        $respon = (array) $_respon;
+        if (false !== strpos($respon['values'], 'person')) {
+            $res = true;
+            $path = $target_dir.$namaFile;
+            $type = pathinfo($path, PATHINFO_EXTENSION);
+            $data = file_get_contents($path);
+            $base64Ret = 'data:image/'.$type.';base64,'.base64_encode($data);
+        }
+    }
+
+    return successResponse($response, ['status' =&gt; $res, 'base64' =&gt; $base64Ret]);
+})-&gt;setName('getJam');
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,91 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+return [
+    'validate_required' =&gt; 'Поле {field} є обов&rsquo;язковим',
+    'validate_valid_email' =&gt; 'Поле {field} має бути Email адресою',
+    'validate_max_len' =&gt; 'У полі {field} має бути максимум {param} символів',
+    'validate_min_len' =&gt; 'У полі {field} має бути мінімум {param} символів',
+    'validate_exact_len' =&gt; 'Поле {field} має містити рівно {param} символів',
+    'validate_alpha' =&gt; 'Поле {field} може містити тільки літери',
+    'validate_alpha_numeric' =&gt; 'Поле {field} може містити тільки букви і цифри',
+    'validate_alpha_numeric_space' =&gt; 'Поле {field} може містити тільки букви, цифри та пробіли',
+    'validate_alpha_dash' =&gt; 'Поле {field} може містити тільки букви та дефіс',
+    'validate_alpha_space' =&gt; 'Поле {field} може містити тільки букви та пробіл',
+    'validate_numeric' =&gt; 'Поле {field} має бути числом',
+    'validate_integer' =&gt; 'Поле {field} має бути цілим числом',
+    'validate_boolean' =&gt; 'У поля {field} повинен бути логічний (булевий) тип даних true або false',
+    'validate_float' =&gt; 'Поле {field} має бути не цілим числом',
+    'validate_valid_url' =&gt; 'Поле {field} має бути гіперпосиланням',
+    'validate_url_exists' =&gt; 'Гіперпосилання {field} недоступне',
+    'validate_valid_ip' =&gt; 'Поле {field} має бути IP адресою',
+    'validate_valid_ipv4' =&gt; 'Поле {field} має бути IPv4 адресою',
+    'validate_valid_ipv6' =&gt; 'Поле {field} має бути IPv6 адресою',
+    'validate_guidv4' =&gt; 'Поле {field} має бути GUIDом',
+    'validate_valid_cc' =&gt; 'Номер картки {field} не є валідним',
+    'validate_valid_name' =&gt; 'Поле {field} має містити повне ім&rsquo;я',
+    'validate_contains' =&gt; 'Поле {field} може містити наступні значення: {param}',
+    'validate_contains_list' =&gt; 'Значення {field} не може бути використано як відповідь',
+    'validate_doesnt_contain_list' =&gt; 'Значення {field} не може бути використано',
+    'validate_street_address' =&gt; 'Поле {field} має бути адресою',
+    'validate_date' =&gt; 'Поле {field} має бути датою',
+    'validate_min_numeric' =&gt; 'Поле {field} має бути числом не менше ніж {param}',
+    'validate_max_numeric' =&gt; 'Поле {field} має бути числом не більше ніж {param}',
+    'validate_min_age' =&gt; 'Вік повинен бути більшим ніж {param}',
+    'validate_invalid' =&gt; 'Поле {field} не пройшло перевірку',
+    'validate_starts' =&gt; 'Поле {field} має починатися з {param}',
+    'validate_extension' =&gt; 'Файл {field} повинен бути наступного типу: {param}',
+    'validate_required_file' =&gt; 'Файл {field} обов&rsquo;язковий до завантаження',
+    'validate_equalsfield' =&gt; 'Поле {field} має бути ідентичним {param}',
+    'validate_iban' =&gt; 'Поле {field} має бути валідним IBAN',
+    'validate_phone_number' =&gt; 'Поле {field} має бути правильним номером телефону',
+    'validate_regex' =&gt; 'Поле {field} повинно містити правильне значення',
+    'validate_valid_json_string' =&gt; 'Поле {field} має бути валідним JSON рядком',
+    'validate_valid_array_size_greater' =&gt; 'Поле {field} має містити мінімум {param} значень',
+    'validate_valid_array_size_lesser' =&gt; 'Поле {field} повинно містити максимум {param} значень',
+    'validate_valid_array_size_equal' =&gt; 'Поле {field} має містити рівно {param} значень',
+];
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

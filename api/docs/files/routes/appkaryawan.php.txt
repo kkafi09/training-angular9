@@ -1,0 +1,457 @@
+<?php
+
+use Model\Jabatan;
+use Model\Karyawan;
+use Model\Organisasi;
+use Model\Ptkp;
+use Service\Firebase;
+use Service\Landa;
+
+// Ambil semua perusahaan
+$app->get('/appkaryawan/getData', function ($request, $response) {
+    $params = $request->getParams();
+    $karyawan = new Karyawan();
+    $data = $karyawan->getAllKaryawan();
+
+    return successResponse($response, ['list' => $data['data'], 'totalItems' => $data['totalItem']]);
+});
+
+// Ambil semua data bank
+$app->get('/appkaryawan/getBank', function ($request, $response) {
+    $params = $request->getParams();
+    $karyawan = new Karyawan();
+    $data = $karyawan->getAllBank($params);
+
+    return successResponse($response, ['list' => $data['data']]);
+});
+
+// Ambil data karyawan
+$app->get('/appkaryawan/index', function ($request, $response) {
+    $params = $request->getParams();
+    $karyawan = new Karyawan();
+    $data = $karyawan->getAllKaryawan($params['params'], $params['limit'], $params['offset']);
+    $models = $data['data'];
+    $totalItem = $data['totalItem'];
+
+    foreach ($models as $key => $value) {
+        $value->tanggalMulai = date('d/m/Y', strtotime($value->tgl_mulai_kerja));
+        $value->txtStatus = 1 == $value->status ? 'Aktif' : 'Non Aktif';
+        $selisih = $karyawan->getMasaKerja(date('Y-m-d'), $value->tgl_mulai_kerja);
+        $value->masa_kerja = $selisih['tahun'].' Tahun '.$selisih['bulan'].' Bulan ';
+    }
+
+    return successResponse($response, ['list' => $models, 'totalItems' => $totalItem]);
+});
+
+// Ambil karyawan aktif
+$app->get('/appkaryawan/karyawanaktif', function ($request, $response) {
+    $params = $request->getParams();
+    $karyawan = new Karyawan();
+    $getKaryawan = $karyawan->getKaryawanAktif($params);
+
+    return successResponse($response, [
+        'list' => $getKaryawan['data'],
+    ]);
+});
+
+// Simpan karyawan
+$app->post('/appkaryawan/save', function ($request, $response) {
+    $data = $request->getParams();
+    $karyawan = new Karyawan();
+    $landa = new Landa();
+    $firebase = new Firebase();
+    $validasi = $karyawan->validasi($data);
+
+    if (true === $validasi) {
+        $input = [];
+        if (isset($data['fileUpload']) && !empty($data['fileUpload'])) {
+            $path = 'assets/img/karyawan/'.$landa->idKaryawan('foto').'/';
+            $uploadFile = $landa->base64ToImage($path, $data['fileUpload']);
+            if ($uploadFile['status']) {
+                $input['foto'] = $uploadFile['data'];
+            } else {
+                return unprocessResponse($response, [$uploadFile['error']]);
+            }
+        }
+        // uid dari firebase
+        if (isset($data['uid']) && !empty($data['uid'])) {
+            $input['uid'] = $data['uid'];
+        }
+
+        if (isset($data['id']) && !empty($data['id'])) {
+            $input['id'] = $data['id'];
+            $input['karyawan_data_id'] = $data['karyawan_data_id'];
+        } else {
+            $input['id'] = '';
+            $input['karyawan_data_id'] = '';
+        }
+
+        // $input untuk masuk ke tabel karyawan
+        $input['nik'] = $data['nik'];
+        $input['nama'] = $data['nama'];
+        $input['gelar_depan'] = $data['gelar_depan'];
+        $input['gelar_belakang'] = $data['gelar_belakang'];
+        $input['kewarganegaraan'] = $data['kewarganegaraan'];
+        $input['jenis_identitas'] = $data['jenis_identitas'];
+        $input['m_perusahaan_id'] = $_SESSION['user']['m_perusahaan']['id'];
+        $input['no_identitas'] = $data['no_identitas'];
+        $input['no_asuransi_sosial'] = $data['no_asuransi_sosial'];
+        $input['no_bpjs_kesehatan'] = $data['no_bpjs_kesehatan'];
+        $input['no_bpjs_ketenagakerjaan'] = $data['no_bpjs_ketenagakerjaan'];
+        $input['jenkel'] = $data['jenkel'];
+        $input['status_nikah'] = $data['status_nikah'];
+        $input['tempat_lahir'] = $data['tempat_lahir'];
+        $input['agama'] = $data['agama'];
+        $input['golongan_darah'] = $data['golongan_darah'];
+        $input['w_provinsi_id'] = $data['w_provinsi_id'];
+        $input['w_kota_id'] = $data['w_kota_id'];
+        $input['w_kecamatan_id'] = $data['w_kecamatan_id'];
+        $input['w_desa_id'] = $data['w_desa_id'];
+        $input['alamat_detail'] = $data['alamat_detail'];
+        $input['kode_pos'] = $data['kode_pos'];
+        $input['no_telepon'] = $data['no_telepon'];
+        $input['no_hp'] = $data['no_hp'];
+        $input['email'] = $data['email'];
+        $input['m_ptkp_id'] = $data['m_ptkp_id'];
+        $input['is_deleted'] = 0;
+        $input['no_absen'] = $data['no_absen'];
+        $input['gaji_pokok'] = $data['gaji_pokok'];
+        $input['status_pph'] = $data['status_pph'];
+        $input['tipe_gaji'] = $data['tipe_gaji'];
+        $input['tipe'] = $data['tipe'];
+        $input['m_bank_id'] = $data['m_bank_id'];
+        $input['no_rekening'] = $data['no_rekening'];
+        $input['atas_nama'] = $data['atas_nama'];
+        $input['status_jht'] = $data['status_jht'];
+        $input['status_jp'] = $data['status_jp'];
+        $input['status_kesehatan'] = $data['status_kesehatan'];
+        // $input['boleh_lembur'] = $data['boleh_lembur'];
+        if (isset($data['tgl_asuransi_sosial'])) {
+            $input['tgl_asuransi_sosial'] = $landa->arrayToDate($data['tgl_asuransi_sosial']);
+        }
+        if (isset($data['tgl_bpjs_kesehatan'])) {
+            $input['tgl_bpjs_kesehatan'] = $landa->arrayToDate($data['tgl_bpjs_kesehatan']);
+        }
+        if (isset($data['tgl_bpjs_ketenagakerjaan'])) {
+            $input['tgl_bpjs_ketenagakerjaan'] = $landa->arrayToDate($data['tgl_bpjs_ketenagakerjaan']);
+        }
+        if (isset($data['tgl_mulai_kerja'])) {
+            $input['tgl_mulai_kerja'] = $landa->arrayToDate($data['tgl_mulai_kerja']);
+        }
+        if (isset($data['tgl_lahir'])) {
+            $input['tgl_lahir'] = $landa->arrayToDate($data['tgl_lahir']);
+        }
+
+        // $input 2 untuk masuk ke tabel k_jabatan
+        $input2 = [];
+        $input2['m_organisasi_id'] = $data['m_organisasi_id'];
+        $input2['m_jabatan_id'] = $data['m_jabatan_id'];
+        $input2['keterangan'] = $data['keterangan'];
+        $input2['aktif'] = 1;
+        if (isset($data['tgl_jabatan'])) {
+            $input2['tgl_mulai'] = $landa->arrayToDate($data['tgl_jabatan']);
+        }
+
+        // $input 3 untuk masuk ke tabel k_status
+        $input3 = [];
+        $input3['status'] = $data['tipe'];
+        $input3['tgl_mulai'] = $landa->arrayToDate($data['tgl_mulai_kerja']);
+        if (!empty($data['tgl_akhir_kontrak'])) {
+            $input3['tgl_selesai'] = $landa->arrayToDate($data['tgl_akhir_kontrak']);
+        }
+
+        // $input 4 adalah data untuk ke tabel t_komponen_gaji
+        $input4 = [];
+        $input4['nominal'] = $data['gaji_pokok'];
+        $input4['m_komponen_id'] = 1;
+
+        // if (strlen($data['tgl_lahir']['month']) < 2) {
+        //     if (strlen($data['tgl_lahir']['day']) < 2) {
+        //         config('DEFAULT_PASSWORD') = $data['tgl_lahir']['year'].'0'.$data['tgl_lahir']['month'].'0'.$data['tgl_lahir']['day'];
+        //     } else {
+        //         config('DEFAULT_PASSWORD') = $data['tgl_lahir']['year'].'0'.$data['tgl_lahir']['month'].$data['tgl_lahir']['day'];
+        //     }
+        // } else {
+        //     if (strlen($data['tgl_lahir']['day']) < 2) {
+        //         config('DEFAULT_PASSWORD') = $data['tgl_lahir']['year'].$data['tgl_lahir']['month'].'0'.$data['tgl_lahir']['day'];
+        //     } else {
+        //         config('DEFAULT_PASSWORD') = $data['tgl_lahir']['year'].$data['tgl_lahir']['month'].$data['tgl_lahir']['day'];
+        //     }
+        // }
+
+        // kasus update karyawan
+        if (!empty($input['id'])) {
+            // pengecekan email
+            $save = $karyawan->saveKaryawan($input, $input2, $input3, $input4);
+            if ($save) {
+                if (isset($data['uid']) && !empty($data['uid'])) {
+                    $input['uid'] = $data['uid'];
+                    //Untuk Update documecnt di collection User Ke Firestore Firebase
+                    //Insert ke table users di firebase
+                    $datafb = [];
+                    $datafb['nama'] = $input['nama'];
+                    $datafb['tipe'] = 'karyawan';
+                    $datafb['uid'] = $data['uid'];
+
+                    $collection = 'users';
+                    $namadocument = $data['uid'];
+                    $createTable = $firebase->updateDocument($collection, $namadocument, $datafb);
+                }
+            }
+            // return sukses
+            if ($save['status']) {
+                return successResponse($response, $save['data']);
+            }
+
+            return unprocessResponse($response, [$save['error']]);
+        }
+
+        // simpan user karyawan ke firebase
+        $cekemail = $karyawan->cekemail($input);
+        if (true == $cekemail['status']) {
+            // cek apakah email & no identitas sudah terdapat di tabel karyawan_data
+            $karyawanData = $karyawan->cekParentKaryawan($input['email'], $input['no_identitas']);
+            if ($karyawanData['status']) {
+                $input['uid'] = $karyawanData['data']['uid'];
+            } else {
+                // Create User ke Authentication user firebase
+                if (!empty($input['email'])) {
+                    try {
+                        $createAuth = $firebase->firebaseAuth($input['email'], config('DEFAULT_PASSWORD'));
+
+                        if ($createAuth) {
+                            //Insert ke table users di firebase
+                            $datafb['nama'] = $input['nama'];
+                            $datafb['email'] = $input['email'];
+                            $datafb['tipe'] = 'karyawan';
+                            $datafb['client'] = isset($_SESSION['user']['client']) ? $_SESSION['user']['client'] : '';
+                            $datafb['uid'] = $createAuth['data']->uid;
+                            $input['uid'] = $createAuth['data']->uid;
+
+                            $createTable = $firebase->newDocument('users', $datafb['uid'], $datafb);
+                        }
+                    } catch (Exception $e) {
+                        return unprocessResponse($response, $e->getMessage());
+                    } catch (Kreait\Firebase\Exception\Auth\EmailExists $e) {
+                        return unprocessResponse($response, $e->getMessage());
+                    }
+                }
+            }
+
+            //Simpan data karyawan
+            $save = $karyawan->saveKaryawan($input, $input2, $input3, $input4);
+
+            // Respon sukses
+            if ($save['status']) {
+                return successResponse($response, $save['data']);
+            }
+
+            return unprocessResponse($response, $save['error']);
+        }
+
+        return unprocessResponse($response, ['Email sudah terdaftar']);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus karyawan
+$app->post('/appkaryawan/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $karyawan = new Karyawan();
+    $model = $karyawan->saveStatus(['is_deleted' => 1, 'id' => $data['id']]);
+
+    if ($model['status']) {
+        return successResponse($response, $model['data']);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// UPDATE Email
+$app->post('/appkaryawan/updateEmail', function ($request, $response) {
+    $data = $request->getParams();
+    $karyawan = new Karyawan();
+    $landa = new Landa();
+    $firebase = new Firebase();
+    $validasi = $karyawan->validasi($data);
+
+    if (true === $validasi) {
+        $input = [];
+        // uid dari firebase
+        if (isset($data['uid']) && !empty($data['uid'])) {
+            $input['uid'] = $data['uid'];
+        }
+
+        // $input untuk masuk ke tabel karyawan
+        $input['email'] = $data['email'];
+        $input['nama'] = $data['nama'];
+        $input['karyawan_data_id'] = $data['karyawan_data_id'];
+
+        // kasus update karyawan
+        if (!empty($input['id'])) {
+            // pengecekan email
+            $cekemail = $karyawan->cekemail($input);
+            if (true == $cekemail['status']) {
+                if (isset($data['uid']) && !empty($data['uid'])) {
+                    $input['uid'] = $data['uid'];
+
+                    // Update Email User ke Authentication user firebase
+                    $updateAuth = $firebase->firebaseupdateAuth($input['uid'], $input['email']);
+                } else {
+                    try {
+                        $createAuth = $firebase->firebaseAuth($input['email'], config('DEFAULT_PASSWORD'));
+
+                        if ($createAuth) {
+                            //Insert ke table users di firebase
+                            $datafb['nama'] = $input['nama'];
+                            $datafb['email'] = $input['email'];
+                            $datafb['tipe'] = 'karyawan';
+                            $datafb['client'] = isset($_SESSION['user']['client']) ? $_SESSION['user']['client'] : '';
+                            $datafb['uid'] = $createAuth['data']->uid;
+                            $input['uid'] = $datafb['uid'];
+
+                            $createTable = $firebase->newDocument('users', $datafb['uid'], $datafb);
+                        }
+                    } catch (Exception $e) {
+                        return unprocessResponse($response, $e->getMessage());
+                    } catch (Kreait\Firebase\Exception\Auth\EmailExists $e) {
+                        return unprocessResponse($response, $e->getMessage());
+                    }
+                }
+                // Simpan email di database
+                $save = $karyawan->updateEmail($input);
+                if ($save['status']) {
+                    return successResponse($response, $save['data']);
+                }
+
+                return unprocessResponse($response, [$save['error']]);
+            }
+
+            return unprocessResponse($response, ['Yahh... Email sudah terdaftar diakun lain']);
+        }
+
+        return unprocessResponse($response, ['Yahh... Email sudah terdaftar diakun lain']);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// FITUR GANTI PASSWORD
+$app->post('/appkaryawan/updatepassword', function ($request, $response) {
+    $params = $request->getParams();
+    // print_r($params);die;
+    $karyawan = new Karyawan();
+    $firebase = new Firebase();
+
+    if (isset($params['model']['password']) && !empty($params['model']['password'])) {
+        $uppass = $karyawan->updatePass($params);
+
+        if (true == $uppass['status'] && !empty($uppass['data']['uid'])) {
+            $uid = $uppass['data']['uid'];
+            $password = $uppass['data']['password'];
+            $update = $firebase->changePassword($uid, $password);
+
+            if ($update) {
+                return successResponse($response, $update['data']);
+            }
+
+            return unprocessResponse($response, ['Gagal ganti password']);
+        }
+
+        return unprocessResponse($response, ['Gagal ganti password']);
+    }
+
+    return unprocessResponse($response, ['Password tidak boleh kosong']);
+});
+
+// IMPORT EXCEL
+$app->post('/appkaryawan/import', function ($request, $response) {
+    $data = $request->getParams();
+    $karyawan = new Karyawan();
+    $landa = new Landa();
+    $organisasi = new Organisasi();
+    $jabatan = new Jabatan();
+
+    $save = $landa->base64ToFile($data);
+    $excel = $save['data'];
+
+    $dataOrganisasi = $organisasi->getAllOrganisasi();
+    $dataJabatan = $jabatan->getAll();
+
+    $insert_excel = $karyawan->import($excel, $dataOrganisasi, $dataJabatan);
+    $getDataKaryawan = $karyawan->getAllKaryawan();
+    $totalItem = $getDataKaryawan['totalItem'];
+    $models = $getDataKaryawan['data'];
+
+    foreach ($models as $key => $value) {
+        $value->tanggalMulai = date('d/m/Y', strtotime($value->tgl_mulai_kerja));
+        $value->txtStatus = 1 == $value->status ? 'Aktif' : 'Non Aktif';
+    }
+
+    return successResponse($response, [
+        'list' => $models,
+        'totalItems' => $totalItem,
+    ]);
+});
+
+// DOWNLOAD FORMAT
+$app->get('/appkaryawan/downloadFormatExcel', function ($request, $response) {
+    $karyawan = new Karyawan();
+    $organisasi = new Organisasi();
+    $jabatan = new Jabatan();
+    $ptkp = new Ptkp();
+
+    $org = $organisasi->getAllOrganisasi();
+    $jbtn = $jabatan->getAll();
+    $bank = $karyawan->getAllBank();
+    $dataPtkp = $ptkp->getData('m_ptkp', '1');
+
+    $file = 'assets/formatExcel/Karyawan.xlsx';
+    $save = $karyawan->download($file, $org, $jbtn, $bank, $dataPtkp);
+
+    return successResponse($response, $save);
+})->setName('formatExcelKaryawan');
+
+// EXPORT EXCEL
+$app->get('/appkaryawan/export', function ($request, $response) {
+    $data = $request->getParams();
+    $karyawan = new Karyawan();
+    $organisasi = new Organisasi();
+    $jabatan = new Jabatan();
+    $ptkp = new Ptkp();
+
+    $listKaryawan = $karyawan->getAllKaryawan($data);
+    $org = $organisasi->getAllOrganisasi();
+    $jbtn = $jabatan->getAll();
+    $bank = $karyawan->getAllBank();
+    $dataPtkp = $ptkp->getData('m_ptkp', '1');
+
+    $models = $karyawan->export($listKaryawan['data'], $org, $jbtn, $bank, $dataPtkp);
+
+    return successResponse($response, $models);
+});
+
+// Ambil karyawan aktif
+$app->get('/appkaryawan/checkIdentias', function ($request, $response) {
+    $params = $request->getParams();
+    $karyawan = new Karyawan();
+    $getKaryawan = $karyawan->checkIdentitas($params);
+    if (isset($getKaryawan) && [] != $getKaryawan) {
+        return successResponse($response, $getKaryawan);
+    }
+
+    return unprocessResponse($response, ['data tidak ditemukan']);
+});
+
+// Generate NIK
+$app->get('/appkaryawan/generatenik', function ($request, $response) {
+    $params = $request->getParams();
+    $karyawan = new Karyawan();
+    $getDataKaryawan = $karyawan->generateKodenik($params);
+
+    return successResponse($response, [
+        'list' => $getDataKaryawan['data'],
+    ]);
+});
+

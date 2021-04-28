@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PhpCSFixer">
+    <phpcsfixer_settings>
+      <PhpCSFixerConfiguration tool_path="$PROJECT_DIR$/atina-api/vendor/bin/php-cs-fixer" />
+    </phpcsfixer_settings>
+  </component>
+  <component name="PhpIncludePathManager">
+    <include_path>
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/polyfill-mbstring" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/polyfill-intl-normalizer" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/polyfill-intl-grapheme" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/polyfill-ctype" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/options-resolver" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/finder" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/filesystem" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/event-dispatcher-contracts" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/string" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/stopwatch" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/service-contracts" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/process" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/polyfill-php80" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/polyfill-php73" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/polyfill-php72" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/pimple/pimple" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/kreait/firebase-tokens" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/kreait/firebase-php" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/kreait/clock" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/google/protobuf" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/google/grpc-gcp" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/google/gax" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/google/crc32" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/event-dispatcher" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/deprecation-contracts" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/symfony/console" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/monolog/monolog" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/giggsey/locale" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/giggsey/libphonenumber-for-php" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/ramsey/uuid" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/ramsey/collection" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/nikic/fast-route" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/brick/math" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/twig/twig" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/slim/twig-view" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/slim/slim" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/rize/uri-template" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/grpc/grpc" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/psr/simple-cache" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/google/common-protos" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/google/cloud-storage" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/google/cloud-firestore" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/google/cloud-core" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/google/auth" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/dompdf/dompdf" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/phenx/php-svg-lib" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/phenx/php-font-lib" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/psr/log" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/psr/http-message" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/psr/http-client" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/psr/event-dispatcher" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/psr/container" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/psr/cache" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/fig/http-message-util" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/composer" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/php-cs-fixer/diff" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/cahkampung/landa-db" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/riverline/multipart-parser" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/ralouphie/getallheaders" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/phpoffice/phpspreadsheet" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/phpmailer/phpmailer" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/mtdowling/jmespath.php" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/markbaker/matrix" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/friendsofphp/php-cs-fixer" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/tecnickcom/tcpdf" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/sabberworm/php-css-parser" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/guzzlehttp/psr7" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/guzzlehttp/promises" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/guzzlehttp/guzzle" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/cahkampung/landa-php" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/cahkampung/landa-migrasi" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/markbaker/complex" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/lcobucci/jwt" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/firebase/php-jwt" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/doctrine/lexer" />
+      <path value="$PROJECT_DIR$/atina-api/vendor/doctrine/annotations" />
+    </include_path>
+  </component>
+</project>

@@ -1,0 +1,109 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Firebase;
+use Service\Landa;
+
+class Client extends Firebase
+{
+    /**
+     * Ambil semua klien dari firebase.
+     *
+     * @return array data klien
+     */
+    public function getAll()
+    {
+        return parent::getAllClient();
+    }
+
+    /**
+     * Simpan data client ke firebase.
+     *
+     * @param array $data data klien
+     *
+     * @return bool
+     */
+    public function save($data)
+    {
+        try {
+            $landa = new Landa();
+            $data['db']['DB_HOST'] = isset($data['db']['DB_HOST']) ? $landa-&gt;safeString($data['db']['DB_HOST']) : '';
+            $data['db']['DB_NAME'] = isset($data['db']['DB_NAME']) ? $landa-&gt;safeString($data['db']['DB_NAME']) : '';
+            $data['db']['DB_PASS'] = isset($data['db']['DB_PASS']) ? $landa-&gt;safeString($data['db']['DB_PASS']) : '';
+            $data['db']['DB_USER'] = isset($data['db']['DB_USER']) ? $landa-&gt;safeString($data['db']['DB_USER']) : '';
+            if (isset($data['uid']) &amp;&amp; !empty($data['uid'])) {
+                $save = parent::updateDocument('client', $data['uid'], $data);
+            } else {
+                $data['uid'] = date('ymdhis');
+                $save = parent::newDocument('client', $data['uid'], $data);
+            }
+
+            return true;
+        } catch (Exception $e) {
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' =&gt; 'required',
+            'cp' =&gt; 'required',
+            'email' =&gt; 'required',
+            'telepon' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

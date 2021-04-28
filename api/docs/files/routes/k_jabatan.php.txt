@@ -1,0 +1,59 @@
+<?php
+
+use Model\KJabatan;
+use Service\Landa;
+
+// Ambil semua emergency kontak
+$app->get('/k_jabatan/index/{id}', function ($request, $response) {
+    $params = $request->getParams();
+    $params['idkaryawan'] = $request->getAttribute('id');
+    $kJabatan = new KJabatan();
+    $getDatakJabatan = $kJabatan->getAll($params);
+
+    foreach ($getDatakJabatan['data'] as $key => $val) {
+        if (null != $val->tgl_mulai) {
+            $val->tgl_mulai = date('d/m/Y', strtotime($val->tgl_mulai));
+        }
+
+        if (null != $val->tgl_selesai) {
+            $val->tgl_selesai = date('d/m/Y', strtotime($val->tgl_selesai));
+        }
+    }
+
+    return successResponse($response, [
+        'list' => $getDatakJabatan['data'],
+        'totalItems' => $getDatakJabatan['totalItem'],
+    ]);
+});
+// Save emergency kontak
+$app->post('/k_jabatan/save', function ($request, $response) {
+    $data = $request->getParams();
+    $landa = new Landa();
+    $kJabatan = new KJabatan();
+    $validasi = $kJabatan->validasi($data);
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $kJabatan->save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Hapus emergency kontak
+$app->post('/k_jabatan/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $kJabatan = new KJabatan();
+    $model = $kJabatan->save(['is_deleted' => 1, 'id' => $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+

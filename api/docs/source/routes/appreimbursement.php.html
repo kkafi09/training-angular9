@@ -1,0 +1,159 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Formula;
+use Model\Reimbursement;
+
+// Ambil semua pelatihan
+$app-&gt;get('/appreimbursement/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $reimbursement = new Reimbursement();
+
+    $params['filter'] = isset($params['filter']) ? $params['filter'] : [];
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : '';
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : '';
+
+    $getDataReimbursement = $reimbursement-&gt;getAll($params, $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataReimbursement['data'],
+        'totalItems' =&gt; $getDataReimbursement['totalItem'],
+    ]);
+});
+
+// Save pelatihan
+$app-&gt;post('/appreimbursement/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $reimbursement = new Reimbursement();
+    $formula = new Formula();
+    $validasi = $reimbursement-&gt;validasi($data['model']);
+    $validasiDetail = $reimbursement-&gt;validasiDetail($data);
+    $validasiAll = array_merge(true !== $validasi ? $validasi : [], true !== $validasiDetail ? $validasiDetail : []);
+    // $validasiKode = $reimbursement-&gt;validasiKode($data);
+
+    if (true === $validasi &amp;&amp; true === $validasiDetail) {
+        // if (true === $validasiKode) {
+        $save = $reimbursement-&gt;save($data);
+        if ($save['status']) {
+            if (1 == $save['data']-&gt;tipe_nilai) {
+                $params['formula'][] = [
+                    'children' =&gt; [],
+                    'parent_id' =&gt; '',
+                    'reff_id' =&gt; '',
+                    'reff_type' =&gt; 0,
+                    'm_reimbursement_id' =&gt; $save['data']-&gt;id,
+                    'value' =&gt; $save['data']-&gt;nilai,
+                ];
+            } else {
+                $params['formula'] = $data['formula'];
+            }
+            $saveformula = $formula-&gt;saveformula($params['formula'], 'm_reimbursement_id', $save['data']-&gt;id);
+            if ($saveformula['status']) {
+                return successResponse($response, $data);
+            }
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+        // }
+        // return unprocessResponse($response, 'Kode Telah Digunakan');
+    }
+
+    return unprocessResponse($response, $validasiAll);
+});
+
+// Hapus pelatihan
+$app-&gt;post('/appreimbursement/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $reimbursement = new Reimbursement();
+    $delete = $reimbursement-&gt;delete($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+$app-&gt;get('/appreimbursement/getDetail/{id}', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $id = $request-&gt;getAttribute('id');
+    $reimbursement = new Reimbursement();
+    $get = $reimbursement-&gt;getDetail($id);
+//    echo json_encode($get['data']);die();
+
+    if ($get['totalItem'] &gt; 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app-&gt;get('/appreimbursement/getDataRembursement', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $reimbursement = new Reimbursement();
+    $get = $reimbursement-&gt;getAll();
+
+    if ($get['totalItem'] &gt; 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app-&gt;get('/appreimbursement/getKode', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $reimbursement = new Reimbursement();
+    $get = $reimbursement-&gt;generate_kode();
+
+    if (isset($get)) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,203 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Formula;
+use Model\KomponenGaji;
+use Service\Landa;
+
+// Ambil semua KomponenGaji
+$app-&gt;get('/komponen_gaji/tunjangan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $komgaji = new KomponenGaji();
+    $getDataKomGaji = $komgaji-&gt;getTunjangan($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKomGaji['data'],
+        'totalItems' =&gt; $getDataKomGaji['totalItem'],
+    ]);
+});
+
+// Ambil semua KomponenGaji
+$app-&gt;get('/komponen_gaji/potongan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $komgaji = new KomponenGaji();
+    $getDataKomGaji = $komgaji-&gt;getPotongan($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKomGaji['data'],
+        'totalItems' =&gt; $getDataKomGaji['totalItem'],
+    ]);
+});
+
+// Ambil semua KomponenGaji
+$app-&gt;get('/komponen_gaji/manfaat', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $komgaji = new KomponenGaji();
+    $getDataKomGaji = $komgaji-&gt;getManfaat($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKomGaji['data'],
+        'totalItems' =&gt; $getDataKomGaji['totalItem'],
+    ]);
+});
+
+// Save KomponenGaji
+$app-&gt;post('/komponen_gaji/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    // print_r($data);die;
+    $landa = new Landa();
+    $komgaji = new KomponenGaji();
+    $formula = new Formula();
+    $validasi = $komgaji-&gt;validasi($data['model']);
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $komgaji-&gt;save($data);
+        if ($save['status']) {
+            if (0 == $save['data']-&gt;is_formula) {
+                $params['formula'][] = [
+                    'children' =&gt; [],
+                    'parent_id' =&gt; '',
+                    'reff_id' =&gt; '',
+                    'reff_type' =&gt; 0,
+                    'm_komponen_gaji_id' =&gt; $save['data']-&gt;id,
+                    'value' =&gt; $save['data']-&gt;nilai,
+                ];
+            } else {
+                $params['formula'] = $data['formula'];
+            }
+            $saveformula = $formula-&gt;saveformula($params['formula'], 'm_komponen_gaji_id', $save['data']-&gt;id);
+            if ($saveformula['status']) {
+                return successResponse($response, $data);
+            }
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus KomponenGaji
+$app-&gt;post('/komponen_gaji/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $komgaji = new KomponenGaji();
+    $isdelete['model']['is_deleted'] = 1;
+    $isdelete['model']['id'] = $data['id'];
+    $model = $komgaji-&gt;save($isdelete);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+//FORMULA
+
+// Ambil formula
+$app-&gt;get('/komponen_gaji/getFormula', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $formula = new Formula();
+    $landa = new Landa();
+    $getFormula = $formula-&gt;getFormula($params['reff_type'], $params['id']);
+
+    foreach ($getFormula['data'] as $key =&gt; $value) {
+        $arrChild[] = [
+            'id' =&gt; $value-&gt;id,
+            'm_komponen_gaji_id' =&gt; isset($value-&gt;m_komponen_gaji_id) ? $value-&gt;m_komponen_gaji_id : null,
+            'm_reimbursement_id' =&gt; isset($value-&gt;m_reimbursement_id) ? $value-&gt;m_reimbursement_id : null,
+            'reff_type' =&gt; $value-&gt;reff_type,
+            'reff_id' =&gt; $value-&gt;reff_id,
+            'reff_list' =&gt; [],
+            'value' =&gt; $value-&gt;value,
+            'parent_id' =&gt; $value-&gt;parent_id,
+        ];
+    }
+    if (isset($arrChild) &amp;&amp; !empty($arrChild)) {
+        $tree = $landa-&gt;buildTree($arrChild);
+    } else {
+        $tree[] = [
+            'id' =&gt; '',
+            'm_komponen_gaji_id' =&gt; '',
+            'm_reimbursement_id' =&gt; '',
+            'reff_type' =&gt; '',
+            'reff_id' =&gt; '',
+            'reff_list' =&gt; [],
+            'value' =&gt; '',
+            'parent_id' =&gt; '',
+            'children' =&gt; [],
+        ];
+    }
+
+    return successResponse($response, [
+        'list' =&gt; $tree,
+    ]);
+});
+// Hapus level jabatan
+$app-&gt;post('/komponen_gaji/deleteformula', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    // print_r($params[0]['id']);die;
+    $id_komponen = $params[0]['id'];
+    $landa = new Landa();
+    $formula = new Formula();
+    $delete = $formula-&gt;hapusformula($id_komponen);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+$app-&gt;get('/komponen_gaji/getOption/{id}', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $id = $request-&gt;getAttribute('id');
+
+    $formula = new Formula();
+    $getDataFormula = $formula-&gt;getOpsi($id);
+
+    return successResponse($response, ['list' =&gt; $getDataFormula['data']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

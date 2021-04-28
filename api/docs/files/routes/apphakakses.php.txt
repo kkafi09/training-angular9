@@ -1,0 +1,57 @@
+<?php
+
+use Model\HakAkses;
+
+// Ambil semua hak akses
+$app->get('/apphakakses/index', function ($request, $response) {
+    $params = $request->getParams();
+    $hakAkses = new HakAkses();
+
+    $params['filter'] = isset($params['filter']) ? $params['filter'] : [];
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : '';
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : '';
+
+    $getDataHakAkses = $hakAkses->getAll($params, $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' => $getDataHakAkses['data'],
+        'totalItems' => $getDataHakAkses['totalItem'],
+    ]);
+});
+
+// Simpan hak akses
+$app->post('/apphakakses/save', function ($request, $response) {
+    $params = $request->getParams();
+    $hakAkses = new HakAkses();
+    $params['akses'] = json_encode($params['akses']);
+    $params['akses_perusahaan'] = json_encode($params['akses_perusahaan']);
+    $validasi = $hakAkses->validasi($params);
+
+    if (true === $validasi) {
+        $save = $hakAkses->save($params);
+
+        // return sukses
+        if ($save['status']) {
+            return successResponse($response, [$save['data']]);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus hak akses
+$app->post('/apphakakses/delete', function ($request, $response) {
+    $params = $request->getParams();
+    $hakAkses = new HakAkses();
+    $delete = $hakAkses->delete($params);
+
+    // return sukses
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+

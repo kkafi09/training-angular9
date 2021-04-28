@@ -1,0 +1,35 @@
+<?php
+
+namespace Model;
+
+class Ptkp extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->table = '';
+    }
+
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+            'kode' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

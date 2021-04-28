@@ -1,0 +1,48 @@
+<div class="row" style="margin: unset;">
+    <input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="display: none" (change)="onFileSelected($event, url)" #fileInput>
+    <input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="display: none" (change)="onFileSelected($event, urlImportKontakDarurat)" #fileInputKontakDarurat>
+    <input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="display: none" (change)="onFileSelected($event, urlImportKeluarga)" #fileInputKeluarga>
+    <input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="display: none" (change)="onFileSelected($event, urlImportPendidikan)" #fileInputPendidikan>
+    <input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="display: none" (change)="onFileSelected($event, urlImportSertifikat)" #fileInputSertifikat>
+    <input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="display: none" (change)="onFileSelected($event, urlImportPelatihan)" #fileInputPelatihan>
+    <div *ngIf="tipe == 'karyawan'" ngbDropdown>
+
+        <button id="excelButton" type="button" class="btn btn-sm btn-transparant dropdown-toggle" ngbDropdownToggle>
+            <i class="far fa-file-excel font-size-14 align-middle"></i>
+            Excel
+            <span class="arrow-down"></span>
+        </button>
+        <div class="dropdown-menu" aria-labelledby="excelButton" ngbDropdownMenu>
+            <a class="dropdown-item" style="font-weight:bold">Download</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="downloadFormatExcel(urlDownload)">Download Format Excel</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="downloadReferensiAlamat()">Download Referensi Alamat</a>
+            <!-- <a class="dropdown-item" href="javascript: void(0);" (click)="downloadReferensi()">Download Referensi Karyawan</a> -->
+            <a class="dropdown-item" style="font-weight:bold;">Karyawan</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="fileInput.click()">Import Data karyawan</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="export()">Export Data karyawan</a>
+            <a class="dropdown-item" style="font-weight:bold">Kontak Darurat</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="fileInputKontakDarurat.click()">Import Data Kontak Darurat</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="exportKontakDarurat()">Export Data Kontak Darurat</a>
+            <a class="dropdown-item" style="font-weight:bold">Keluarga</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="fileInputKeluarga.click()">Import Data Keluarga</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="exportKeluarga()">Export Data Keluarga</a>
+            <a class="dropdown-item" style="font-weight:bold">Pendidikan</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="fileInputPendidikan.click()">Import Data Pendidikan</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="exportPendidikan()">Export Data Pendidikan</a>
+            <a class="dropdown-item" style="font-weight:bold">Sertifikat</a >
+            <a class="dropdown-item" href="javascript: void(0);" (click)="fileInputSertifikat.click()">Import Data Sertifikat</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="exportSertifikat()">Export Data Sertifikat</a>
+            <a class="dropdown-item" style="font-weight:bold">Pelatihan</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="fileInputPelatihan.click()">Import Data Pelatihan</a>
+            <a class="dropdown-item" href="javascript: void(0);" (click)="exportPelatihan()">Export Data Pelatihan</a>
+        </div>
+    </div>
+    <a *ngIf="tipe != 'karyawan'" class="btn btn-transparent btn-sm mr-2" (click)="downloadFormatExcel(urlDownload)">
+        <i class="fa fa-download font-size-14 align-middle"></i>
+        Download Format Excel
+    </a>
+    <button *ngIf="tipe != 'karyawan'" class="btn btn-transparent btn-sm" (click)="fileInput.click()">
+        <i class="far fa-file font-size-14 align-middle"></i>
+        Import Excel
+    </button>
+</div>

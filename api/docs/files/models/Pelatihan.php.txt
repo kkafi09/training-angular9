@@ -1,0 +1,256 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class Pelatihan extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_pelatihan';
+    }
+
+    /**
+     * Ambil semua data pelatihan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('*')
+            ->from($this->table)->where('is_deleted', '=', 0);
+
+        // Filter
+        if (isset($params) && !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) && is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($params) && !empty($params)) {
+            foreach ($filter as $key => $val) {
+                if (!empty($val)) {
+                    if ('nama' == $key) {
+                        $this->db->where('m_pelatihan.nama', 'like', $val);
+                    } elseif ('kode' == $key) {
+                        $this->db->where('m_pelatihan.kode', 'like', $val);
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) && !empty($limit)) {
+            $this->db->limit($limit);
+        }
+
+        // Set offset
+        if (isset($offset) && !empty($offset)) {
+            $this->db->offset($offset);
+        }
+
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere($this->table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function generateKode()
+    {
+        $kodePerusahaan = $this->db->select('kode')
+            ->from('m_perusahaan')
+            ->where('id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->find()
+        ;
+
+        $cekKode = $this->db->select('kode')
+            ->from($this->table)
+            ->where('m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->andWhere('kode', 'LIKE', $kodePerusahaan->kode.'TRN')
+            ->orderBy('kode DESC')
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $tipe = 'TRN';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $kodePerusahaan->kode.$tipe.$kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menyimpan data pelatihan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $data['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : null;
+                $model = $this->db->insert($this->table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+            } else {
+                $model = $this->db->update($this->table, $data, $customParams);
+            }
+            // Return data pelatihan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function deleteAll($data)
+    {
+        try {
+            $model = $this->db->update($this->table, ['is_deleted' => $data['is_deleted']], ['m_perusahaan_id' => $_SESSION['user']['m_perusahaan']['id']]);
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Import excel.
+     *
+     * @param array $data
+     */
+    public function import($data)
+    {
+        try {
+            error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
+
+            try {
+                $inputFileType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($data['filePath']);
+                $objReader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
+                $objPhpSpreadsheet = $objReader->load($data['filePath']);
+            } catch (Exception $e) {
+                exit('Error loading file : "'.pathinfo($data['filePath'], PATHINFO_BASENAME).'": '.$e->getMessage());
+            }
+
+            $sheet = $objPhpSpreadsheet->getSheet(0);
+            $highestRow = $sheet->getHighestRow();
+            $highestColumn = $sheet->getHighestColumn();
+
+            $pelatihan = [];
+            $index = 0;
+            for ($row = 2; $row <= $highestRow; ++$row) {
+                $pelatihan[$index]['kode'] = $sheet->getCell('A'.$row)->getFormattedValue();
+                $pelatihan[$index]['nama'] = $sheet->getCell('B'.$row)->getFormattedValue();
+                $pelatihan[$index]['keterangan'] = $sheet->getCell('C'.$row)->getFormattedValue();
+                ++$index;
+            }
+
+            unlink($data['filePath']);
+
+            foreach ($pelatihan as $key => $val) {
+                // Set value untuk diinput ke m_pelatihan
+                $val['m_perusahaan_id'] = $_SESSION['user']['m_perusahaan']['id'];
+
+                // Input ke m_pelatihan
+                $model = $this->db->insert($this->table, $val);
+            }
+
+            // Return data
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function download($file)
+    {
+        parent::downloadFile($file);
+
+        return true;
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+            'kode' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiKode($data)
+    {
+        return parent::validasiKodeCore($data, 'm_pelatihan');
+    }
+}
+

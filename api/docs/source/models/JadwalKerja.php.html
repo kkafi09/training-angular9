@@ -1,0 +1,359 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class JadwalKerja extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'm_jadwal';
+    }
+
+    /**
+     * Ambil semua data jadwal kerja.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from($this-&gt;table)
+            -&gt;where('is_deleted', '=', 0)
+        ;
+
+        // Filter
+        if (isset($params) &amp;&amp; !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) &amp;&amp; is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($params) &amp;&amp; !empty($params)) {
+            foreach ($filter as $key =&gt; $val) {
+                if (!empty($val)) {
+                    if ('nama' == $key) {
+                        $this-&gt;db-&gt;where('m_jadwal.nama', 'like', $val);
+                    } elseif ('kode' == $key) {
+                        $this-&gt;db-&gt;where('m_jadwal.kode', 'like', $val);
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) &amp;&amp; !empty($limit)) {
+            $this-&gt;db-&gt;limit($limit);
+        }
+
+        // Set offset
+        if (isset($offset) &amp;&amp; !empty($offset)) {
+            $this-&gt;db-&gt;offset($offset);
+        }
+
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        $models = $this-&gt;db-&gt;orderBy('id DESC')-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil detail jadwal kerja.
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    public function getDetail($data)
+    {
+        try {
+            $detJadwal = $this-&gt;db-&gt;select('m_jadwal_det.*, m_jamker.nama')
+                -&gt;from('m_jadwal_det')
+                -&gt;join('left join', 'm_jamker', 'm_jamker.id = m_jadwal_det.m_jamker_id')
+                -&gt;where('m_jadwal_det.m_jadwal_id', '=', $data['id'])
+                -&gt;findAll();
+
+            return [
+                'data' =&gt; $detJadwal,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function getJamKerja()
+    {
+        try {
+            $this-&gt;db-&gt;select('*')
+                -&gt;from('m_jamker')
+                -&gt;where('is_deleted', '=', 0)
+            ;
+
+            $models = $this-&gt;db-&gt;findAll();
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $models,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function generateKode()
+    {
+        $cekKode = $this-&gt;db-&gt;select('kode')
+            -&gt;from($this-&gt;table)
+            -&gt;where('kode', 'LIKE', 'JDW')
+            -&gt;orderBy('kode DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $tipe = 'JDW';
+            $kode_item = (substr($kode_terakhir, -3) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $tanggal = date('y').date('m');
+            $kode = $tipe.$tanggal.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menyimpan data jadwal kerja.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (isset($data['data'])) {
+                if ('jadwal' == $data['tipe']) {
+                    $jadwal = $data['data'];
+
+                    if (!isset($jadwal['id'])) {
+                        $jadwal['is_deleted'] = 0;
+                        $jadwal['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : null;
+
+                        $this-&gt;db-&gt;startTransaction();
+
+                        $model = $this-&gt;db-&gt;insert($this-&gt;table, $jadwal);
+                        foreach ($data['listJadwal'] as $key =&gt; $value) {
+                            $value['m_jadwal_id'] = $model-&gt;id;
+                            $detail = $this-&gt;db-&gt;insert('m_jadwal_det', $value);
+                        }
+
+                        $this-&gt;db-&gt;endTransaction();
+                    } elseif (empty($customParams)) {
+                        $jadwal = $data['data'];
+
+                        $this-&gt;db-&gt;startTransaction();
+
+                        $model = $this-&gt;db-&gt;update($this-&gt;table, $jadwal, ['id' =&gt; $jadwal['id']]);
+                        $delete = $this-&gt;db-&gt;delete('m_jadwal_det', ['m_jadwal_id' =&gt; $jadwal['id']]);
+                        foreach ($data['listJadwal'] as $key =&gt; $value) {
+                            $value['m_jadwal_id'] = $model-&gt;id;
+                            $detail = $this-&gt;db-&gt;insert('m_jadwal_det', $value);
+                        }
+
+                        $this-&gt;db-&gt;endTransaction();
+                    } else {
+                        $model = $this-&gt;db-&gt;update($this-&gt;table, $data, $customParams);
+                    }
+                } else {
+                    $this-&gt;table = 'm_jamker';
+                    $jamker = $data['data'];
+
+                    if (!isset($jamker['id'])) {
+                        $jamker['jam_masuk'] = isset($jamker['jam_masuk']) ? $jamker['jam_masuk']['hour'].':'.$jamker['jam_masuk']['minute'].':'.$jamker['jam_masuk']['second'] : null;
+                        $jamker['jam_pulang'] = isset($jamker['jam_pulang']) ? $jamker['jam_pulang']['hour'].':'.$jamker['jam_pulang']['minute'].':'.$jamker['jam_pulang']['second'] : null;
+                        $jamker['m_istirahat'] = isset($jamker['m_istirahat']) ? $jamker['m_istirahat']['hour'].':'.$jamker['m_istirahat']['minute'].':'.$jamker['m_istirahat']['second'] : null;
+                        $jamker['s_istirahat'] = isset($jamker['s_istirahat']) ? $jamker['s_istirahat']['hour'].':'.$jamker['s_istirahat']['minute'].':'.$jamker['s_istirahat']['second'] : null;
+                        $jamker['t_after'] = isset($jamker['t_after']) ? '00:'.$jamker['t_after'].':00' : null;
+                        $jamker['t_before'] = isset($jamker['t_before']) ? '00:'.$jamker['t_before'].':00' : null;
+                        $jamker['ganti_hari'] = true == $jamker['ganti_hari'] ? 1 : 0;
+
+                        $model = $this-&gt;db-&gt;insert($this-&gt;table, $jamker);
+                    }
+                }
+            } else {
+                if ('jadwal' == $data['tipe']) {
+                    $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; $data['is_deleted']], ['id' =&gt; $data['id']]);
+                } else {
+                    $this-&gt;table = 'm_jamker';
+                    $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; $data['is_deleted']], ['id' =&gt; $data['id']]);
+                }
+            }
+
+            // Return data pelatihan
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     * @param mixed $tipe
+     */
+    public function validasi($tipe, $data, $custom = [])
+    {
+        if ('jadwal' == $tipe) {
+            $validasi = [
+                'kode' =&gt; 'required',
+                'nama' =&gt; 'required',
+            ];
+        } else {
+            $validasi = [
+                'nama' =&gt; 'required',
+                'jam_masuk' =&gt; 'required',
+                'jam_pulang' =&gt; 'required',
+                'm_istirahat' =&gt; 'required',
+                's_istirahat' =&gt; 'required',
+                't_before' =&gt; 'required',
+                't_after' =&gt; 'required',
+                'ganti_hari' =&gt; 'required',
+            ];
+
+            \GUMP::set_field_name('m_istirahat', 'Mulai Istirahat');
+            \GUMP::set_field_name('s_istirahat', 'Selesai Istirahat');
+            \GUMP::set_field_name('t_before', 'Toleransi Sebelum');
+            \GUMP::set_field_name('t_after', 'Toleransi Sesudah');
+        }
+
+        return validate($data, $validasi, $custom);
+    }
+
+    /**
+     * Validasi kode tersedia.
+     *
+     * @param array $data
+     * @param array $custom
+     * @param mixed $tipe
+     */
+    public function validasiKode($tipe, $data)
+    {
+        if ('jadwal' === $tipe) {
+            if (!isset($data['id'])) {
+                $dataKode = true;
+                $this-&gt;db-&gt;select('kode')-&gt;from($this-&gt;table)-&gt;where('is_deleted', '=', 0);
+                $models = $this-&gt;db-&gt;findAll();
+                foreach ($models as $key =&gt; $value) {
+                    if ($value-&gt;kode == $data['kode']) {
+                        $dataKode = false;
+                    }
+                }
+            } else {
+                $dataKode = true;
+            }
+        } else {
+            $dataKode = true;
+        }
+
+        return $dataKode;
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

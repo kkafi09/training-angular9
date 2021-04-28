@@ -1,0 +1,46 @@
+<?php
+
+use Model\Client;
+
+// Ambil semua Klien
+$app->get('/appclient/index', function ($request, $response) {
+    $params = $request->getParams();
+    $klien = new Client();
+    $getDataKlien = $klien->getAll();
+
+    return successResponse($response, [
+        'list' => $getDataKlien['data'],
+    ]);
+});
+
+// Simpan Klien
+$app->post('/appclient/save', function ($request, $response) {
+    $params = $request->getParams();
+    $klien = new Client();
+    $validasi = $klien->validasi($params);
+    if (true === $validasi) {
+        $getDataKlien = $klien->save($params);
+
+        return successResponse($response, [
+            'list' => $getDataKlien['data'],
+        ]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// set Klien aktif
+$app->post('/appclient/setAktif', function ($request, $response) {
+    $params = $request->getParams();
+    $klien = new Client();
+    $_SESSION['user']['safeEmailId'] = $params['uid'];
+    $_SESSION['user']['safeEmail'] = [
+        'safeEmail1' => $params['db']['DB_HOST'],
+        'safeEmail2' => $params['db']['DB_NAME'],
+        'safeEmail3' => $params['db']['DB_PASS'],
+        'safeEmail4' => $params['db']['DB_USER'],
+    ];
+
+    return successResponse($response, $_SESSION['user']);
+});
+

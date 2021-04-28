@@ -1,0 +1,137 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanLembur
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 't_lembur';
+    }
+
+    /**
+     * Ambil semua data kasbon.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+        if ('null' != $params['periode_mulai'] &amp;&amp; 'null' != $params['periode_selesai']) {
+            $tanggal_awal = date('Y-m-d', strtotime($params['periode_mulai']));
+            $tanggal_akhir = date('Y-m-d', strtotime($params['periode_selesai']));
+        } else {
+            $tanggal_awal = null;
+            $tanggal_akhir = null;
+        }
+
+        // Ambil list lembur
+        $this-&gt;db-&gt;select(
+            $this-&gt;table.'.*, 
+                karyawan_data.nama as nama_karyawan, 
+                m_jabatan.nama as nama_jabatan'
+        )
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'karyawan', 'karyawan.id = '.$this-&gt;table.'.karyawan_id')
+            -&gt;join('left join', 'karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            -&gt;join('left join', 'k_jabatan', 'karyawan_data.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1')
+            -&gt;join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+
+        if (null != $tanggal_awal &amp;&amp; null != $tanggal_akhir) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.tgl_kasbon', '&gt;=', $tanggal_awal)
+                -&gt;andWhere($this-&gt;table.'.tgl_kasbon', '&lt;=', $tanggal_akhir)
+            ;
+        }
+
+        if ('null' != $params['karyawan_id'] &amp;&amp; '' != $params['karyawan_id']) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.karyawan_id', '=', $params['karyawan_id']);
+        }
+
+        if ('null' != $params['status'] &amp;&amp; '' != $params['status']) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.is_approve', '=', $params['status']);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+
+        // Ganti format tanggal
+        foreach ($models as $key =&gt; $val) {
+            $val-&gt;tgl = date('d/m/Y', strtotime($val-&gt;tgl));
+            $val-&gt;waktu = substr($val-&gt;jam_mulai, 11, 5).' - '.substr($val-&gt;jam_selesai, 11, 5);
+
+            $interval = strtotime($val-&gt;jam_selesai) - strtotime($val-&gt;jam_mulai);
+            $minutes = floor(($interval % 3600) / 60);
+            $hours = floor($interval / 3600);
+
+            $val-&gt;jumlah_jam = $hours.' Jam '.' '.$minutes.' Menit';
+            $val-&gt;interval = $interval;
+        }
+
+        return [
+            'status' =&gt; true,
+            'data' =&gt; $models,
+            'periode' =&gt; null != $tanggal_awal &amp;&amp; null != $tanggal_akhir ? date('d/m/Y', strtotime($tanggal_awal)).' s/d '.date('d/m/Y', strtotime($tanggal_akhir)) : null,
+        ];
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

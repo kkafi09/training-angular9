@@ -1,0 +1,107 @@
+<?php
+
+use Model\JadwalKerja;
+use Service\Landa;
+
+// Ambil semua jadwal kerja
+$app->get('/appjadwalkerja/index', function ($request, $response) {
+    $params = $request->getParams();
+    $jadwalKerja = new JadwalKerja();
+    if (!empty($params)) {
+        $getDataJadwalKerja = $jadwalKerja->getAll($params['params'], $params['limit'], $params['offset']);
+    } else {
+        $getDataJadwalKerja = $jadwalKerja->getAll();
+    }
+
+    foreach ($getDataJadwalKerja['data'] as $key => $val) {
+        $val->tgl_mulai = date('d/m/Y', strtotime($val->tgl_mulai));
+    }
+
+    return successResponse($response, [
+        'list' => $getDataJadwalKerja['data'],
+        'totalItems' => $getDataJadwalKerja['totalItem'],
+    ]);
+});
+
+// Ambil detail jadwal kerja
+$app->post('/appjadwalkerja/getJadwal', function ($request, $response) {
+    $data = $request->getParams();
+    $jadwalKerja = new JadwalKerja();
+    $getDetailJadwalKerja = $jadwalKerja->getDetail($data);
+
+    return successResponse($response, [
+        'list' => $getDetailJadwalKerja['data'],
+    ]);
+});
+
+// Ambil list jam kerja
+$app->get('/appjadwalkerja/jamkerja', function ($request, $response) {
+    $data = $request->getParams();
+    $jadwalKerja = new JadwalKerja();
+    $listJamKerja = $jadwalKerja->getJamKerja();
+
+    foreach ($listJamKerja['data'] as $key => $val) {
+        $val->jam_masuk = substr($val->jam_masuk, 0, 5);
+        $val->jam_pulang = substr($val->jam_pulang, 0, 5);
+        $val->m_istirahat = substr($val->m_istirahat, 0, 5);
+        $val->s_istirahat = substr($val->s_istirahat, 0, 5);
+        $val->t_before = substr($val->t_before, 0, 5);
+        $val->t_after = substr($val->t_after, 0, 5);
+    }
+
+    return successResponse($response, [
+        'list' => $listJamKerja['data'],
+    ]);
+});
+
+// Save jadwal kerja
+$app->post('/appjadwalkerja/save', function ($request, $response) {
+    $data = $request->getParams();
+    $landa = new Landa();
+    $jadwalKerja = new JadwalKerja();
+    $validasi = $jadwalKerja->validasi($data['tipe'], $data['data']);
+    $validasiKode = $jadwalKerja->validasiKode($data['tipe'], $data['data']);
+
+    if (true === $validasi) {
+        // Proses simpan ke dalam database
+        if (true == $validasiKode) {
+            if ('jadwal' == $data['tipe']) {
+                $data['data']['tgl_mulai'] = $landa->arrayToDate($data['data']['tgl_mulai']);
+            }
+
+            $save = $jadwalKerja->save($data);
+
+            if ($save['status']) {
+                return successResponse($response, $save);
+            }
+
+            return unprocessResponse($response, [$save['error']]);
+        }
+
+        return unprocessResponse($response, 'Kode Telah Tersedia');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus jadwal kerja
+$app->post('/appjadwalkerja/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $jadwalKerja = new JadwalKerja();
+    $model = $jadwalKerja->save($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Generate kode jadwal kerja
+$app->get('/appjadwalkerja/generatekode', function ($request, $response) {
+    $jadwalKerja = new JadwalKerja();
+
+    $kode = $jadwalKerja->generateKode();
+
+    return successResponse($response, $kode['data']);
+});
+

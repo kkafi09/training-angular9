@@ -1,0 +1,565 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Firebase;
+
+class Kasbon
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_kasbon';
+    }
+
+    /**
+     * Ambil semua data kasbon.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param boolean $approvedByMe
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $approvedByMe = false)
+    {
+        $this->db->select(
+                't_kasbon.*, 
+                karyawan_data.nama as nama_karyawan, 
+                karyawan.nik as nik_karyawan,
+                m_jabatan.nama as nama_jabatan
+            ')
+            ->from($this->table)
+            ->join('left join', 'karyawan', 'karyawan.id = '.$this->table.'.karyawan_id')
+            ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->join('left join', 'k_jabatan', 'karyawan.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->orderBy($this->table.'.tgl_kasbon DESC, '.$this->table.'.id DESC')
+        ;
+
+        // Jika diakses dari approval mobile
+        if($approvedByMe){
+            $this->db->join('join', 't_approval', 't_kasbon.id = t_approval.reff_id and t_approval.reff_type = "t_kasbon"')
+                    ->andWhere('t_approval.is_aktif', '=', 1)
+                    ->andWhere('t_approval.k_approval_id', '=', $_SESSION['user']['userId'])
+                    ->andWhere('t_approval.status', '=', 1);
+        }
+
+        // Filter
+        if (isset($params) && !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) && is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($filter) && !empty($filter)) {
+            foreach ($filter as $key => $val) {
+                if (!empty($val)) {
+                    if ('nama' == $key) {
+                        $this->db->where('karyawan_data.nama', 'like', $val);
+                    } elseif ('kode' == $key) {
+                        $this->db->where('t_kasbon.kode', 'like', $val);
+                    } elseif ('status' == $key) {
+                        $this->db->where('t_kasbon.status', '=', $val);
+                    } elseif ('approval' == $key) {
+                        $this->db->where('t_kasbon.is_approve', '=', $val);
+                    } elseif ('kasbon_id' == $key) {
+                        $this->db->where('t_kasbon.id', '=', $val);
+                    } elseif ('karyawan_id' == $key) {
+                        $this->db->where('karyawan.id', '=', $val);
+                    } elseif ('status' == $key) {
+                        if($approvedByMe){
+                            $this->db->where('t_approval.status', '=', $val);                            
+                        }
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) && !empty($limit)) {
+            $this->db->limit($limit);
+        }
+
+        // Set offset
+        if (isset($offset) && !empty($offset)) {
+            $this->db->offset($offset);
+        }
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        $this->db->select('*')
+            ->from('t_kasbon_bayar_det')
+        ;
+
+        $riwayat = $this->db->findAll();
+
+        $arrRiwayat = [];
+        $index = 0;
+        foreach ($riwayat as $key => $val) {
+            $arrRiwayat[$val->t_kasbon_id][] = $val;
+        }
+
+        foreach ($models as $key => $val) {
+            $val->total_hutang = $val->jumlah + ($val->jumlah * $val->bunga / 100);
+            $val->tgl_kasbon = date('d/m/Y', strtotime($val->tgl_kasbon));
+
+            if (isset($arrRiwayat[$val->id])) {
+                $val->riwayat = $arrRiwayat[$val->id];
+
+                foreach ($arrRiwayat[$val->id] as $keys => $vals) {
+                    if (!isset($val->jumlah_pembayaran)) {
+                        $val->jumlah_pembayaran = $vals->bayar;
+                    } else {
+                        $val->jumlah_pembayaran += $vals->bayar;
+                    }
+                }
+            } else {
+                $val->jumlah_pembayaran = 0;
+            }
+        }
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function getSisaKasbon($karyawanId = null)
+    {
+        // Ambil jumlah kasbon yang belum lunas
+        $this->db->select('
+                    t_kasbon.id as t_kasbon_id,
+                    jumlah + (jumlah * bunga / 100) as kasbon, 
+                    jumlah as kasbon_asli,
+                    bunga,
+                    karyawan_id
+                ')
+            ->from('t_kasbon')
+            ->leftJoin('karyawan', 'karyawan.id = t_kasbon.karyawan_id')
+            ->where('t_kasbon.status', '=', 'Belum Lunas')
+            ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->orderBy('t_kasbon.tgl_kasbon ASC')
+        ;
+
+        if (!empty($karyawanId)) {
+            $this->db->andWhere('karyawan.id', '=', $karyawanId);
+        }
+
+        $kasbon = $this->db->findAll();
+
+        // Ambil pembayaran untuk mencari sisa
+        $arr = [];
+        foreach ($kasbon as $key => $value) {
+            $bayar = $this->db->select('sum(bayar + bunga) as bayar')
+                ->from('t_kasbon_bayar_det')
+                ->where('t_kasbon_id', '=', $value->t_kasbon_id)
+                ->find()
+            ;
+            $totalBayar = isset($bayar->bayar) ? $bayar->bayar : 0;
+            $sisaKasbon = $value->kasbon - $totalBayar;
+            $arr[$value->karyawan_id]['kasbon'] = (isset($arr[$value->karyawan_id]['kasbon']) ? $arr[$value->karyawan_id]['kasbon'] : 0) + $sisaKasbon;
+            // $arr[$value->karyawan_id]['bayar'] = (isset($arr[$value->karyawan_id]['bayar']) ? $arr[$value->karyawan_id]['bayar'] : 0) + $totalBayar;
+            if ($sisaKasbon > 0) {
+                // $arr[$value->karyawan_id]['total'] = (isset($arr[$value->karyawan_id]['total']) ? $arr[$value->karyawan_id]['total'] : 0) + $value->kasbon - $totalBayar;
+                $arr[$value->karyawan_id]['detail'][] = [
+                    't_kasbon_id' => $value->t_kasbon_id,
+                    'kasbon_asli' => $value->kasbon,
+                    'sisa' => $value->kasbon - $totalBayar,
+                    'bunga' => $value->bunga,
+                ];
+            }
+        }
+
+        return $arr;
+    }
+
+    public function getRiwayat($params = [])
+    {
+        try {
+            $filter = json_decode($params['params']);
+
+            $this->db->select('*')
+                ->from('t_kasbon_bayar_det')
+                ->where('t_kasbon_id', '=', $filter->id)
+            ;
+
+            $models = $this->db->findAll();
+            $totalItem = $this->db->count();
+
+            foreach ($models as $key => $val) {
+                $val->tgl_bayar = date('d/m/Y', strtotime($val->tgl_bayar));
+            }
+
+            return [
+                'data' => $models,
+                'totalItem' => $totalItem,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Simpan transaksi kasbon.
+     *
+     * @param array  $data
+     * @param string $customParams
+     *
+     * @return array
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (isset($data['t_kasbon_id'])) {
+                $this->table = 't_kasbon_bayar_det';
+            }
+
+            $this->db->startTransaction();
+
+            if (!isset($data['id'])) {
+                $model = $this->db->insert($this->table, $data);
+                // set Approval Line.
+                if (2 == $model->sumber || (1 == $model->sumber && $model->karyawan_id == $_SESSION['user']['userId'])) {
+                    if (!isset($data['t_kasbon_id'])) {
+                        // Ambil data karyawan
+                        $karyawan = new Karyawan();
+                        $dataKaryawan = $karyawan->getKaryawan(['karyawan.id' => $model->karyawan_id]);
+
+                        if (isset($dataKaryawan->id)) {
+                            // Set data karyawan yang pengajuan
+                            $arrKaryawan['karyawan_id'] = $dataKaryawan->id;
+                            $arrKaryawan['keterangan'] = 'Mengajukan kasbon';
+                            $arrKaryawan['m_jabatan_id'] = $dataKaryawan->m_jabatan_id;
+                            $arrKaryawan['m_jabatan_level_id'] = $dataKaryawan->m_jabatan_level_id;
+                            // Set approval Line
+                            $approvalLine = new ApprovalLine();
+                            $isApprove = $approvalLine->setApprovalLine($arrKaryawan, 't_kasbon', $model->id);
+
+                            if ($isApprove['status']) {
+                                // Updte status belum approve
+                                $this->db->update($this->table, ['is_approve' => 0], ['id' => $model->id]);
+
+                                // kirim notifikasi ke atasan / yang approve
+                                if (!empty($isApprove['data'])) {
+                                    foreach ($isApprove['data'] as $key => $value) {
+                                        $firebase = new Firebase();
+                                        $firebase->sendNotif('person', 'Pengajuan Kasbon', 'Ada pengajuan kasbon baru', [
+                                            'idKaryawan' => $value['idKaryawan'],
+                                            'tipe' => 'kasbon',
+                                            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                                        ]);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } elseif (empty($customParams)) {
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+            } else {
+                $model = $this->db->update($this->table, $data, $customParams);
+            }
+
+            if (isset($data['t_kasbon_id'])) {
+                $cek_riwayat = $this->db->select('id, bayar, bunga')
+                    ->from($this->table)
+                    ->where('t_kasbon_id', '=', $data['t_kasbon_id'])
+                    ->findAll()
+                ;
+
+                $total_bayar = 0;
+                foreach ($cek_riwayat as $key => $val) {
+                    $val->total_bayar = $val->bayar + $val->bunga;
+                    $total_bayar += $val->total_bayar;
+                }
+
+                $kasbon = $this->db->select('id, jumlah, bunga')
+                    ->from('t_kasbon')
+                    ->where('id', '=', $data['t_kasbon_id'])
+                    ->find()
+                ;
+
+                $total_hutang = $kasbon->jumlah + ($kasbon->jumlah * $kasbon->bunga / 100);
+
+                if ($total_bayar >= $total_hutang) {
+                    $lunas = $this->db->update('t_kasbon', ['status' => 'Lunas'], ['id' => $data['t_kasbon_id']]);
+                } else {
+                    $lunas = $this->db->update('t_kasbon', ['status' => 'Belum Lunas'], ['id' => $data['t_kasbon_id']]);
+                }
+            }
+
+            $this->db->endTransaction();
+
+            // Return data pelatihan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function delete($data)
+    {
+        try {
+            if (!isset($data['t_kasbon_id'])) {
+                $this->db->startTransaction();
+
+                if (isset($data['id'])) {
+                    $model = $this->db->delete($this->table, ['id' => $data['id']]);
+                    $pembayaran = $this->db->delete('t_kasbon_bayar_det', ['t_kasbon_id' => $data['id']]);
+                }
+
+                $this->db->endTransaction();
+            } else {
+                $this->table = 't_kasbon_bayar_det';
+
+                // Update t_kasbon_bayar_det
+                if (isset($data['id'])) {
+                    $model = $this->db->delete($this->table, ['id' => $data['id']]);
+                }
+
+                // Cek pembayaran untuk update Lunas atau Belum Lunas
+                $cek_riwayat = $this->db->select('id, bayar, bunga')
+                    ->from($this->table)
+                    ->where('t_kasbon_id', '=', $data['t_kasbon_id'])
+                    ->findAll()
+                ;
+
+                $total_bayar = 0;
+                foreach ($cek_riwayat as $key => $val) {
+                    $val->total_bayar = $val->bayar + $val->bunga;
+                    $total_bayar += $val->total_bayar;
+                }
+
+                $kasbon = $this->db->select('id, jumlah, bunga')
+                    ->from('t_kasbon')
+                    ->where('id', '=', $data['t_kasbon_id'])
+                    ->find()
+                ;
+
+                $total_hutang = $kasbon->jumlah + ($kasbon->jumlah * $kasbon->bunga / 100);
+
+                if ($total_bayar >= $total_hutang) {
+                    $lunas = $this->db->update('t_kasbon', ['status' => 'Lunas'], ['id' => $data['t_kasbon_id']]);
+                } else {
+                    $lunas = $this->db->update('t_kasbon', ['status' => 'Belum Lunas'], ['id' => $data['t_kasbon_id']]);
+                }
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function generateKode()
+    {
+        $cekKode = $this->db->select('kode')
+            ->from($this->table)
+            ->orderBy('kode DESC')
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $tipe = 'KSBN';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $tanggal = date('y').date('m');
+            $kode = $tipe.$tanggal.$kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        if (!isset($data['t_kasbon_id'])) {
+            $validasi = [
+                'tgl_kasbon' => 'required',
+                'karyawan_id' => 'required',
+                'jumlah' => 'required',
+                'jenis_bayar' => 'required',
+                'tipe_bunga' => 'required',
+                'bunga' => 'required',
+            ];
+
+            \GUMP::set_field_name('karyawan_id', 'Karyawan');
+            \GUMP::set_field_name('tgl_kasbon', 'Tanggal Kasbon');
+        } else {
+            $validasi = [
+                'tgl_bayar' => 'required',
+                'total' => 'required',
+            ];
+
+            \GUMP::set_field_name('tgl_bayar', 'Tanggal Bayar');
+        }
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function getRiwayatKasbon($userID, $tanggal = '', $status = '')
+    {
+        try {
+            $this->db->select('*')
+                ->from('t_kasbon')
+            ;
+            if (isset($userID) && !empty($userID)) {
+                $this->db->where('karyawan_id', '=', $userID);
+            }
+            if (isset($status) && '' != $status) {
+                $this->db->andWhere('is_approve', '=', $status);
+            }
+            if (isset($tanggal) && !empty($tanggal)) {
+                $this->db->andWhere('tgl_kasbon', '=', $tanggal);
+            }
+            $models = $this->db->findAll();
+
+            $totalItem = $this->db->count();
+            foreach ($models as $key => $val) {
+                $val->post = $val->id.'~'.strtotime($val->tgl_kasbon).'~'.$val->jumlah.'~'.$val->cicilan.'~'.$val->is_approve.'~'.$val->status.'~'.$val->keterangan;
+
+                $val->tgl_kasbon = date('d/m/Y', strtotime($val->tgl_kasbon));
+                $val->tanggal_kasbon = strtotime($val->tgl_kasbon);
+            }
+
+            return [
+                'data' => $models,
+                'totalItem' => $totalItem,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function getPembayaranKasbon($userID, $tanggal = '', $status = '')
+    {
+        try {
+            $this->db->select('t_kasbon_bayar_det.*,t_kasbon.*')
+                ->from('t_kasbon_bayar_det')
+                ->join('left join', 't_kasbon', 't_kasbon.id = t_kasbon_bayar_det.t_kasbon_id')
+            ;
+            if (isset($userID) && !empty($userID)) {
+                $this->db->where('t_kasbon.karyawan_id', '=', $userID);
+            }
+            if (isset($status) && '' != $status) {
+                $this->db->andWhere('t_kasbon.status', '=', $status);
+            }
+            if (isset($tanggal) && !empty($tanggal)) {
+                $this->db->andWhere('t_kasbon_bayar_det.tgl_bayar', '=', $tanggal);
+            }
+            $models = $this->db->findAll();
+            $totalItem = $this->db->count();
+            foreach ($models as $key => $val) {
+                $val->tgl_bayar = date('d/m/Y', strtotime($val->tgl_bayar));
+            }
+
+            return [
+                'data' => $models,
+                'totalItem' => $totalItem,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function getDetail($userID)
+    {
+        try {
+            $this->db->select('
+            t_kasbon.*,
+            karyawan_data.*,
+            karyawan.*,
+            k_jabatan.m_organisasi_id,
+            k_jabatan.m_jabatan_id,
+            k_jabatan.keterangan,
+            m_jabatan.nama as nama_jabatan,
+            m_jabatan.m_jabatan_level_id,
+            m_organisasi.nama as nama_org,
+            m_perusahaan.nama as m_perusahaan_nama')
+                ->from('t_kasbon')
+                ->join('left join', 'karyawan', 'karyawan.id = t_kasbon.id')
+                ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+                ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id and aktif = 1')
+                ->join('left join', 'k_status', 'k_status.karyawan_id = karyawan.id')
+                ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+                ->join('left join', 'm_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+                ->join('left join', 'm_perusahaan', 'm_perusahaan.id = karyawan.m_perusahaan_id')
+                ->where('karyawan.is_deleted', '=', 0)->andWhere('t_kasbon.karyawan_id', '=', $userID);
+            $models = $this->db->find();
+            $totalItem = $this->db->count();
+            foreach ($models as $key => $val) {
+                $val->tgl_kasbon = strtotime($val->tgl_kasbon);
+            }
+
+            return [
+                'data' => $models,
+                'totalItem' => $totalItem,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+}
+

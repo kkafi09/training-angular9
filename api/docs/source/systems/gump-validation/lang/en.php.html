@@ -1,0 +1,97 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+return [
+    'validate_required' =&gt; 'The {field} field is required',
+    'validate_valid_email' =&gt; 'The {field} field must be a valid email address',
+    'validate_max_len' =&gt; 'The {field} field needs to be {param} characters or less',
+    'validate_min_len' =&gt; 'The {field} field needs to be at least {param} characters',
+    'validate_exact_len' =&gt; 'The {field} field needs to be exactly {param} characters',
+    'validate_alpha' =&gt; 'The {field} field may only contain letters',
+    'validate_alpha_numeric' =&gt; 'The {field} field may only contain letters and numbers',
+    'validate_alpha_numeric_space' =&gt; 'The {field} field may only contain letters, numbers and spaces',
+    'validate_alpha_dash' =&gt; 'The {field} field may only contain letters and dashes',
+    'validate_alpha_space' =&gt; 'The {field} field may only contain letters and spaces',
+    'validate_numeric' =&gt; 'The {field} field must be a number',
+    'validate_integer' =&gt; 'The {field} field must be a number without a decimal',
+    'validate_boolean' =&gt; 'The {field} field has to be either true or false',
+    'validate_float' =&gt; 'The {field} field must be a number with a decimal point (float)',
+    'validate_valid_url' =&gt; 'The {field} field has to be a URL',
+    'validate_url_exists' =&gt; 'The {field} URL does not exist',
+    'validate_valid_ip' =&gt; 'The {field} field needs to be a valid IP address',
+    'validate_valid_ipv4' =&gt; 'The {field} field needs to contain a valid IPv4 address',
+    'validate_valid_ipv6' =&gt; 'The {field} field needs to contain a valid IPv6 address',
+    'validate_guidv4' =&gt; 'The {field} field needs to contain a valid GUID',
+    'validate_valid_cc' =&gt; 'The {field} is not a valid credit card number',
+    'validate_valid_name' =&gt; 'The {field} should be a full name',
+    'validate_contains' =&gt; 'The {field} can only be one of the following: {param}',
+    'validate_contains_list' =&gt; 'The {field} is not a valid option',
+    'validate_doesnt_contain_list' =&gt; 'The {field} field contains a value that is not accepted',
+    'validate_street_address' =&gt; 'The {field} field needs to be a valid street address',
+    'validate_date' =&gt; 'The {field} must be a valid date',
+    'validate_min_numeric' =&gt; 'The {field} field needs to be a numeric value, equal to, or higher than {param}',
+    'validate_max_numeric' =&gt; 'The {field} field needs to be a numeric value, equal to, or lower than {param}',
+    'validate_min_age' =&gt; 'The {field} field needs to have an age greater than or equal to {param}',
+    'validate_invalid' =&gt; 'The {field} field is invalid',
+    'validate_starts' =&gt; 'The {field} field needs to start with {param}',
+    'validate_extension' =&gt; 'The {field} field can only have one of the following extensions: {param}',
+    'validate_required_file' =&gt; 'The {field} field is required',
+    'validate_equalsfield' =&gt; 'The {field} field does not equal {param} field',
+    'validate_iban' =&gt; 'The {field} field needs to contain a valid IBAN',
+    'validate_phone_number' =&gt; 'The {field} field needs to be a valid Phone Number',
+    'validate_regex' =&gt; 'The {field} field needs to contain a value with valid format',
+    'validate_valid_json_string' =&gt; 'The {field} field needs to contain a valid JSON format string',
+    'validate_valid_array_size_greater' =&gt; 'The {field} fields needs to be an array with a size, equal to, or higher than {param}',
+    'validate_valid_array_size_lesser' =&gt; 'The {field} fields needs to be an array with a size, equal to, or lower than {param}',
+    'validate_valid_array_size_equal' =&gt; 'The {field} fields needs to be an array with a size equal to {param}',
+    'validate_valid_persian_name' =&gt; 'The {field} should be a valid Persian/Dari or Arabic name',
+    'validate_valid_eng_per_pas_name' =&gt; 'The {field} should be a valid English, Persian/Dari/Pashtu or Arabic name',
+    'validate_valid_persian_digit' =&gt; 'The {field} should be a valid digit in Persian/Dari or Arabic format',
+    'validate_valid_persian_text' =&gt; 'The {field} should be a valid text in Persian/Dari or Arabic format',
+    'validate_valid_pashtu_text' =&gt; 'The {field} should be a valid text in Pashtu format',
+    'validate_valid_twitter' =&gt; 'The {field} is not a valid twitter handle',
+];
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

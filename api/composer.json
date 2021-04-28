@@ -1,0 +1,31 @@
+{
+    "name": "landa/core",
+    "description": "",
+    "type": "package",
+    "authors": [{
+        "name": "wahyu agung",
+        "email": "agung@landa.co.id"
+    }],
+    "prefer-stable": false,
+    "minimum-stability": "dev",
+    "require": {
+        "slim/slim": "3.*",
+        "cahkampung/landa-db": "*",
+        "cahkampung/landa-migrasi": "*",
+        "cahkampung/landa-php": "*",
+        "slim/twig-view": "2.5.0",
+        "friendsofphp/php-cs-fixer": "^2.17@dev",
+        "google/cloud-firestore": "dev-master",
+        "phpoffice/phpspreadsheet": "1.12.0",
+        "kreait/firebase-php": "^5.0@dev",        
+        "tecnickcom/tcpdf": "^6.2",
+        "phpmailer/phpmailer": "dev-master",
+        "dompdf/dompdf": "^0.8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Model\\": "src/models",
+            "Service\\": "src/services"
+        }
+    }
+}

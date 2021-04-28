@@ -1,0 +1,80 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\LaporanBpjs;
+
+// Ambil semua bpjs
+$app-&gt;get('/l_bpjs/getAll', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $laporan_bpjs = new LaporanBpjs();
+    $getDataBpjs = $laporan_bpjs-&gt;getAll($params);
+
+    if (isset($params['is_export']) &amp;&amp; 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view-&gt;fetch('laporan/bpjs.html', [
+            'data' =&gt; $getDataBpjs['data'],
+            'periode' =&gt; $getDataBpjs['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getDataBpjs['periode']) {
+            header('Content-Disposition: attachment;Filename=&quot;Laporan BPJS ('.$getDataBpjs['periode'].').xls&quot;');
+        } else {
+            header('Content-Disposition: attachment;Filename=&quot;Laporan BPJS (Semua Periode).xls&quot;');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) &amp;&amp; 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view-&gt;fetch('laporan/bpjs.html', [
+            'data' =&gt; $getDataBpjs['data'],
+            'periode' =&gt; $getDataBpjs['periode'],
+        ]);
+        echo $content;
+        echo '&lt;script type=&quot;text/javascript&quot;&gt;window.print();setTimeout(function () { window.close(); }, 500);&lt;/script&gt;';
+    } else {
+        return successResponse($response, ['list' =&gt; array_values($getDataBpjs['data']), 'periode' =&gt; $getDataBpjs['periode']]);
+    }
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

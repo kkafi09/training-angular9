@@ -1,0 +1,589 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Firebase;
+
+class Kasbon
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 't_kasbon';
+    }
+
+    /**
+     * Ambil semua data kasbon.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select($this-&gt;table.'.*, karyawan_data.nama as nama_karyawan')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'karyawan', 'karyawan.id = '.$this-&gt;table.'.karyawan_id')
+            -&gt;join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            -&gt;where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            -&gt;orderBy($this-&gt;table.'.tgl_kasbon DESC, '.$this-&gt;table.'.id DESC')
+        ;
+
+        // Filter
+        if (isset($params) &amp;&amp; !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) &amp;&amp; is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($filter) &amp;&amp; !empty($filter)) {
+            foreach ($filter as $key =&gt; $val) {
+                if (!empty($val)) {
+                    if ('nama' == $key) {
+                        $this-&gt;db-&gt;where('karyawan_data.nama', 'like', $val);
+                    } elseif ('kode' == $key) {
+                        $this-&gt;db-&gt;where('t_kasbon.kode', 'like', $val);
+                    } elseif ('status' == $key) {
+                        $this-&gt;db-&gt;where('t_kasbon.status', '=', $val);
+                    } elseif ('approval' == $key) {
+                        $this-&gt;db-&gt;where('t_kasbon.is_approve', '=', $val);
+                    } elseif ('kasbon_id' == $key) {
+                        $this-&gt;db-&gt;where('t_kasbon.id', '=', $val);
+                    } elseif ('karyawan_id' == $key) {
+                        $this-&gt;db-&gt;where('karyawan.id', '=', $val);
+                    } 
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) &amp;&amp; !empty($limit)) {
+            $this-&gt;db-&gt;limit($limit);
+        }
+
+        // Set offset
+        if (isset($offset) &amp;&amp; !empty($offset)) {
+            $this-&gt;db-&gt;offset($offset);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('t_kasbon_bayar_det')
+        ;
+
+        $riwayat = $this-&gt;db-&gt;findAll();
+
+        $arrRiwayat = [];
+        $index = 0;
+        foreach ($riwayat as $key =&gt; $val) {
+            $arrRiwayat[$val-&gt;t_kasbon_id][] = $val;
+        }
+
+        foreach ($models as $key =&gt; $val) {
+            $val-&gt;total_hutang = $val-&gt;jumlah + ($val-&gt;jumlah * $val-&gt;bunga / 100);
+            $val-&gt;tgl_kasbon = date('d/m/Y', strtotime($val-&gt;tgl_kasbon));
+
+            if (isset($arrRiwayat[$val-&gt;id])) {
+                $val-&gt;riwayat = $arrRiwayat[$val-&gt;id];
+
+                foreach ($arrRiwayat[$val-&gt;id] as $keys =&gt; $vals) {
+                    if (!isset($val-&gt;jumlah_pembayaran)) {
+                        $val-&gt;jumlah_pembayaran = $vals-&gt;bayar;
+                    } else {
+                        $val-&gt;jumlah_pembayaran += $vals-&gt;bayar;
+                    }
+                }
+            } else {
+                $val-&gt;jumlah_pembayaran = 0;
+            }
+        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function getSisaKasbon($karyawanId = null)
+    {
+        // Ambil jumlah kasbon yang belum lunas
+        $this-&gt;db-&gt;select('
+                    t_kasbon.id as t_kasbon_id,
+                    jumlah + (jumlah * bunga / 100) as kasbon, 
+                    jumlah as kasbon_asli,
+                    bunga,
+                    karyawan_id
+                ')
+            -&gt;from('t_kasbon')
+            -&gt;leftJoin('karyawan', 'karyawan.id = t_kasbon.karyawan_id')
+            -&gt;where('t_kasbon.status', '=', 'Belum Lunas')
+            -&gt;where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            -&gt;orderBy('t_kasbon.tgl_kasbon ASC');
+
+        if(!empty($karyawanId)){
+            $this-&gt;db-&gt;andWhere('karyawan.id', '=', $karyawanId);
+        }
+
+        $kasbon = $this-&gt;db-&gt;findAll();
+
+        // Ambil pembayaran untuk mencari sisa
+        $arr = [];
+        foreach ($kasbon as $key =&gt; $value) {
+            $bayar = $this-&gt;db-&gt;select('sum(bayar + bunga) as bayar')
+                -&gt;from('t_kasbon_bayar_det')
+                -&gt;where('t_kasbon_id', '=', $value-&gt;t_kasbon_id)
+                -&gt;find()
+            ;
+            $totalBayar = isset($bayar-&gt;bayar) ? $bayar-&gt;bayar : 0;
+            $sisaKasbon = $value-&gt;kasbon - $totalBayar;
+            $arr[$value-&gt;karyawan_id]['kasbon'] = (isset($arr[$value-&gt;karyawan_id]['kasbon']) ? $arr[$value-&gt;karyawan_id]['kasbon'] : 0) + $sisaKasbon;
+            // $arr[$value-&gt;karyawan_id]['bayar'] = (isset($arr[$value-&gt;karyawan_id]['bayar']) ? $arr[$value-&gt;karyawan_id]['bayar'] : 0) + $totalBayar;
+            if ($sisaKasbon &gt; 0) {
+                // $arr[$value-&gt;karyawan_id]['total'] = (isset($arr[$value-&gt;karyawan_id]['total']) ? $arr[$value-&gt;karyawan_id]['total'] : 0) + $value-&gt;kasbon - $totalBayar;
+                $arr[$value-&gt;karyawan_id]['detail'][] = [
+                    't_kasbon_id' =&gt; $value-&gt;t_kasbon_id,
+                    'kasbon_asli' =&gt; $value-&gt;kasbon,
+                    'sisa' =&gt; $value-&gt;kasbon - $totalBayar,
+                    'bunga' =&gt; $value-&gt;bunga,
+                ];
+            }
+        }
+
+        return $arr;
+    }
+
+    public function getRiwayat($params = [])
+    {
+        try {
+            $filter = json_decode($params['params']);
+
+            $this-&gt;db-&gt;select('*')
+                -&gt;from('t_kasbon_bayar_det')
+                -&gt;where('t_kasbon_id', '=', $filter-&gt;id)
+            ;
+
+            $models = $this-&gt;db-&gt;findAll();
+            $totalItem = $this-&gt;db-&gt;count();
+
+            foreach ($models as $key =&gt; $val) {
+                $val-&gt;tgl_bayar = date('d/m/Y', strtotime($val-&gt;tgl_bayar));
+            }
+
+            return [
+                'data' =&gt; $models,
+                'totalItem' =&gt; $totalItem,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Simpan transaksi kasbon.
+     *
+     * @param array  $data
+     * @param string $customParams
+     *
+     * @return array
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (isset($data['t_kasbon_id'])) {
+                $this-&gt;table = 't_kasbon_bayar_det';
+            }
+
+            $this-&gt;db-&gt;startTransaction();
+
+            if (!isset($data['id'])) {
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $data);
+                // set Approval Line.
+                if (2 == $model-&gt;sumber || (1 == $model-&gt;sumber &amp;&amp; $model-&gt;karyawan_id == $_SESSION['user']['userId'])) {
+                    if (!isset($data['t_kasbon_id'])) {
+                        // Ambil data karyawan
+                        $karyawan = new Karyawan();
+                        $dataKaryawan = $karyawan-&gt;getKaryawan(['karyawan.id' =&gt; $model-&gt;karyawan_id]);
+
+                        if (isset($dataKaryawan-&gt;id)) {
+                            // Set data karyawan yang pengajuan
+                            $arrKaryawan['karyawan_id'] = $dataKaryawan-&gt;id;
+                            $arrKaryawan['keterangan'] = 'Mengajukan kasbon';
+                            $arrKaryawan['m_jabatan_id'] = $dataKaryawan-&gt;m_jabatan_id;
+                            $arrKaryawan['m_jabatan_level_id'] = $dataKaryawan-&gt;m_jabatan_level_id;
+
+                            // Set approval Line
+                            $approvalLine = new ApprovalLine();
+                            $isApprove = $approvalLine-&gt;setApprovalLine($arrKaryawan, 't_kasbon', $model-&gt;id);
+
+                            if ($isApprove['status']) {
+                                // Updte status belum approve
+                                $this-&gt;db-&gt;update($this-&gt;table, ['is_approve' =&gt; 0], ['id' =&gt; $model-&gt;id]);
+
+                                // kirim notifikasi ke atasan / yang approve
+                                if (!empty($isApprove['data'])) {
+                                    foreach ($isApprove['data'] as $key =&gt; $value) {
+                                        $firebase = new Firebase();
+                                        $firebase-&gt;sendNotif('person', 'Pengajuan Kasbon', 'Ada pengajuan kasbon baru', [
+                                            'idKaryawan' =&gt; $value['idKaryawan'],
+                                            'tipe' =&gt; 'kasbon',
+                                            'click_action' =&gt; 'FLUTTER_NOTIFICATION_CLICK',
+                                        ]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } elseif (empty($customParams)) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, ['id' =&gt; $data['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, $customParams);
+            }
+
+            if (isset($data['t_kasbon_id'])) {
+                $cek_riwayat = $this-&gt;db-&gt;select('id, bayar, bunga')
+                    -&gt;from($this-&gt;table)
+                    -&gt;where('t_kasbon_id', '=', $data['t_kasbon_id'])
+                    -&gt;findAll()
+                ;
+
+                $total_bayar = 0;
+                foreach ($cek_riwayat as $key =&gt; $val) {
+                    $val-&gt;total_bayar = $val-&gt;bayar + $val-&gt;bunga;
+                    $total_bayar += $val-&gt;total_bayar;
+                }
+
+                $kasbon = $this-&gt;db-&gt;select('id, jumlah, bunga')
+                    -&gt;from('t_kasbon')
+                    -&gt;where('id', '=', $data['t_kasbon_id'])
+                    -&gt;find()
+                ;
+
+                $total_hutang = $kasbon-&gt;jumlah + ($kasbon-&gt;jumlah * $kasbon-&gt;bunga / 100);
+
+                if ($total_bayar &gt;= $total_hutang) {
+                    $lunas = $this-&gt;db-&gt;update('t_kasbon', ['status' =&gt; 'Lunas'], ['id' =&gt; $data['t_kasbon_id']]);
+                } else {
+                    $lunas = $this-&gt;db-&gt;update('t_kasbon', ['status' =&gt; 'Belum Lunas'], ['id' =&gt; $data['t_kasbon_id']]);
+                }
+            }
+
+            $this-&gt;db-&gt;endTransaction();
+
+            // Return data pelatihan
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function delete($data)
+    {
+        try {
+            if (!isset($data['t_kasbon_id'])) {
+                $this-&gt;db-&gt;startTransaction();
+
+                if (isset($data['id'])) {
+                    $model = $this-&gt;db-&gt;delete($this-&gt;table, ['id' =&gt; $data['id']]);
+                    $pembayaran = $this-&gt;db-&gt;delete('t_kasbon_bayar_det', ['t_kasbon_id' =&gt; $data['id']]);
+                }
+
+                $this-&gt;db-&gt;endTransaction();
+            } else {
+                $this-&gt;table = 't_kasbon_bayar_det';
+
+                // Update t_kasbon_bayar_det
+                if (isset($data['id'])) {
+                    $model = $this-&gt;db-&gt;delete($this-&gt;table, ['id' =&gt; $data['id']]);
+                }
+
+                // Cek pembayaran untuk update Lunas atau Belum Lunas
+                $cek_riwayat = $this-&gt;db-&gt;select('id, bayar, bunga')
+                    -&gt;from($this-&gt;table)
+                    -&gt;where('t_kasbon_id', '=', $data['t_kasbon_id'])
+                    -&gt;findAll()
+                ;
+
+                $total_bayar = 0;
+                foreach ($cek_riwayat as $key =&gt; $val) {
+                    $val-&gt;total_bayar = $val-&gt;bayar + $val-&gt;bunga;
+                    $total_bayar += $val-&gt;total_bayar;
+                }
+
+                $kasbon = $this-&gt;db-&gt;select('id, jumlah, bunga')
+                    -&gt;from('t_kasbon')
+                    -&gt;where('id', '=', $data['t_kasbon_id'])
+                    -&gt;find()
+                ;
+
+                $total_hutang = $kasbon-&gt;jumlah + ($kasbon-&gt;jumlah * $kasbon-&gt;bunga / 100);
+
+                if ($total_bayar &gt;= $total_hutang) {
+                    $lunas = $this-&gt;db-&gt;update('t_kasbon', ['status' =&gt; 'Lunas'], ['id' =&gt; $data['t_kasbon_id']]);
+                } else {
+                    $lunas = $this-&gt;db-&gt;update('t_kasbon', ['status' =&gt; 'Belum Lunas'], ['id' =&gt; $data['t_kasbon_id']]);
+                }
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function generateKode()
+    {
+        $cekKode = $this-&gt;db-&gt;select('kode')
+            -&gt;from($this-&gt;table)
+            -&gt;orderBy('kode DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $tipe = 'KSBN';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $tanggal = date('y').date('m');
+            $kode = $tipe.$tanggal.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        if (!isset($data['t_kasbon_id'])) {
+            $validasi = [
+                'tgl_kasbon' =&gt; 'required',
+                'karyawan_id' =&gt; 'required',
+                'jumlah' =&gt; 'required',
+                'jenis_bayar' =&gt; 'required',
+                'tipe_bunga' =&gt; 'required',
+                'bunga' =&gt; 'required',
+            ];
+
+            \GUMP::set_field_name('karyawan_id', 'Karyawan');
+            \GUMP::set_field_name('tgl_kasbon', 'Tanggal Kasbon');
+        } else {
+            $validasi = [
+                'tgl_bayar' =&gt; 'required',
+                'total' =&gt; 'required',
+            ];
+
+            \GUMP::set_field_name('tgl_bayar', 'Tanggal Bayar');
+        }
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function getRiwayatKasbon($userID, $tanggal = '', $status = '')
+    {
+        try {
+            $this-&gt;db-&gt;select('*')
+                -&gt;from('t_kasbon')
+            ;
+            if (isset($userID) &amp;&amp; !empty($userID)) {
+                $this-&gt;db-&gt;where('karyawan_id', '=', $userID);
+            }
+            if (isset($status) &amp;&amp; '' != $status) {
+                $this-&gt;db-&gt;andWhere('is_approve', '=', $status);
+            }
+            if (isset($tanggal) &amp;&amp; !empty($tanggal)) {
+                $this-&gt;db-&gt;andWhere('tgl_kasbon', '=', $tanggal);
+            }
+            $models = $this-&gt;db-&gt;findAll();
+
+            $totalItem = $this-&gt;db-&gt;count();
+            foreach ($models as $key =&gt; $val) {
+                $val-&gt;post = $val-&gt;id.'~'.strtotime($val-&gt;tgl_kasbon).'~'.$val-&gt;jumlah.'~'.$val-&gt;cicilan.'~'.$val-&gt;is_approve.'~'.$val-&gt;status.'~'.$val-&gt;keterangan;
+
+                $val-&gt;tgl_kasbon = date('d/m/Y', strtotime($val-&gt;tgl_kasbon));
+                $val-&gt;tanggal_kasbon = strtotime($val-&gt;tgl_kasbon);
+            }
+
+            return [
+                'data' =&gt; $models,
+                'totalItem' =&gt; $totalItem,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function getPembayaranKasbon($userID, $tanggal = '', $status = '')
+    {
+        try {
+            $this-&gt;db-&gt;select('t_kasbon_bayar_det.*,t_kasbon.*')
+                -&gt;from('t_kasbon_bayar_det')
+                -&gt;join('left join', 't_kasbon', 't_kasbon.id = t_kasbon_bayar_det.t_kasbon_id')
+            ;
+            if (isset($userID) &amp;&amp; !empty($userID)) {
+                $this-&gt;db-&gt;where('t_kasbon.karyawan_id', '=', $userID);
+            }
+            if (isset($status) &amp;&amp; '' != $status) {
+                $this-&gt;db-&gt;andWhere('t_kasbon.status', '=', $status);
+            }
+            if (isset($tanggal) &amp;&amp; !empty($tanggal)) {
+                $this-&gt;db-&gt;andWhere('t_kasbon_bayar_det.tgl_bayar', '=', $tanggal);
+            }
+            $models = $this-&gt;db-&gt;findAll();
+            $totalItem = $this-&gt;db-&gt;count();
+            foreach ($models as $key =&gt; $val) {
+                $val-&gt;tgl_bayar = date('d/m/Y', strtotime($val-&gt;tgl_bayar));
+            }
+
+            return [
+                'data' =&gt; $models,
+                'totalItem' =&gt; $totalItem,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function getDetail($userID)
+    {
+        try {
+            $this-&gt;db-&gt;select('
+            t_kasbon.*,
+            karyawan_data.*,
+            karyawan.*,
+            k_jabatan.m_organisasi_id,
+            k_jabatan.m_jabatan_id,
+            k_jabatan.keterangan,
+            m_jabatan.nama as nama_jabatan,
+            m_jabatan.m_jabatan_level_id,
+            m_organisasi.nama as nama_org,
+            m_perusahaan.nama as m_perusahaan_nama')
+                -&gt;from('t_kasbon')
+                -&gt;join('left join', 'karyawan', 'karyawan.id = t_kasbon.id')
+                -&gt;join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+                -&gt;join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id and aktif = 1')
+                -&gt;join('left join', 'k_status', 'k_status.karyawan_id = karyawan.id')
+                -&gt;join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+                -&gt;join('left join', 'm_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+                -&gt;join('left join', 'm_perusahaan', 'm_perusahaan.id = karyawan.m_perusahaan_id')
+                -&gt;where('karyawan.is_deleted', '=', 0)-&gt;andWhere('t_kasbon.karyawan_id', '=', $userID);
+            $models = $this-&gt;db-&gt;find();
+            $totalItem = $this-&gt;db-&gt;count();
+            foreach ($models as $key =&gt; $val) {
+                $val-&gt;tgl_kasbon = strtotime($val-&gt;tgl_kasbon);
+            }
+
+            return [
+                'data' =&gt; $models,
+                'totalItem' =&gt; $totalItem,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

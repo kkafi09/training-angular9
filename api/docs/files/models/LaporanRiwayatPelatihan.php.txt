@@ -1,0 +1,135 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanRiwayatPelatihan extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_pelatihan';
+    }
+
+    /**
+     * Ambil semua data perusahaan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('k_pelatihan.*,
+         	karyawan_data.nama as karyawan_nama, 
+         	karyawan.nik as karyawan_nik,
+         	m_pelatihan.nama as pelatihan_nama,
+         	k_pelatihan.tgl_mulai as pelatihan_tanggal,
+         	k_pelatihan.lokasi as pelatihan_lokasi,
+         	k_pelatihan.total_jam as pelatihan_totaljam,
+         	m_jabatan.nama as jabatan_nama')
+            ->from($this->table)
+            ->leftJoin('karyawan', $this->table.'.karyawan_id = karyawan.id')
+            ->leftJoin('karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            ->leftJoin('m_pelatihan', $this->table.'.m_pelatihan_id = m_pelatihan.id')
+            ->leftJoin('k_jabatan', 'karyawan.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1')
+            ->leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->where($this->table.'.is_deleted', '=', 0)
+        ;
+
+        if (isset($params['karyawan']) && !empty($params['karyawan']) && '' != $params['karyawan'] && 'null' != $params['karyawan']) {
+            $this->db->andWhere($this->table.'.karyawan_id', '=', $params['karyawan']);
+        }
+        if (isset($params['pelatihan']) && !empty($params['pelatihan']) && '' != $params['pelatihan'] && 'null' != $params['pelatihan']) {
+            $this->db->andWhere($this->table.'.m_pelatihan_id', '=', $params['pelatihan']);
+        }
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+
+        $models = $this->db->findAll();
+        $arr = [];
+        foreach ($models as $key => $val) {
+            $val->pelatihan_tanggal = date('d-m-Y', strtotime($val->tgl_mulai));
+            $arr[$key] = (array) $val;
+        }
+
+        // jika status belum diikut
+        if (isset($params['status']) && 'belum' == $params['status']) {
+            // jika status belum diikuti ambil pelatihan yang diikuti dulu
+            $sudahDiikut = [];
+            foreach ($models as $key => $value) {
+                $sudahDiikut[$value->karyawan_id][$value->m_pelatihan_id] = $value->m_pelatihan_id;
+            }
+
+            // Ambil list pelatihan sesuai dengan spesifikasi jabatan
+            $this->db->select('
+                    karyawan_data.nama as karyawan_nama, 
+                    karyawan.id as karyawan_id,
+                    karyawan.nik as karyawan_nik,
+                    m_jabatan.nama as jabatan_nama,
+                    m_pelatihan.nama as pelatihan_nama,
+                    m_pelatihan.id as m_pelatihan_id
+                ')
+                ->from('karyawan')
+                ->leftJoin('karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+                ->leftJoin('k_jabatan', 'karyawan.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1')
+                ->leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+                ->leftJoin('m_jabatan_standard', 'm_jabatan.id = m_jabatan_standard.m_jabatan_id')
+                ->leftJoin('m_pelatihan', 'm_pelatihan.id = m_jabatan_standard.m_pelatihan_id')
+                ->customWhere('m_jabatan_standard.m_pelatihan_id'.' IS NOT NULL', 'AND')
+            ;
+            if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+                $this->db->andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+            }
+            $models = $this->db->findAll();
+//            echo json_encode($models);die();
+            $arr = [];
+            foreach ($models as $key => $value) {
+                if (isset($sudahDiikut[$value->karyawan_id][$value->m_pelatihan_id])) {
+                    // sudah diikuti
+                } else {
+                    $arr[$key] = (array) $value;
+                    $arr[$key]['pelatihan_tanggal'] = '';
+                    $arr[$key]['pelatihan_lokasi'] = '';
+                    $arr[$key]['pelatihan_totaljam'] = '';
+                }
+            }
+        }
+
+        return [
+            'data' => array_values($arr),
+        ];
+    }
+}
+

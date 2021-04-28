@@ -1,0 +1,66 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\ApprovalLine;
+
+// Ambil semua Notifikasi
+$app-&gt;get('/appnotifikasi/getAll', function ($request, $response) {
+    $params = $request-&gt;getParams();
+
+    // Ambil notifikasi approval
+    $approval = new ApprovalLine();
+    $getApproval = $approval-&gt;getApprovedByMe($params['type'], $params['limit'], $params['offset']);
+    // $arr = ['t_kasbon' =&gt; [], 't_reimbursement' =&gt; [], 't_lembur' =&gt; [], 't_ijin' =&gt; [], 't_payroll' =&gt; []];
+
+    // foreach ($getApproval['data'] as $key =&gt; $value) {
+    //     $arr[$value-&gt;reff_type][] = $value;
+    // }
+
+    return successResponse($response, [
+        'list' =&gt; $getApproval['data'],
+    ]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

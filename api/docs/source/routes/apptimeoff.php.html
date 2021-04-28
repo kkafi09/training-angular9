@@ -1,0 +1,90 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Timeoff;
+
+// Ambil semua timeoff
+$app-&gt;get('/apptimeoff/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $timeoff = new Timeoff();
+    $getDatatimeoff = $timeoff-&gt;getAll($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDatatimeoff['data'],
+        'totalItems' =&gt; $getDatatimeoff['totalItem'],
+    ]);
+});
+
+// Save timeoff
+$app-&gt;post('/apptimeoff/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $timeoff = new Timeoff();
+    $validasi = $timeoff-&gt;validasi($data);
+    if (true === $validasi) {
+        // proses simpan time off
+        $save = $timeoff-&gt;save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus timeoff
+$app-&gt;post('/apptimeoff/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $timeoff = new Timeoff();
+    $model = $timeoff-&gt;save(['is_deleted' =&gt; 1, 'id' =&gt; $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

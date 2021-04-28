@@ -1,0 +1,176 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+
+class Pengumuman
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_pengumuman';
+    }
+
+    /**
+     * Ambil semua data pengumuman.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('*')
+            ->from($this->table)->where('is_deleted', '=', 0);
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            if (isset($filter['tgl_mulai']) && '' != $filter['tgl_mulai'] && isset($filter['tgl_selesai']) && '' != $filter['tgl_selesai']) {
+                $this->db->where($this->table.'.created_at', '>=', strtotime($filter['tgl_mulai']));
+                $this->db->where($this->table.'.created_at', '<=', strtotime($filter['tgl_selesai']));
+            }
+            unset($filter['tgl_mulai'], $filter['tgl_selesai']);
+
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere($this->table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        $models = $this->db->findAll();
+        foreach ($models as $key => $value) {
+            $value->tanggal = date('d/m/yy', $value->created_at);
+            $value->isinya = strip_tags($value->isi_pengumuman);
+        }
+//        echo json_encode($models);die();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data pengumuman.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $data['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : null;
+                $model = $this->db->insert($this->table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+            } else {
+                $model = $this->db->update($this->table, $data, $customParams);
+            }
+            // Return data pengumuman
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menghapus data pengumuman.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function hapus($data, $customParams = '')
+    {
+        try {
+            $model = $db->delete('m_pengumuman', ['id' => $data['id']]);
+            // Return data pengumuman
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'judul' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function getData()
+    {
+        $landa = new Landa();
+        $this->db->select('*')
+            ->from($this->table)->where('is_deleted', '=', 0);
+        // Filter
+
+        $this->db->limit(10);
+        $this->db->orderBy($this->table.'.created_at DESC');
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere($this->table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        $models = $this->db->findAll();
+        $ret = [];
+        foreach ($models as $key => $value) {
+            $value->isinya = strip_tags($value->isi_pengumuman);
+            $ret[$landa->indonesian_date(date('d-m-Y', $value->created_at))][] = (array) $value;
+        }
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $ret,
+            'totalItem' => $totalItem,
+        ];
+    }
+}
+

@@ -1,0 +1,198 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Karyawan;
+use Model\Terminasi;
+use Service\Landa;
+
+// Get terminasi
+$app-&gt;get('/t_terminasi/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $terminasi = new Terminasi();
+    $getAlasan = $terminasi-&gt;getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getAlasan['data'],
+        'totalItems' =&gt; $getAlasan['totalItem'],
+    ]);
+});
+
+// Get list karyawan
+$app-&gt;get('/t_terminasi/getKaryawan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $terminasi = new Terminasi();
+
+    if ('null' != $params['data']) {
+        $data = (array) json_decode($params['data']);
+        $detail = $terminasi-&gt;getDetail(['id' =&gt; $data['id']]);
+    } else {
+        $detail = null;
+    }
+
+    $data = $terminasi-&gt;getDataKaryawan($params['tipe'], $detail['data']['karyawan_id']);
+
+    return successResponse($response, ['list' =&gt; $data['data'], 'totalItems' =&gt; $data['totalItem']]);
+});
+
+// Get Data karyawan
+$app-&gt;get('/t_terminasi/karyawan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $terminasi = new Terminasi();
+    $getKaryawan = $terminasi-&gt;getKaryawan($params['params']);
+    $getSisaKasbon = $terminasi-&gt;getSisaKasbon($params['params']);
+
+    foreach ($getKaryawan['data'] as $key =&gt; $val) {
+        $selisih = date_diff(date_create($val-&gt;tgl_mulai_kerja), date_create());
+        $val-&gt;masa_kerja = $selisih-&gt;y.' Tahun '.$selisih-&gt;m.' Bulan';
+        $val-&gt;tgl_mulai_kerja = date('d/m/Y', strtotime($val-&gt;tgl_mulai_kerja));
+        $val-&gt;sisa_kasbon = !empty($getSisaKasbon['data'][$val-&gt;karyawan_id]) ? $getSisaKasbon['data'][$val-&gt;karyawan_id] : 0;
+
+        if (isset($params['data'])) {
+            $getPesangon = $terminasi-&gt;getPesangon($val, $selisih, $params['data']);
+
+            if (null != $getPesangon['data']) {
+                $val-&gt;pesangon = $getPesangon['data']-&gt;gaji + $getPesangon['data']-&gt;nominal;
+            } else {
+                $val-&gt;pesangon = 0;
+            }
+        }
+    }
+
+    return successResponse($response, [
+        'list' =&gt; $getKaryawan['data'],
+    ]);
+});
+
+// Get detail terminasi
+$app-&gt;get('/t_terminasi/getDetail', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $terminasi = new Terminasi();
+    $karyawan = new Karyawan();
+    $getDetail = $terminasi-&gt;getDetail($params);
+    $getKaryawan = $terminasi-&gt;getKaryawan($getDetail['data']['karyawan_id'], $params['id']);
+    $getSisaKasbon = $terminasi-&gt;getSisaKasbon($getDetail['data']['karyawan_id'], $params['id']);
+
+    foreach ($getKaryawan['data'] as $key =&gt; $val) {
+        $selisih = $karyawan-&gt;getMasaKerja(date('Y-m-d'), $val-&gt;tgl_mulai_kerja);
+
+        $val-&gt;id = $getDetail['data']['id'][$val-&gt;karyawan_id];
+        $val-&gt;masa_kerja = $selisih['tahun'].' Tahun '.$selisih['bulan'].' Bulan';
+        $val-&gt;tgl_mulai_kerja = date('d/m/Y', strtotime($val-&gt;tgl_mulai_kerja));
+        $val-&gt;sisa_kasbon = isset($getSisaKasbon['data'][$val-&gt;karyawan_id]) ? $getSisaKasbon['data'][$val-&gt;karyawan_id] : 0;
+    }
+
+    return successResponse($response, [
+        'list' =&gt; $getKaryawan['data'],
+    ]);
+});
+
+// Get alasan
+$app-&gt;get('/t_terminasi/alasan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $terminasi = new Terminasi();
+    $getAlasan = $terminasi-&gt;getAlasan($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getAlasan['data'],
+    ]);
+});
+
+// Get sisa kasbon
+$app-&gt;get('/t_terminasi/sisa-kasbon', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $terminasi = new Terminasi();
+    $getSisaKasbon = $terminasi-&gt;getSisaKasbon($params['params']);
+
+    return successResponse($response, [
+        'list' =&gt; $getSisaKasbon['data'],
+    ]);
+});
+
+// Save terminasi
+$app-&gt;post('/t_terminasi/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $terminasi = new Terminasi();
+    $landa = new Landa();
+    $validasi = $terminasi-&gt;validasi($data['data']);
+
+    if (true === $validasi) {
+        if (!isset($data['data']['id'])) {
+            $kode = $terminasi-&gt;generateKode();
+            $data['data']['kode'] = $kode['data'];
+        }
+
+        $data['data']['tgl'] = $landa-&gt;arrayToDate($data['data']['tgl']);
+
+        // Proses simpan ke dalam database.
+        if (!empty($data['hapus'])) {
+            $hapus_detail = $terminasi-&gt;deleteDetail($data['hapus']);
+        }
+        $save = $terminasi-&gt;save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus terminasi
+$app-&gt;post('/t_terminasi/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $terminasi = new Terminasi();
+    $detail = $terminasi-&gt;getDetail(['id' =&gt; $data['id']]);
+    $model = $terminasi-&gt;delete(['id' =&gt; $data['id']], $detail['data']['karyawan_id']);
+
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

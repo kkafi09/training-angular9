@@ -1,0 +1,220 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+
+class Pengumuman
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'm_pengumuman';
+    }
+
+    /**
+     * Ambil semua data pengumuman.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from($this-&gt;table)-&gt;where('is_deleted', '=', 0);
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            if (isset($filter['tgl_mulai']) &amp;&amp; '' != $filter['tgl_mulai'] &amp;&amp; isset($filter['tgl_selesai']) &amp;&amp; '' != $filter['tgl_selesai']) {
+                $this-&gt;db-&gt;where($this-&gt;table.'.created_at', '&gt;=', strtotime($filter['tgl_mulai']));
+                $this-&gt;db-&gt;where($this-&gt;table.'.created_at', '&lt;=', strtotime($filter['tgl_selesai']));
+            }
+            unset($filter['tgl_mulai'], $filter['tgl_selesai']);
+
+            foreach ($filter as $key =&gt; $val) {
+                $this-&gt;db-&gt;where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        foreach ($models as $key =&gt; $value) {
+            $value-&gt;tanggal = date('d/m/yy', $value-&gt;created_at);
+            $value-&gt;isinya = strip_tags($value-&gt;isi_pengumuman);
+        }
+//        echo json_encode($models);die();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data pengumuman.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $data['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : null;
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, ['id' =&gt; $data['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, $customParams);
+            }
+            // Return data pengumuman
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menghapus data pengumuman.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function hapus($data, $customParams = '')
+    {
+        try {
+            $model = $db-&gt;delete('m_pengumuman', ['id' =&gt; $data['id']]);
+            // Return data pengumuman
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'judul' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function getData()
+    {
+        $landa = new Landa();
+        $this-&gt;db-&gt;select('*')
+            -&gt;from($this-&gt;table)-&gt;where('is_deleted', '=', 0);
+        // Filter
+
+        $this-&gt;db-&gt;limit(10);
+        $this-&gt;db-&gt;orderBy($this-&gt;table.'.created_at DESC');
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        $ret = [];
+        foreach ($models as $key =&gt; $value) {
+            $value-&gt;isinya = strip_tags($value-&gt;isi_pengumuman);
+            $ret[$landa-&gt;indonesian_date(date('d-m-Y', $value-&gt;created_at))][] = (array) $value;
+        }
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $ret,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

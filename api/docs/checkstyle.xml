@@ -1,0 +1,978 @@
+<?xml version="1.0"?>
+<checkstyle version="1.3.0">
+  <file name="models/Terminasi.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Terminasi" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="199" severity="error" message="Argument $karyawan is missing from the Docblock of getPesangon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="199" severity="error" message="Argument $selisih is missing from the Docblock of getPesangon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="199" severity="error" message="Argument $params is missing from the Docblock of getPesangon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="199" severity="error" message="No summary for method getPesangon()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="417" severity="error" message="Argument $data is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="417" severity="error" message="Argument $karyawan_id is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="417" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="443" severity="error" message="Argument $data is missing from the Docblock of deleteDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="443" severity="error" message="No summary for method deleteDetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="systems/functions.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="3" severity="error" message="Argument $date is missing from the Docblock of arr_date_to_string" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="3" severity="error" message="No summary for function \arr_date_to_string()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="10" severity="error" message="No summary for function \twigView()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="14" severity="error" message="Argument $tahun is missing from the Docblock of generate_kodegaji" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="14" severity="error" message="Argument $bulan is missing from the Docblock of generate_kodegaji" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="14" severity="error" message="No summary for function \generate_kodegaji()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="35" severity="error" message="Argument $subjek is missing from the Docblock of sendMailreg" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="35" severity="error" message="Argument $nama_penerima is missing from the Docblock of sendMailreg" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="35" severity="error" message="Argument $email_penerima is missing from the Docblock of sendMailreg" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="35" severity="error" message="Argument $template is missing from the Docblock of sendMailreg" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="35" severity="error" message="No summary for function \sendMailreg()" source="phpDocumentor.file.PPC:ERR-50011"/>
+  </file>
+  <file name="models/LaporanMutasiKaryawan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\LaporanMutasiKaryawan" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="routes/appsaldoreimbursement.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Kasbon.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="8" severity="error" message="No summary for class \Model\Kasbon" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="126" severity="error" message="Argument $karyawanId is missing from the Docblock of getSisaKasbon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="126" severity="error" message="No summary for method getSisaKasbon()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="174" severity="error" message="Argument $params is missing from the Docblock of getRiwayat" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="174" severity="error" message="No summary for method getRiwayat()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="308" severity="error" message="Argument $data is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="308" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="368" severity="error" message="No summary for method generateKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="433" severity="error" message="Argument $userID is missing from the Docblock of getRiwayatKasbon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="433" severity="error" message="Argument $tanggal is missing from the Docblock of getRiwayatKasbon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="433" severity="error" message="Argument $status is missing from the Docblock of getRiwayatKasbon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="433" severity="error" message="No summary for method getRiwayatKasbon()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="470" severity="error" message="Argument $userID is missing from the Docblock of getPembayaranKasbon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="470" severity="error" message="Argument $tanggal is missing from the Docblock of getPembayaranKasbon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="470" severity="error" message="Argument $status is missing from the Docblock of getPembayaranKasbon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="470" severity="error" message="No summary for method getPembayaranKasbon()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="504" severity="error" message="Argument $userID is missing from the Docblock of getDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="504" severity="error" message="No summary for method getDetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/appkomponengajikaryawan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/l_pembayarankasbon.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Jabatan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Jabatan" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="93" severity="error" message="No summary for method getOrganisasi()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="116" severity="error" message="No summary for method getJabatan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="139" severity="error" message="No summary for method getAllJabatan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="188" severity="error" message="No summary for method generateKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="314" severity="error" message="Argument $data is missing from the Docblock of deleteAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="314" severity="error" message="No summary for method deleteAll()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="348" severity="error" message="Name of argument $removeExcel does not match with the DocBlock's name $dataJabatanLevel in import()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="348" severity="notice" message="Parameter $dataJabatanLevel could not be found in import()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="348" severity="notice" message="Parameter $dataJabatan could not be found in import()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="routes/apppengumuman.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="systems/gump-validation/lang/fa.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/t_mutasi_karyawan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/LaporanIzin.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\LaporanIzin" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="models/Sertifikat.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Sertifikat" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="81" severity="error" message="No summary for method generateKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="144" severity="error" message="Argument $data is missing from the Docblock of deleteAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="144" severity="error" message="No summary for method deleteAll()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="240" severity="error" message="Argument $file is missing from the Docblock of download" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="240" severity="error" message="No summary for method download()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="263" severity="error" message="Argument $data is missing from the Docblock of validasiKode" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="263" severity="error" message="No summary for method validasiKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="models/KJabatan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\KJabatan" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="models/RiwayatKehadiran.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="8" severity="error" message="No summary for class \Model\RiwayatKehadiran" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="63" severity="error" message="Argument $params is missing from the Docblock of getKaryawanOrg" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="63" severity="error" message="No summary for method getKaryawanOrg()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="128" severity="error" message="Argument $data is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="128" severity="error" message="Argument $customParams is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="128" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="models/Client.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="8" severity="error" message="No summary for class \Model\Client" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="models/PengajuanReimbursement.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="8" severity="error" message="No summary for class \Model\PengajuanReimbursement" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="173" severity="error" message="Argument $params is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="173" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="194" severity="error" message="Argument $params is missing from the Docblock of deleteFile" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="194" severity="error" message="No summary for method deleteFile()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="230" severity="error" message="Argument $data is missing from the Docblock of validasiDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="230" severity="error" message="Argument $custom is missing from the Docblock of validasiDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="230" severity="error" message="No summary for method validasiDetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="240" severity="error" message="Argument $data is missing from the Docblock of validasiKode" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="240" severity="error" message="No summary for method validasiKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="245" severity="error" message="Argument $id is missing from the Docblock of getDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="245" severity="error" message="No summary for method getDetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="261" severity="error" message="Argument $reff_table is missing from the Docblock of getFile" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="261" severity="error" message="Argument $reff_type is missing from the Docblock of getFile" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="261" severity="error" message="Argument $id is missing from the Docblock of getFile" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="261" severity="error" message="Argument $folder is missing from the Docblock of getFile" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="261" severity="error" message="No summary for method getFile()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="280" severity="error" message="Argument $params is missing from the Docblock of saveFile" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="280" severity="error" message="No summary for method saveFile()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="300" severity="error" message="Argument $data is missing from the Docblock of checkBatasFormula" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="300" severity="error" message="Argument $karyawan_id is missing from the Docblock of checkBatasFormula" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="300" severity="error" message="Argument $m_reimbursement_id is missing from the Docblock of checkBatasFormula" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="300" severity="error" message="Argument $tanggal is missing from the Docblock of checkBatasFormula" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="300" severity="error" message="No summary for method checkBatasFormula()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="361" severity="error" message="Argument $karyawan_id is missing from the Docblock of checkTanggalSaldo" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="361" severity="error" message="Argument $m_reimbursement_id is missing from the Docblock of checkTanggalSaldo" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="361" severity="error" message="Argument $tanggal is missing from the Docblock of checkTanggalSaldo" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="361" severity="error" message="No summary for method checkTanggalSaldo()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="391" severity="error" message="No summary for method generate_kode_file()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="423" severity="error" message="No summary for method generate_kode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="457" severity="error" message="Argument $id is missing from the Docblock of getReimbursementDet" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="457" severity="error" message="No summary for method getReimbursementDet()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="467" severity="error" message="Argument $params is missing from the Docblock of getReimbursementPenggajian" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="467" severity="error" message="No summary for method getReimbursementPenggajian()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/coba.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="systems/middleware.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Pelatihan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Pelatihan" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="86" severity="error" message="No summary for method generateKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="157" severity="error" message="Argument $data is missing from the Docblock of deleteAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="157" severity="error" message="No summary for method deleteAll()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="228" severity="error" message="Argument $file is missing from the Docblock of download" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="228" severity="error" message="No summary for method download()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="251" severity="error" message="Argument $data is missing from the Docblock of validasiKode" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="251" severity="error" message="No summary for method validasiKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/applisensi.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/k_status.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Timeoff.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Timeoff" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="models/JadwalKerja.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\JadwalKerja" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="115" severity="error" message="No summary for method getJamKerja()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="137" severity="error" message="No summary for method generateKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="258" severity="error" message="Name of argument $tipe does not match with the DocBlock's name $data in validasi()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="258" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $tipe in validasi()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="258" severity="error" message="Name of argument $data does not match with the DocBlock's name $custom in validasi()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="258" severity="error" message="Name of argument $custom does not match with the DocBlock's name $tipe in validasi()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="258" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $custom in validasi()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="293" severity="error" message="Name of argument $tipe does not match with the DocBlock's name $data in validasiKode()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="293" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $tipe in validasiKode()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="293" severity="error" message="Name of argument $data does not match with the DocBlock's name $custom in validasiKode()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="293" severity="notice" message="Parameter $custom could not be found in validasiKode()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="systems/gump-validation/lang/nl.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="systems/domain.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="3" severity="error" message="No summary for function \getConfig()" source="phpDocumentor.file.PPC:ERR-50011"/>
+  </file>
+  <file name="routes/appkategorifile.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Pesangon.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Pesangon" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="28" severity="error" message="Argument $params is missing from the Docblock of getAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="28" severity="error" message="Argument $limit is missing from the Docblock of getAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="28" severity="error" message="Argument $offset is missing from the Docblock of getAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="28" severity="error" message="Argument $order is missing from the Docblock of getAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="28" severity="error" message="No summary for method getAll()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="61" severity="error" message="Argument $data is missing from the Docblock of getDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="61" severity="error" message="No summary for method getDetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="95" severity="notice" message="Parameter $customParams could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="models/Organisasi.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Organisasi" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="79" severity="error" message="No summary for method getOrganisasi()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="101" severity="error" message="No summary for method getAll()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="115" severity="error" message="Name of argument $removeExcel does not match with the DocBlock's name $dataOrganisasi in import()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="115" severity="notice" message="Parameter $dataOrganisasi could not be found in import()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="221" severity="error" message="Name of argument $customParams does not match with the DocBlock's name $table in save()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="221" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $customParams in save()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="221" severity="notice" message="Parameter $table could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="246" severity="error" message="Argument $data is missing from the Docblock of deleteAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="246" severity="error" message="No summary for method deleteAll()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="308" severity="notice" message="Parameter $custom could not be found in validasiKode()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="313" severity="error" message="Argument $data is missing from the Docblock of getOrganisasiByPerusahaan" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="313" severity="error" message="No summary for method getOrganisasiByPerusahaan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/appreimbursement.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/appjadwalkerja.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Karyawan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="8" severity="error" message="No summary for class \Model\Karyawan" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="210" severity="error" message="Argument $params is missing from the Docblock of getKaryawanAktif" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="210" severity="error" message="No summary for method getKaryawanAktif()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="233" severity="error" message="Argument $data is missing from the Docblock of cekemail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="233" severity="error" message="No summary for method cekemail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="830" severity="error" message="Argument $params is missing from the Docblock of checkIdentitas" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="830" severity="error" message="No summary for method checkIdentitas()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="models/Pengumuman.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="8" severity="error" message="No summary for class \Model\Pengumuman" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="149" severity="error" message="No summary for method getData()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/approvalline.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="systems/systems.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="3" severity="error" message="Argument $key is missing from the Docblock of config" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="3" severity="error" message="No summary for function \config()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="9" severity="error" message="No summary for function \site_url()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="13" severity="error" message="No summary for function \site_path()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="22" severity="error" message="No summary for function \img_url()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="26" severity="error" message="No summary for function \img_path()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="30" severity="error" message="No summary for function \dispatch()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="44" severity="error" message="No summary for function \get_client_ip()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="65" severity="error" message="Argument $messaggio is missing from the Docblock of sendMessage" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="65" severity="error" message="No summary for function \sendMessage()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="81" severity="error" message="Argument $error_level is missing from the Docblock of errorHandler" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="81" severity="error" message="Argument $error_message is missing from the Docblock of errorHandler" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="81" severity="error" message="Argument $error_file is missing from the Docblock of errorHandler" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="81" severity="error" message="Argument $error_line is missing from the Docblock of errorHandler" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="81" severity="error" message="Argument $error_context is missing from the Docblock of errorHandler" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="81" severity="error" message="No summary for function \errorHandler()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="123" severity="error" message="No summary for function \shutdownHandler()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="140" severity="error" message="Argument $error is missing from the Docblock of mylog" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="140" severity="error" message="Argument $errlvl is missing from the Docblock of mylog" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="140" severity="error" message="No summary for function \mylog()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="151" severity="error" message="No summary for function \getUrlFile()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="177" severity="error" message="Argument $response is missing from the Docblock of successResponse" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="177" severity="error" message="Argument $message is missing from the Docblock of successResponse" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="177" severity="error" message="No summary for function \successResponse()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="184" severity="error" message="Argument $response is missing from the Docblock of unprocessResponse" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="184" severity="error" message="Argument $message is missing from the Docblock of unprocessResponse" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="184" severity="error" message="No summary for function \unprocessResponse()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="191" severity="error" message="Argument $response is missing from the Docblock of unauthorizedResponse" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="191" severity="error" message="Argument $message is missing from the Docblock of unauthorizedResponse" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="191" severity="error" message="No summary for function \unauthorizedResponse()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="198" severity="error" message="Argument $data is missing from the Docblock of validate" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="198" severity="error" message="Argument $validasi is missing from the Docblock of validate" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="198" severity="error" message="Argument $custom is missing from the Docblock of validate" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="198" severity="error" message="No summary for function \validate()" source="phpDocumentor.file.PPC:ERR-50011"/>
+    <error line="215" severity="error" message="Argument $string is missing from the Docblock of get_string_between" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="215" severity="error" message="Argument $start is missing from the Docblock of get_string_between" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="215" severity="error" message="Argument $end is missing from the Docblock of get_string_between" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="215" severity="error" message="No summary for function \get_string_between()" source="phpDocumentor.file.PPC:ERR-50011"/>
+  </file>
+  <file name="routes/apppelatihan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/generator.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/l_lembur.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/t_penggajian.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/apppesangon.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/k_file.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/apppengajuanizin.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/SaldoReimbursement.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="8" severity="error" message="No summary for class \Model\SaldoReimbursement" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="140" severity="error" message="Argument $params is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="140" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="176" severity="error" message="Argument $data is missing from the Docblock of validasiKode" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="176" severity="error" message="No summary for method validasiKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="181" severity="error" message="Argument $id is missing from the Docblock of getDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="181" severity="error" message="No summary for method getDetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="197" severity="error" message="Argument $params is missing from the Docblock of getTanggalSelesai" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="197" severity="error" message="No summary for method getTanggalSelesai()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="219" severity="error" message="Argument $params is missing from the Docblock of cekInputSaldo" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="219" severity="error" message="No summary for method cekInputSaldo()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="248" severity="error" message="Argument $id is missing from the Docblock of getReimbursementDet" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="248" severity="error" message="No summary for method getReimbursementDet()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="258" severity="error" message="No summary for method generate_kode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="300" severity="error" message="Name of argument $dataKategoriFile does not match with the DocBlock's name $dataJabatanLevel in import()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="300" severity="notice" message="Parameter $dataJabatanLevel could not be found in import()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="300" severity="notice" message="Parameter $dataJabatan could not be found in import()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="359" severity="error" message="Name of argument $karyawan does not match with the DocBlock's name $org in download()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="359" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $karyawan in download()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="359" severity="notice" message="Parameter $org could not be found in download()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="359" severity="notice" message="Parameter $jbtn could not be found in download()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="359" severity="notice" message="Parameter $bank could not be found in download()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="359" severity="notice" message="Parameter $ptkp could not be found in download()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="models/KPendidikan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\KPendidikan" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="161" severity="error" message="Argument $params is missing from the Docblock of getTpendidikan" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="161" severity="error" message="No summary for method getTpendidikan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="systems/gump-validation/lang/id.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/LaporanPembayaranKasbon.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\LaporanPembayaranKasbon" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="models/KomponenGajiKaryawan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\KomponenGajiKaryawan" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="77" severity="error" message="No summary for method getPerusahaan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="85" severity="error" message="No summary for method getKaryawan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="93" severity="error" message="Argument $karyawanId is missing from the Docblock of getMKomponengj" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="93" severity="error" message="No summary for method getMKomponengj()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="144" severity="error" message="Name of argument $params does not match with the DocBlock's name $data in save()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="144" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $params in save()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="144" severity="notice" message="Parameter $data could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="144" severity="notice" message="Parameter $customParams could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="172" severity="error" message="Argument $params is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="172" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/applaporanriwayatjabatan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Inventaris.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Inventaris" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="77" severity="error" message="Name of argument $params does not match with the DocBlock's name $data in save()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="77" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $params in save()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="77" severity="notice" message="Parameter $data could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="routes/t_jadwalkerja.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/apppelatihanriwayat.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/k_keluarga.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/t_kasbon.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Ptkp.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="5" severity="error" message="No summary for class \Model\Ptkp" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="25" severity="error" message="Argument $data is missing from the Docblock of validasi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="25" severity="error" message="Argument $custom is missing from the Docblock of validasi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="25" severity="error" message="No summary for method validasi()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="models/ApprovalLine.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="8" severity="error" message="No summary for class \Model\ApprovalLine" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="94" severity="error" message="Argument $kategori is missing from the Docblock of getApprovedByMe" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="94" severity="error" message="Argument $limit is missing from the Docblock of getApprovedByMe" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="94" severity="error" message="Argument $offset is missing from the Docblock of getApprovedByMe" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="94" severity="error" message="No summary for method getApprovedByMe()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="189" severity="error" message="No summary for method listApproval()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/apponboard.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/appinventaris.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/t_lembur.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="systems/gump-validation/lang/es.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/LaporanBpjs.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\LaporanBpjs" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="systems/gump-validation/lang/uk.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/applaporankelpelatihan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/LaporanKontrak.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\LaporanKontrak" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="systems/dependencies.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/PengajuanIzin.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="11" severity="error" message="No summary for class \Model\PengajuanIzin" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="161" severity="error" message="Argument $params is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="161" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="182" severity="error" message="Argument $params is missing from the Docblock of deleteFile" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="182" severity="error" message="No summary for method deleteFile()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="219" severity="error" message="Argument $data is missing from the Docblock of validasiDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="219" severity="error" message="Argument $custom is missing from the Docblock of validasiDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="219" severity="error" message="No summary for method validasiDetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="228" severity="error" message="Argument $data is missing from the Docblock of checkTanggal" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="228" severity="error" message="No summary for method checkTanggal()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="252" severity="error" message="Argument $data is missing from the Docblock of validasiKode" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="252" severity="error" message="No summary for method validasiKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="257" severity="error" message="Argument $id is missing from the Docblock of getDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="257" severity="error" message="No summary for method getDetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="273" severity="error" message="Argument $reff_type is missing from the Docblock of getFile" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="273" severity="error" message="Argument $id is missing from the Docblock of getFile" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="273" severity="error" message="No summary for method getFile()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="292" severity="error" message="Argument $params is missing from the Docblock of saveFile" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="292" severity="error" message="No summary for method saveFile()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="312" severity="error" message="No summary for method generate_kode_file()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="344" severity="error" message="No summary for method generate_kode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="378" severity="error" message="Argument $startDate is missing from the Docblock of createDateRange" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="378" severity="error" message="Argument $endDate is missing from the Docblock of createDateRange" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="378" severity="error" message="Argument $format is missing from the Docblock of createDateRange" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="378" severity="error" message="No summary for method createDateRange()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/k_pendidikan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/apphakakses.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/LaporanRiwayatPendidikan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/OnBoard.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="8" severity="error" message="No summary for class \Model\OnBoard" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="100" severity="error" message="Name of argument $params does not match with the DocBlock's name $data in save()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="100" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $params in save()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="100" severity="notice" message="Parameter $data could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="100" severity="notice" message="Parameter $customParams could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="139" severity="error" message="Argument $params is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="139" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="models/JadwalKerjaKaryawan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\JadwalKerjaKaryawan" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="194" severity="notice" message="Parameter $tipe could not be found in validasi()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="models/LaporanKelengkapanPelatihan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/k_jabatan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/l_reimbursement.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/t_kontrak.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/JabatanLevel.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\JabatanLevel" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="82" severity="error" message="Name of argument $params does not match with the DocBlock's name $data in save()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="82" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $params in save()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="82" severity="notice" message="Parameter $data could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="82" severity="notice" message="Parameter $customParams could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="218" severity="notice" message="Parameter $custom could not be found in validasiLevel()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="models/ModelCore.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\ModelCore" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="37" severity="error" message="Name of argument $table does not match with the DocBlock's name $params in getData()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="37" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $table in getData()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="37" severity="error" message="Name of argument $mode does not match with the DocBlock's name $limit in getData()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="37" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $mode in getData()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="37" severity="notice" message="Parameter $params could not be found in getData()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="37" severity="notice" message="Parameter $limit could not be found in getData()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="37" severity="notice" message="Parameter $offset could not be found in getData()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="37" severity="notice" message="Parameter $order could not be found in getData()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="models/PelatihanRiwayat.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="8" severity="error" message="No summary for class \Model\PelatihanRiwayat" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="91" severity="error" message="No summary for method getPerusahaan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="99" severity="error" message="No summary for method getKaryawan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="107" severity="error" message="No summary for method getMPelatihan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="125" severity="error" message="Name of argument $params does not match with the DocBlock's name $data in save()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="125" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $params in save()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="125" severity="notice" message="Parameter $data could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="125" severity="notice" message="Parameter $customParams could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="146" severity="error" message="Argument $params is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="146" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/appriwayatkehadiran.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="systems/gump-validation/lang/pt-br.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/MutasiKaryawan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="8" severity="error" message="No summary for class \Model\MutasiKaryawan" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="157" severity="error" message="Argument $data is missing from the Docblock of mutasiSatuPerusahaanNonAktif" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="157" severity="error" message="No summary for method mutasiSatuPerusahaanNonAktif()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="164" severity="error" message="Argument $data is missing from the Docblock of mutasiSatuPerusahaanAktif" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="164" severity="error" message="No summary for method mutasiSatuPerusahaanAktif()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="171" severity="error" message="Argument $data is missing from the Docblock of mutasiBedaPerusahaanNonAktif" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="171" severity="error" message="No summary for method mutasiBedaPerusahaanNonAktif()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="234" severity="error" message="Argument $data is missing from the Docblock of mutasiBedaPerusahaanAktif" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="234" severity="error" message="No summary for method mutasiBedaPerusahaanAktif()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="315" severity="error" message="Argument $data is missing from the Docblock of tambahMutasi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="315" severity="error" message="Argument $customParams is missing from the Docblock of tambahMutasi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="315" severity="error" message="No summary for method tambahMutasi()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="343" severity="error" message="Argument $data is missing from the Docblock of checkTambahMutasi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="343" severity="error" message="No summary for method checkTambahMutasi()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="379" severity="error" message="Argument $data is missing from the Docblock of checkMutasi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="379" severity="error" message="No summary for method checkMutasi()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="402" severity="error" message="Argument $data is missing from the Docblock of checkKaryawan" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="402" severity="error" message="No summary for method checkKaryawan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="446" severity="error" message="No summary for method getKaryawan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="468" severity="error" message="Argument $perusahaan_id is missing from the Docblock of getOrganisasi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="468" severity="error" message="No summary for method getOrganisasi()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="486" severity="error" message="Argument $perusahaan_id is missing from the Docblock of getJabatan" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="486" severity="error" message="No summary for method getJabatan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="505" severity="error" message="Argument $data is missing from the Docblock of getJabatanKaryawan" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="505" severity="error" message="No summary for method getJabatanKaryawan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="527" severity="error" message="Argument $data is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="527" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="559" severity="error" message="Argument $data is missing from the Docblock of nonaktif" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="559" severity="error" message="No summary for method nonaktif()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="591" severity="error" message="Argument $data is missing from the Docblock of ubahJabatan" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="591" severity="error" message="No summary for method ubahJabatan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="620" severity="error" message="No summary for method generate_kode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="models/Perusahaan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Perusahaan" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="28" severity="error" message="Argument $id is missing from the Docblock of getByIdArr" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="28" severity="error" message="No summary for method getByIdArr()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="121" severity="error" message="No summary for method generateKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="152" severity="error" message="Argument $data is missing from the Docblock of getLegalitas" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="152" severity="error" message="No summary for method getLegalitas()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="246" severity="error" message="Argument $data is missing from the Docblock of deleteAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="246" severity="error" message="No summary for method deleteAll()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="277" severity="error" message="Name of argument $removeExcel does not match with the DocBlock's name $dataPerusahaan in import()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="277" severity="notice" message="Parameter $dataPerusahaan could not be found in import()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="407" severity="notice" message="Parameter $custom could not be found in validasiKode()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="routes/appsertifikat.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Formula.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Formula" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="36" severity="error" message="Name of argument $type does not match with the DocBlock's name $customParams in saveformula()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="36" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $type in saveformula()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="36" severity="error" message="Name of argument $id does not match with the DocBlock's name $type in saveformula()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="36" severity="notice" message="Parameter $customParams could not be found in saveformula()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="205" severity="error" message="Name of argument $elements does not match with the DocBlock's name $parentId in getFormulaChild()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="205" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $elements in getFormulaChild()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="205" severity="error" message="Name of argument $parentId does not match with the DocBlock's name $karyawan in getFormulaChild()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="205" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $parentId in getFormulaChild()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="205" severity="error" message="Name of argument $karyawan does not match with the DocBlock's name $value in getFormulaChild()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="205" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $karyawan in getFormulaChild()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="205" severity="error" message="Argument $value is missing from the Docblock of getFormulaChild" source="phpDocumentor.file.PPC:ERR-50015"/>
+  </file>
+  <file name="routes/apporganisasi.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/l_mutasi_karyawan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/LaporanLembur.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\LaporanLembur" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="routes/l_izin.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="systems/gump-validation/lang/he.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="services/Firebase.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="27" severity="error" message="No summary for method __construct()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="83" severity="error" message="Argument $email is missing from the Docblock of firebaseAuth" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="83" severity="error" message="Argument $password is missing from the Docblock of firebaseAuth" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="83" severity="error" message="No summary for method firebaseAuth()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="93" severity="error" message="Argument $uid is missing from the Docblock of firebaseupdateAuth" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="93" severity="error" message="Argument $email is missing from the Docblock of firebaseupdateAuth" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="93" severity="error" message="No summary for method firebaseupdateAuth()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="102" severity="error" message="Argument $token is missing from the Docblock of subscribeTopic" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="102" severity="error" message="Argument $topik is missing from the Docblock of subscribeTopic" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="102" severity="error" message="No summary for method subscribeTopic()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="124" severity="error" message="Argument $uid is missing from the Docblock of getUserByUid" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="146" severity="error" message="Argument $uid is missing from the Docblock of getClientByUid" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="206" severity="error" message="Argument $collection is missing from the Docblock of newDocument" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="206" severity="error" message="Argument $uid is missing from the Docblock of newDocument" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="206" severity="error" message="Argument $data is missing from the Docblock of newDocument" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="228" severity="error" message="Name of argument $collection does not match with the DocBlock's name $name in updateDocument()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="228" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $collection in updateDocument()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="228" severity="error" message="Argument $uid is missing from the Docblock of updateDocument" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="228" severity="error" message="Name of argument $uid does not match with the DocBlock's name $name in updateDocument()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="228" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $uid in updateDocument()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="228" severity="error" message="Argument $data is missing from the Docblock of updateDocument" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="228" severity="error" message="Name of argument $data does not match with the DocBlock's name $name in updateDocument()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="228" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $data in updateDocument()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="228" severity="notice" message="Parameter $name could not be found in updateDocument()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="249" severity="error" message="Argument $name is missing from the Docblock of dropDocument" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="261" severity="error" message="No summary for method changePassword()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="276" severity="error" message="Argument $idclient is missing from the Docblock of getAllPresensi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="308" severity="error" message="Argument $uid is missing from the Docblock of dropDocumentPresensi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="15" severity="error" message="No summary for property $fdb" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="17" severity="error" message="No summary for property $name" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="19" severity="error" message="No summary for property $fb" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="21" severity="error" message="No summary for property $firestore" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="23" severity="error" message="No summary for property $auth" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="25" severity="error" message="No summary for property $messaging" source="phpDocumentor.file.PPC:ERR-50007"/>
+  </file>
+  <file name="models/HakAkses.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\HakAkses" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="88" severity="error" message="Name of argument $params does not match with the DocBlock's name $data in save()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="88" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $params in save()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="88" severity="notice" message="Parameter $data could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="88" severity="notice" message="Parameter $customParams could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="models/LaporanPenggajian.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\LaporanPenggajian" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="services/Db.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/LaporanTerminasi.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\LaporanTerminasi" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="models/LaporanReimbursement.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\LaporanReimbursement" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="models/Lembur.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Lembur" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="255" severity="error" message="Name of argument $data does not match with the DocBlock's name $params in save()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="255" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $data in save()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="255" severity="notice" message="Parameter $params could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="287" severity="error" message="Argument $data is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="287" severity="error" message="Argument $karyawan_id is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="287" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="models/KKeluarga.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\KKeluarga" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="141" severity="error" message="Argument $params is missing from the Docblock of getProvinsi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="141" severity="error" message="No summary for method getProvinsi()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="155" severity="error" message="Argument $params is missing from the Docblock of getKota" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="155" severity="error" message="No summary for method getKota()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="172" severity="error" message="Argument $params is missing from the Docblock of getKecamatan" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="172" severity="error" message="No summary for method getKecamatan()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="189" severity="error" message="Argument $params is missing from the Docblock of getDesa" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="189" severity="error" message="No summary for method getDesa()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="206" severity="error" message="Argument $table_name is missing from the Docblock of getDataByID" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="206" severity="error" message="Argument $field is missing from the Docblock of getDataByID" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="206" severity="error" message="Argument $id is missing from the Docblock of getDataByID" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="206" severity="error" message="No summary for method getDataByID()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/komponen_gaji.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Penggajian.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Penggajian" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="119" severity="error" message="Argument $payRollId is missing from the Docblock of bayarKasbon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="119" severity="error" message="No summary for method bayarKasbon()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="384" severity="notice" message="Parameter $limit could not be found in getAllid()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="384" severity="notice" message="Parameter $offset could not be found in getAllid()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="384" severity="notice" message="Parameter $order could not be found in getAllid()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="543" severity="notice" message="Parameter $limit could not be found in getKarid()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="543" severity="notice" message="Parameter $offset could not be found in getKarid()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="543" severity="notice" message="Parameter $order could not be found in getKarid()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="583" severity="error" message="Argument $data is missing from the Docblock of getPreview" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="583" severity="error" message="No summary for method getPreview()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="669" severity="error" message="Argument $data is missing from the Docblock of changestatus" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="669" severity="error" message="Argument $customParams is missing from the Docblock of changestatus" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="669" severity="error" message="No summary for method changestatus()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="1011" severity="error" message="Argument $params is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="1011" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="1036" severity="error" message="Argument $params is missing from the Docblock of deletedetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="1036" severity="error" message="No summary for method deletedetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="1067" severity="notice" message="Parameter $limit could not be found in getSlipgaji()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="1067" severity="notice" message="Parameter $offset could not be found in getSlipgaji()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="1067" severity="notice" message="Parameter $order could not be found in getSlipgaji()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="1254" severity="notice" message="Parameter $limit could not be found in getSlipgajiemail()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="1254" severity="notice" message="Parameter $offset could not be found in getSlipgajiemail()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="1254" severity="notice" message="Parameter $order could not be found in getSlipgajiemail()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="routes/t_terminasi.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Lisensi.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Lisensi" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="87" severity="error" message="Name of argument $params does not match with the DocBlock's name $data in save()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="87" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $params in save()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="87" severity="notice" message="Parameter $data could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="systems/gump-validation/gump.class.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="54" severity="error" message="Argument $lang is missing from the Docblock of __construct" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="54" severity="error" message="No summary for method __construct()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="77" severity="error" message="No summary for method get_instance()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="112" severity="error" message="Argument $data is missing from the Docblock of filter_input" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="112" severity="error" message="Argument $filters is missing from the Docblock of filter_input" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="126" severity="error" message="Argument $data is missing from the Docblock of xss_clean" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="193" severity="error" message="Name of argument $array does not match with the DocBlock's name $default in field()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="193" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $array in field()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="193" severity="error" message="Argument $default is missing from the Docblock of field" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="211" severity="error" message="Argument $rules is missing from the Docblock of validation_rules" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="225" severity="error" message="Argument $rules is missing from the Docblock of filter_rules" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="243" severity="error" message="Name of argument $data does not match with the DocBlock's name $check_fields in run()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="243" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $data in run()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="243" severity="error" message="Argument $check_fields is missing from the Docblock of run" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="271" severity="error" message="Name of argument $input does not match with the DocBlock's name $fields in sanitize()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="271" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $input in sanitize()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="271" severity="error" message="Name of argument $fields does not match with the DocBlock's name $utf8_encode in sanitize()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="271" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $fields in sanitize()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="271" severity="error" message="Argument $utf8_encode is missing from the Docblock of sanitize" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="334" severity="error" message="Argument $ruleset is missing from the Docblock of validate" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="334" severity="error" message="Name of argument $ruleset does not match with the DocBlock's name $input in validate()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="334" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $ruleset in validate()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="438" severity="error" message="Argument $array is missing from the Docblock of set_field_names" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="467" severity="error" message="Argument $array is missing from the Docblock of set_error_messages" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="592" severity="error" message="Argument $filterset is missing from the Docblock of filter" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="592" severity="error" message="Name of argument $filterset does not match with the DocBlock's name $input in filter()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="592" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $filterset in filter()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="1526" severity="error" message="Argument $field is missing from the Docblock of validate_valid_ipv4" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="1526" severity="error" message="Argument $input is missing from the Docblock of validate_valid_ipv4" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="1526" severity="error" message="Argument $param is missing from the Docblock of validate_valid_ipv4" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="1526" severity="error" message="No summary for method validate_valid_ipv4()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="2379" severity="error" message="Argument $data is missing from the Docblock of check_fields" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="14" severity="error" message="No summary for property $basic_tags" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="16" severity="error" message="No summary for property $en_noise_words" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="26" severity="error" message="No summary for property $instance" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="29" severity="error" message="No summary for property $validation_rules" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="32" severity="error" message="No summary for property $filter_rules" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="35" severity="error" message="No summary for property $errors" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="38" severity="error" message="No summary for property $fields" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="41" severity="error" message="No summary for property $validation_methods" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="44" severity="error" message="No summary for property $validation_methods_errors" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="47" severity="error" message="No summary for property $filter_methods" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="50" severity="error" message="No summary for property $fieldCharsToRemove" source="phpDocumentor.file.PPC:ERR-50007"/>
+    <error line="52" severity="error" message="No summary for property $lang" source="phpDocumentor.file.PPC:ERR-50007"/>
+  </file>
+  <file name="routes/applaporanriwayatpendidikan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="systems/gump-validation/lang/it.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/LaporanRiwayatJabatan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="systems/gump-validation/lang/ru.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/appwilayah.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="systems/gump-validation/lang/fr.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/appptkp.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/applaporanriwayatpelatihan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/KEmergencykontak.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\KEmergencykontak" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="systems/gump-validation/lang/en.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/appnotifikasi.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/l_kontrak.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Kontrak.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Kontrak" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="193" severity="error" message="Argument $karyawan is missing from the Docblock of getPesangon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="193" severity="error" message="Argument $selisih is missing from the Docblock of getPesangon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="193" severity="error" message="Argument $params is missing from the Docblock of getPesangon" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="193" severity="error" message="No summary for method getPesangon()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="422" severity="error" message="Argument $data is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="422" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="444" severity="error" message="Argument $data is missing from the Docblock of deleteDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="444" severity="error" message="No summary for method deleteDetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="524" severity="error" message="Argument $data is missing from the Docblock of checkStatus" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="524" severity="error" message="No summary for method checkStatus()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="models/LaporanKasbon.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\LaporanKasbon" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="models/Reimbursement.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\Reimbursement" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="141" severity="error" message="Argument $params is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="141" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="179" severity="error" message="Argument $data is missing from the Docblock of validasiDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="179" severity="error" message="Argument $custom is missing from the Docblock of validasiDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="179" severity="error" message="No summary for method validasiDetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="188" severity="error" message="Argument $data is missing from the Docblock of validasiKode" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="188" severity="error" message="No summary for method validasiKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="193" severity="error" message="Argument $id is missing from the Docblock of getDetail" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="193" severity="error" message="No summary for method getDetail()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="209" severity="error" message="No summary for method generate_kode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="systems/gump-validation/lang/de.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/appclient.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/appjabatanlevel.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/l_penggajian.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/l_terminasi.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/l_kasbon.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/apptimeoff.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/Wilayah.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="5" severity="error" message="No summary for class \Model\Wilayah" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="25" severity="error" message="Argument $data is missing from the Docblock of validasi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="25" severity="error" message="Argument $custom is missing from the Docblock of validasi" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="25" severity="error" message="No summary for method validasi()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/appjabatan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/appkaryawan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/LaporanRiwayatPelatihan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\LaporanRiwayatPelatihan" source="phpDocumentor.file.PPC:ERR-50005"/>
+  </file>
+  <file name="models/KStatus.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\KStatus" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="37" severity="error" message="Argument $params is missing from the Docblock of getAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="37" severity="error" message="Argument $limit is missing from the Docblock of getAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="37" severity="error" message="Argument $offset is missing from the Docblock of getAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="37" severity="error" message="Argument $order is missing from the Docblock of getAll" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="37" severity="error" message="No summary for method getAll()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="models/KFile.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\KFile" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="148" severity="error" message="Argument $params is missing from the Docblock of getKfile" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="148" severity="error" message="No summary for method getKfile()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="162" severity="error" message="No summary for method generate_kode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="194" severity="error" message="Argument $file is missing from the Docblock of download" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="194" severity="error" message="No summary for method download()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/l_bpjs.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/KomponenGaji.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\KomponenGaji" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="155" severity="error" message="Argument $sub_childs is missing from the Docblock of getlevel" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="155" severity="error" message="Argument $new_parent_id is missing from the Docblock of getlevel" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="155" severity="error" message="Argument $id_komponen is missing from the Docblock of getlevel" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="155" severity="error" message="No summary for method getlevel()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="209" severity="error" message="Argument $data is missing from the Docblock of validasiKode" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="209" severity="error" message="No summary for method validasiKode()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/sites.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="services/Landa.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="153" severity="error" message="Argument $data is missing from the Docblock of base64ToFilePath" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="153" severity="error" message="Argument $path is missing from the Docblock of base64ToFilePath" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="153" severity="error" message="Argument $kode is missing from the Docblock of base64ToFilePath" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="153" severity="error" message="No summary for method base64ToFilePath()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="255" severity="error" message="Argument $timestamp is missing from the Docblock of indonesian_date" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="255" severity="error" message="Argument $date_format is missing from the Docblock of indonesian_date" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="255" severity="error" message="Argument $suffix is missing from the Docblock of indonesian_date" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="255" severity="error" message="No summary for method indonesian_date()" source="phpDocumentor.file.PPC:ERR-50008"/>
+  </file>
+  <file name="routes/apppengajuanreimbursement.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="routes/appperusahaan.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+  <file name="models/KategoriFile.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+    <error line="7" severity="error" message="No summary for class \Model\KategoriFile" source="phpDocumentor.file.PPC:ERR-50005"/>
+    <error line="87" severity="error" message="Name of argument $dataKategoriFile does not match with the DocBlock's name $dataJabatanLevel in import()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="87" severity="notice" message="Parameter $dataJabatanLevel could not be found in import()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="87" severity="notice" message="Parameter $dataJabatan could not be found in import()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="135" severity="error" message="Argument $file is missing from the Docblock of download" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="135" severity="error" message="No summary for method download()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="149" severity="error" message="Name of argument $params does not match with the DocBlock's name $data in save()" source="phpDocumentor.file.PPC:ERR-50014"/>
+    <error line="149" severity="error" message="The type hint of the argument is incorrect for the type definition of the @param tag with argument $params in save()" source="phpDocumentor.file.PPC:ERR-50016"/>
+    <error line="149" severity="notice" message="Parameter $data could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="149" severity="notice" message="Parameter $customParams could not be found in save()" source="phpDocumentor.file.PPC:ERR-50013"/>
+    <error line="172" severity="error" message="Argument $params is missing from the Docblock of delete" source="phpDocumentor.file.PPC:ERR-50015"/>
+    <error line="172" severity="error" message="No summary for method delete()" source="phpDocumentor.file.PPC:ERR-50008"/>
+    <error line="215" severity="notice" message="Parameter $custom could not be found in validasiKode()" source="phpDocumentor.file.PPC:ERR-50013"/>
+  </file>
+  <file name="routes/k_emergencykontak.php">
+    <error line="0" severity="error" message="No summary was found for this file" source="phpDocumentor.file.PPC:ERR-50000"/>
+  </file>
+</checkstyle>

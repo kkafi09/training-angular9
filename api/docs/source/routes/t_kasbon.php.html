@@ -1,0 +1,190 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Kasbon;
+use Service\Landa;
+
+// Ambil semua kasbon
+$app-&gt;get('/t_kasbon/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kasbon = new Kasbon();
+    $getDataKasbon = $kasbon-&gt;getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKasbon['data'],
+        'totalItems' =&gt; $getDataKasbon['totalItem'],
+    ]);
+});
+$app-&gt;post('/t_kasbon/riwayatKasbon', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $landa = new Landa();
+
+    $userID = isset($params['userID']) ? $params['userID'] : '0';
+    $tanggal = date('Y-m-d');
+    if (isset($params['tanggal'])) {
+        $tahun = isset($params['tanggal']['year']) ? $params['tanggal']['year'] : date('Y');
+        $bulan = isset($params['tanggal']['month']) ? $params['tanggal']['month'] : date('m');
+        $hari = isset($params['tanggal']['day']) ? $params['tanggal']['day'] : date('d');
+
+        $tanggal = date('Y-m-d', strtotime($tahun.'/'.$bulan.'/'.$hari));
+    }
+    $status = isset($params['status']) ? $params['status'] : '';
+    $kasbon = new Kasbon();
+    $getDataKasbon = $kasbon-&gt;getRiwayatKasbon($userID, $tanggal, $status);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKasbon['data'],
+        'totalItems' =&gt; $getDataKasbon['totalItem'],
+    ]);
+});
+$app-&gt;post('/t_kasbon/riwayatPembayaranKasbon', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $landa = new Landa();
+    $userID = isset($params['userID']) ? $params['userID'] : '0';
+    $tanggal = date('Y-m-d');
+    if (isset($params['tanggal'])) {
+        $tahun = isset($params['tanggal']['year']) ? $params['tanggal']['year'] : date('Y');
+        $bulan = isset($params['tanggal']['month']) ? $params['tanggal']['month'] : date('m');
+        $hari = isset($params['tanggal']['day']) ? $params['tanggal']['day'] : date('d');
+
+        $tanggal = date('Y-m-d', strtotime($tahun.'/'.$bulan.'/'.$hari));
+    }
+    $status = isset($params['status']) ? $params['status'] : '';
+    $kasbon = new Kasbon();
+    $getDataKasbon = $kasbon-&gt;getPembayaranKasbon($userID, $tanggal, $status);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKasbon['data'],
+        'totalItems' =&gt; $getDataKasbon['totalItem'],
+    ]);
+});
+
+// Ambil riwayat kasbon
+$app-&gt;get('/t_kasbon/riwayat', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kasbon = new Kasbon();
+    $getRiwayatKasbon = $kasbon-&gt;getRiwayat($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getRiwayatKasbon['data'],
+        'totalItems' =&gt; $getRiwayatKasbon['totalItem'],
+    ]);
+});
+
+// Save kasbon
+$app-&gt;post('/t_kasbon/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $kasbon = new Kasbon();
+    $landa = new Landa();
+    $validasi = $kasbon-&gt;validasi($data);
+
+    if (true === $validasi) {
+        if (!isset($data['id'])) {
+            $kode = $kasbon-&gt;generateKode();
+            $data['kode'] = $kode['data'];
+            $data['status'] = 'Belum Lunas';
+        }
+
+        if (!isset($data['t_kasbon_id'])) {
+            $data['tgl_kasbon'] = $landa-&gt;arrayToDate($data['tgl_kasbon']);
+        } else {
+            $data['tgl_bayar'] = $landa-&gt;arrayToDate($data['tgl_bayar']);
+        }
+
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $kasbon-&gt;save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus kasbon
+$app-&gt;post('/t_kasbon/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $kasbon = new Kasbon();
+    $model = $kasbon-&gt;delete($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Ambil riwayat kasbon
+$app-&gt;get('/t_kasbon/getdetail/{id}', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $user = $request-&gt;getAttribute('id');
+    $kasbon = new Kasbon();
+    $getRiwayatKasbon = $kasbon-&gt;getDetail($user);
+
+    return successResponse($response, [
+        'list' =&gt; $getRiwayatKasbon['data'],
+        'totalItems' =&gt; $getRiwayatKasbon['totalItem'],
+    ]);
+});
+
+// Ambil sisa kasbon
+$app-&gt;get('/t_kasbon/getSisa', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kasbon = new Kasbon();
+    $karyawanId = isset($params['karyawan_id']) ? $params['karyawan_id'] : 0;
+
+    $getRiwayatKasbon = $kasbon-&gt;getSisaKasbon($karyawanId);
+    $totalSisa = isset($getRiwayatKasbon[$karyawanId]['kasbon']) ? $getRiwayatKasbon[$karyawanId]['kasbon'] : 0;
+    
+    return successResponse($response, [
+        'total' =&gt; $totalSisa
+    ]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

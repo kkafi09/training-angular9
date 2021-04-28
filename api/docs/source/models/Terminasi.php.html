@@ -1,0 +1,570 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class Terminasi
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 't_terminasi';
+    }
+
+    /**
+     * Ambil semua data terminasi.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     *
+     * @return array
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select($this-&gt;table.'.*, m_status_terminasi.nama as nama_alasan')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'm_status_terminasi', 'm_status_terminasi.id = '.$this-&gt;table.'.m_status_terminasi_id')
+        ;
+
+        // Filter
+        if (isset($params) &amp;&amp; !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) &amp;&amp; is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($params) &amp;&amp; !empty($params)) {
+            foreach ($filter as $key =&gt; $val) {
+                if (!empty($val)) {
+                    if ('kode' == $key) {
+                        $this-&gt;db-&gt;where('t_terminasi.kode', 'like', $val);
+                    } elseif ('alasan' == $key) {
+                        $this-&gt;db-&gt;where('t_terminasi.m_status_terminasi_id', '=', $val);
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) &amp;&amp; !empty($limit)) {
+            $this-&gt;db-&gt;limit($limit);
+        }
+
+        // Set offset
+        if (isset($offset) &amp;&amp; !empty($offset)) {
+            $this-&gt;db-&gt;offset($offset);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        foreach ($models as $key =&gt; $val) {
+            $val-&gt;tgl = date('d/m/Y', strtotime($val-&gt;tgl));
+        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil list karyawan.
+     *
+     * @param string $tipe
+     * @param mixed  $data
+     *
+     * @return array
+     */
+    public function getDataKaryawan($tipe = '', $data = [])
+    {
+        if (null != $data) {
+            $karyawan_id = implode(',', $data);
+
+            if ('edit' == $tipe) {
+                $this-&gt;db-&gt;select('*')
+                    -&gt;from('karyawan_data')
+                    -&gt;join('left join', 'karyawan', 'karyawan_data.id = karyawan.karyawan_data_id')
+                    -&gt;where('karyawan.is_deleted', '=', 0)
+                    -&gt;andWhere('karyawan.status', '=', 1)
+                    -&gt;andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+                    -&gt;customWhere('karyawan.id IN ('.$karyawan_id.')', 'OR')
+                ;
+            }
+        } else {
+            if ('create' == $tipe) {
+                $this-&gt;db-&gt;select('*')
+                    -&gt;from('karyawan_data')
+                    -&gt;join('left join', 'karyawan', 'karyawan_data.id = karyawan.karyawan_data_id')
+                    -&gt;where('karyawan.is_deleted', '=', 0)
+                    -&gt;andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+                    -&gt;andWhere('karyawan.status', '=', 1)
+                ;
+            }
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil detail karyawan.
+     *
+     * @param array $params
+     * @param int   $terminasi_id
+     *
+     * @return array
+     */
+    public function getKaryawan($params = [], $terminasi_id = null)
+    {
+        if (is_array($params) &amp;&amp; null != $terminasi_id) {
+            $params = implode(',', $params);
+            // echo json_encode($params); die;
+
+            $this-&gt;db-&gt;select('
+              karyawan.id as karyawan_id,
+              karyawan.tgl_mulai_kerja,
+              karyawan_data.nama,
+              k_jabatan.m_jabatan_id,
+              m_jabatan.nama as nama_jabatan,
+              t_terminasi_det.pesangon,
+              t_terminasi_det.keterangan')
+                -&gt;from('karyawan_data')
+                -&gt;join('left join', 'karyawan', 'karyawan.karyawan_data_id = karyawan_data.id')
+                -&gt;join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id and aktif = 1')
+                -&gt;join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+                -&gt;join('left join', 't_terminasi_det', 't_terminasi_det.karyawan_id = karyawan.id')
+                -&gt;where('karyawan.is_deleted', '=', 0)
+                -&gt;andWhere('t_terminasi_det.t_terminasi_id', '=', $terminasi_id)
+            ;
+        } else {
+            $this-&gt;db-&gt;select('
+              karyawan.id as karyawan_id,
+              karyawan.tgl_mulai_kerja,
+              karyawan_data.nama,
+              k_jabatan.m_jabatan_id,
+              m_jabatan.nama as nama_jabatan')
+                -&gt;from('karyawan_data')
+                -&gt;join('left join', 'karyawan', 'karyawan.karyawan_data_id = karyawan_data.id')
+                -&gt;join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id and aktif = 1')
+                -&gt;join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+                -&gt;where('karyawan.is_deleted', '=', 0)
+            ;
+        }
+
+        // Filter
+        if (strpos($params, ']')) {
+            $filter = substr($params, 1, -1);
+        } else {
+            $filter = $params;
+        }
+
+        $this-&gt;db-&gt;customWhere('karyawan.id IN ('.$filter.')', 'AND');
+
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this-&gt;db-&gt;andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+
+        return [
+            'data' =&gt; $models,
+        ];
+    }
+
+    public function getPesangon($karyawan = [], $selisih = [], $params = '')
+    {
+        try {
+            $data = json_decode($params);
+            $masa_kerja = $selisih-&gt;y;
+
+            $gaji_pokok = $this-&gt;db-&gt;select('gaji_pokok')
+                -&gt;from('karyawan')
+                -&gt;where('id', '=', $karyawan-&gt;karyawan_id)
+                -&gt;find()
+            ;
+
+            $pesangon = $this-&gt;db-&gt;select('
+              m_pesangon.id,
+              m_pesangon_det.min_masa_kerja, 
+              SUM(m_pesangon_det.gaji *  '.$gaji_pokok-&gt;gaji_pokok.') as gaji,
+              SUM(m_pesangon_det.nominal) as nominal')
+                -&gt;from('m_pesangon')
+                -&gt;join('left join', 'm_pesangon_det', 'm_pesangon.id = m_pesangon_det.m_pesangon_id')
+                -&gt;where('m_pesangon.m_status_terminasi_id', '=', $data-&gt;m_status_terminasi_id)
+                -&gt;andWhere('m_pesangon_det.min_masa_kerja', '&lt;=', $masa_kerja)
+                -&gt;orderBy('m_pesangon_det.min_masa_kerja DESC')
+                -&gt;groupBy('m_pesangon_det.min_masa_kerja')
+                -&gt;findAll()
+            ;
+
+            foreach ($pesangon as $key =&gt; $val) {
+                $val-&gt;gaji = null != $val-&gt;gaji ? $val-&gt;gaji : 0;
+                $val-&gt;nominal = null != $val-&gt;nominal ? $val-&gt;nominal : 0;
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; isset($pesangon[0]) ? $pesangon[0] : null,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Ambil sisa kasbon karyawan terminasi.
+     *
+     * @param array $params
+     *
+     * @return array
+     */
+    public function getSisaKasbon($params = [])
+    {
+        if (is_array($params)) {
+            $params = implode(',', $params);
+        }
+
+        try {
+            if (strpos($params, ']')) {
+                $filter = substr($params, 1, -1);
+            } else {
+                $filter = $params;
+            }
+
+            $this-&gt;db-&gt;select('
+              t_kasbon.id, 
+              t_kasbon.karyawan_id, 
+              t_kasbon.jumlah, 
+              t_kasbon.bunga,
+              SUM(t_kasbon_bayar_det.bayar) as bayar,
+              SUM(t_kasbon_bayar_det.bunga) as bunga_bayar')
+                -&gt;from('t_kasbon')
+                -&gt;join('left join', 't_kasbon_bayar_det', 't_kasbon.id = t_kasbon_bayar_det.t_kasbon_id')
+            ;
+
+            $this-&gt;db-&gt;customWhere('karyawan_id IN ('.$filter.')')
+                -&gt;groupBy('t_kasbon.id')
+            ;
+
+            $kasbon = $this-&gt;db-&gt;findAll();
+
+            $arrKasbon = [];
+            foreach ($kasbon as $key =&gt; $val) {
+                if (empty($arrKasbon[$val-&gt;karyawan_id])) {
+                    $arrKasbon[$val-&gt;karyawan_id] = ($val-&gt;jumlah + ($val-&gt;jumlah * $val-&gt;bunga / 100)) - ($val-&gt;bayar + $val-&gt;bunga_bayar);
+                } else {
+                    $arrKasbon[$val-&gt;karyawan_id] += ($val-&gt;jumlah + ($val-&gt;jumlah * $val-&gt;bunga / 100)) - ($val-&gt;bayar + $val-&gt;bunga_bayar);
+                }
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $arrKasbon,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Ambil detail terminasi.
+     *
+     * @param array $params
+     *
+     * @return array
+     */
+    public function getDetail($params = [])
+    {
+        try {
+            $karyawan_id = $this-&gt;db-&gt;select('id, karyawan_id')
+                -&gt;from('t_terminasi_det')
+                -&gt;where('t_terminasi_id', '=', $params['id'])
+                -&gt;findAll()
+            ;
+
+            $models = [];
+            foreach ($karyawan_id as $key =&gt; $val) {
+                $models['karyawan_id'][] = $val-&gt;karyawan_id;
+                $models['id'][$val-&gt;karyawan_id] = $val-&gt;id;
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $models,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Ambil list alasan terminasi.
+     *
+     * @param array $params
+     *
+     * @return array
+     */
+    public function getAlasan($params = [])
+    {
+        try {
+            $this-&gt;db-&gt;select('*')
+                -&gt;from('m_status_terminasi')
+            ;
+
+            $models = $this-&gt;db-&gt;findAll();
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $models,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Simpan data terminasi.
+     *
+     * @param array  $params
+     * @param string $customParams
+     *
+     * @return array
+     */
+    public function save($params, $customParams = '')
+    {
+        try {
+            $data = $params['data'];
+            $detail = $params['detail'];
+
+            $this-&gt;db-&gt;startTransaction();
+            if (!isset($data['id'])) {
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $data);
+
+                foreach ($detail as $key =&gt; $val) {
+                    $val['t_terminasi_id'] = $model-&gt;id;
+
+                    $terminasi_det = $this-&gt;db-&gt;insert('t_terminasi_det', $val);
+                    $karyawan = $this-&gt;db-&gt;update('karyawan', ['status' =&gt; 2], ['id' =&gt; $val['karyawan_id']]);
+                }
+            } elseif (empty($customParams)) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, ['id' =&gt; $data['id']]);
+                $delete_det = $this-&gt;db-&gt;delete('t_terminasi_det', ['t_terminasi_id' =&gt; $data['id']]);
+
+                foreach ($detail as $key =&gt; $val) {
+                    if (isset($val['id'])) {
+                        unset($val['id']);
+                    }
+
+                    $val['pesangon'] = (int) $val['pesangon'];
+                    $val['t_terminasi_id'] = $model-&gt;id;
+                    $detail = $this-&gt;db-&gt;insert('t_terminasi_det', $val);
+                    $karyawan = $this-&gt;db-&gt;update('karyawan', ['status' =&gt; 2], ['id' =&gt; $val['karyawan_id']]);
+                }
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, $customParams);
+            }
+            $this-&gt;db-&gt;endTransaction();
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function delete($data, $karyawan_id = [])
+    {
+        try {
+            $this-&gt;db-&gt;startTransaction();
+            if (isset($data['id'])) {
+                foreach ($karyawan_id as $key =&gt; $val) {
+                    $karyawan = $this-&gt;db-&gt;update('karyawan', ['status' =&gt; 1], ['id' =&gt; $val]);
+                }
+
+                $model = $this-&gt;db-&gt;delete($this-&gt;table, ['id' =&gt; $data['id']]);
+                $detail = $this-&gt;db-&gt;delete('t_terminasi_det', ['t_terminasi_id' =&gt; $data['id']]);
+            }
+            $this-&gt;db-&gt;endTransaction();
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function deleteDetail($data)
+    {
+        try {
+            $this-&gt;db-&gt;startTransaction();
+
+            foreach ($data as $key =&gt; $val) {
+                $model = $this-&gt;db-&gt;delete('t_terminasi_det', ['id' =&gt; $val['id']]);
+                $model = $this-&gt;db-&gt;update('karyawan', ['status' =&gt; 1], ['id' =&gt; $val['karyawan_id']]);
+            }
+
+            $this-&gt;db-&gt;endTransaction();
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Generate kode terminasi.
+     *
+     * @return array
+     */
+    public function generateKode()
+    {
+        $cekKode = $this-&gt;db-&gt;select('kode')
+            -&gt;from($this-&gt;table)
+            -&gt;orderBy('kode DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $tipe = 'TRMN';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $tanggal = date('y').date('m');
+            $kode = $tipe.$tanggal.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    /**
+     * Validasi terminasi.
+     *
+     * @param array $data
+     * @param array $custom
+     *
+     * @return array
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'tgl' =&gt; 'required',
+            'm_status_terminasi_id' =&gt; 'required',
+        ];
+
+        \GUMP::set_field_name('tgl', 'Tanggal');
+        \GUMP::set_field_name('m_status_terminasi_id', 'Alasan');
+
+        return validate($data, $validasi, $custom);
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

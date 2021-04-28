@@ -1,0 +1,91 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+return [
+    'validate_required' =&gt; 'O preenchimento do campo {field} &eacute; obrigat&oacute;rio',
+    'validate_valid_email' =&gt; 'O campo {field} precisa conter um e-mail v&aacute;lido',
+    'validate_max_len' =&gt; 'O campo {field} pode conter no m&aacute;ximo {param} caracteres',
+    'validate_min_len' =&gt; 'O campo {field} precisa conter no m&iacute;nimo {param} caracteres',
+    'validate_exact_len' =&gt; 'O campo {field} precisa conter exatamente {param} caracteres',
+    'validate_alpha' =&gt; 'O campo {field} pode conter apenas letras',
+    'validate_alpha_numeric' =&gt; 'O campo {field} pode conter apenas letras e n&uacute;meros',
+    'validate_alpha_numeric_space' =&gt; 'O campo {field} pode conter apenas letras, n&uacute;meros e espa&ccedil;os',
+    'validate_alpha_dash' =&gt; 'O campo {field} pode conter apenas letras e tra&ccedil;os',
+    'validate_alpha_space' =&gt; 'O campo {field} pode conter apenas letras e espa&ccedil;os',
+    'validate_numeric' =&gt; 'O campo {field} precisa ser um n&uacute;mero',
+    'validate_integer' =&gt; 'O campo {field} precisa ser um n&uacute;mero inteiro, sem decimal',
+    'validate_boolean' =&gt; 'O campo {field} deve ser verdadeiro ou falso',
+    'validate_float' =&gt; 'O campo {field} precisa ser um n&uacute;mero com (float) casas decimais',
+    'validate_valid_url' =&gt; 'O campo {field} precisa ser uma url v&aacute;lida',
+    'validate_url_exists' =&gt; 'O campo {field} possui uma url que n&atilde;o existe',
+    'validate_valid_ip' =&gt; 'O campo {field} precisa conter um IP v&aacute;lido',
+    'validate_valid_ipv4' =&gt; 'O campo {field} precisa conter um endere&ccedil;o de IPv4 v&aacute;lido',
+    'validate_valid_ipv6' =&gt; 'O campo {field} precisa conter um endere&ccedil;o de IPv6 v&aacute;lido',
+    'validate_guidv4' =&gt; 'O campo {field} precisa conter um valor v&aacute;lido de GUID',
+    'validate_valid_cc' =&gt; 'O campo {field} n&atilde;o possui um valor de cart&atilde;o de cr&eacute;dito v&aacute;lido',
+    'validate_valid_name' =&gt; 'O campo {field} precisa conter um nome completo',
+    'validate_contains' =&gt; 'O campo {field} pode conter apenas um dos valores a seguir: {param}',
+    'validate_contains_list' =&gt; 'O campo {field} foi preenchido com uma op&ccedil;&atilde;o inv&aacute;lida',
+    'validate_doesnt_contain_list' =&gt; 'O campo {field} cont&eacute;m um valor que n&atilde;o &eacute; aceito',
+    'validate_street_address' =&gt; 'O campo {field} precisa conter um nome de rua v&aacute;lido',
+    'validate_date' =&gt; 'O campo {field} precisa ser uma data v&aacute;lida',
+    'validate_min_numeric' =&gt; 'O campo {field} precisa conter um valor num&eacute;rico, igual, ou maior que {param}',
+    'validate_max_numeric' =&gt; 'O campo {field} precisa conter um valor num&eacute;rico, igual, ou menor que {param}',
+    'validate_min_age' =&gt; 'O campo {field} precisa conter uma idade maior ou igual a {param}',
+    'validate_invalid' =&gt; 'O campo {field} &eacute; inv&aacute;lido',
+    'validate_starts' =&gt; 'O campo {field} precisa iniciar com {param}',
+    'validate_extension' =&gt; 'O campo {field} permite apenas os seguintes formatos: {param}',
+    'validate_required_file' =&gt; 'O campo {field} &eacute; de preenchimento obrigat&oacute;rio',
+    'validate_equalsfield' =&gt; 'O campo {field} n&atilde;o &eacute; igual ao campo {param}',
+    'validate_iban' =&gt; 'O campo {field} precisa conter um n&uacute;mero IBAN v&aacute;lido',
+    'validate_phone_number' =&gt; 'O campo {field} precisa conter um n&uacute;mero de telefone v&aacute;lido',
+    'validate_regex' =&gt; 'O campo {field} precisa conter um valor com formato v&aacute;lido',
+    'validate_valid_json_string' =&gt; 'O campo {field} precisa conter um string com formato JSON',
+    'validate_valid_array_size_greater' =&gt; 'O campo {field} precisa conter um array com tamanho, igual, ou maior que {param}',
+    'validate_valid_array_size_lesser' =&gt; 'O campo {field} precisa conter um array com tamanho, igual, ou menor que {param}',
+    'validate_valid_array_size_equal' =&gt; 'O campo {field} precisa conter um array com tamanho igual a {param}',
+];
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

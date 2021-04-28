@@ -1,0 +1,6 @@
+node_modules/
+nbproject/
+dist/
+package.lock.json
+node_modules.zip
+src/environments/

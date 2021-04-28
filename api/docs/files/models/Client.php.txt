@@ -1,0 +1,65 @@
+<?php
+
+namespace Model;
+
+use Service\Firebase;
+use Service\Landa;
+
+class Client extends Firebase
+{
+    /**
+     * Ambil semua klien dari firebase.
+     *
+     * @return array data klien
+     */
+    public function getAll()
+    {
+        return parent::getAllClient();
+    }
+
+    /**
+     * Simpan data client ke firebase.
+     *
+     * @param array $data data klien
+     *
+     * @return bool
+     */
+    public function save($data)
+    {
+        try {
+            $landa = new Landa();
+            $data['db']['DB_HOST'] = isset($data['db']['DB_HOST']) ? $landa->safeString($data['db']['DB_HOST']) : '';
+            $data['db']['DB_NAME'] = isset($data['db']['DB_NAME']) ? $landa->safeString($data['db']['DB_NAME']) : '';
+            $data['db']['DB_PASS'] = isset($data['db']['DB_PASS']) ? $landa->safeString($data['db']['DB_PASS']) : '';
+            $data['db']['DB_USER'] = isset($data['db']['DB_USER']) ? $landa->safeString($data['db']['DB_USER']) : '';
+            if (isset($data['uid']) && !empty($data['uid'])) {
+                $save = parent::updateDocument('client', $data['uid'], $data);
+            } else {
+                $data['uid'] = date('ymdhis');
+                $save = parent::newDocument('client', $data['uid'], $data);
+            }
+
+            return true;
+        } catch (Exception $e) {
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+            'cp' => 'required',
+            'email' => 'required',
+            'telepon' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

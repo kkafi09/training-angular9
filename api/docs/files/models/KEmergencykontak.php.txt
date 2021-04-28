@@ -1,0 +1,157 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class KEmergencykontak
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_kontak_darurat';
+    }
+
+    /**
+     * Ambil semua data Kontak darurat.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     *
+     * @return array
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $karyawanData = $this->db->select('karyawan_data_id')
+            ->from('karyawan')
+            ->where('id', '=', $params['idkaryawan'])
+            ->find()
+        ;
+        $karyawanDataId = isset($karyawanData->karyawan_data_id) ? $karyawanData->karyawan_data_id : 0;
+        // print_r($karyawanDataId);die;
+        $this->db->select('k_kontak_darurat.*, karyawan.id as idkaryawan')
+            ->from($this->table)
+            ->leftJoin('karyawan', 'karyawan.id = k_kontak_darurat.karyawan_id')
+            ->where($this->table.'.is_deleted', '=', 0)
+            ->andWhere('karyawan.karyawan_data_id', '=', $karyawanDataId)
+        ;
+
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+
+        $models = $this->db->findAll();
+        // print_r($models);die;
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data Kontak darurat.
+     *
+     * @param array $data
+     * @param array $customParams
+     *
+     * @return array
+     */
+    public function save($data, $customParams = '')
+    {
+        // print_r($data);die;
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $model = $this->db->insert($this->table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+            } else {
+                $model = $this->db->update($this->table, $data, $customParams);
+            }
+            // Return data Kontak darurat
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menghapus data kontak darurat.
+     *
+     * @param array $data
+     * @param array $customParams
+     *
+     * @return array
+     */
+    public function hapus($data, $customParams = '')
+    {
+        try {
+            $model = $db->delete('k_kontak_darurat', ['id' => $data['id']]);
+            // Return data kontak darurat
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     *
+     * @return bool
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+            'hubungan' => 'required',
+            'no_telepon' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

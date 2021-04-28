@@ -1,0 +1,213 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class KFile
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_file';
+    }
+
+    /**
+     * Ambil semua data KFile.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('k_file.*, m_kategori_file.id as id_file, m_kategori_file.nama as nama_jfile')
+            ->from($this->table)
+            ->join('left join', 'm_kategori_file', 'm_kategori_file.id = k_file.m_kategori_file')
+            ->where('k_file.is_deleted', '=', 0)
+            ->andWhere('karyawan_id', '=', $params['idkaryawan'])
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        $models = $this->db->findAll();
+        foreach ($models as $key => $value) {
+            $value->tgl_upload = date('d/m/Y', $value->created_at);
+            $value->fileUrl = config('SITE_URL').'assets/filekaryawan/'.$value->file;
+        }
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data KFile.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        $data['m_kategori_file'] = isset($data['m_kategori_file']) ? $data['m_kategori_file'] : '';
+
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $model = $this->db->insert($this->table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+            } else {
+                $model = $this->db->update($this->table, $data, $customParams);
+            }
+            // Return data KFile
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menghapus data KFile.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function hapus($data, $customParams = '')
+    {
+        try {
+            $model = $this->db->delete('k_file', ['id' => $data['id']]);
+            // Return data KFile
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'm_kategori_file' => 'required',
+            'file' => 'required',
+            'keterangan' => 'required',
+        ];
+
+        \GUMP::set_field_name('m_kategori_file', 'Jenis File');
+        \GUMP::set_field_name('file', 'File');
+        \GUMP::set_field_name('keterangan', 'Keterangan File');
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function getKfile($params = [])
+    {
+        $this->db->select('*')
+            ->from('m_kategori_file')
+            ->where('is_deleted', '=', 0)
+        ;
+
+        $models = $this->db->findAll();
+
+        return [
+            'data' => $models,
+        ];
+    }
+
+    public function generate_kode()
+    {
+        $this->dbModel = Db::db();
+        $cekKode = $this->db->select('id')
+            ->from($this->table)
+            ->orderBy('id DESC')
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $tipe = 'F';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    public function download($file)
+    {
+        if (file_exists($file)) {
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename='.basename($file));
+            header('Content-Transfer-Encoding: binary');
+            header('Expires: 0');
+            header('Cache-Control: private');
+            header('Pragma: private');
+            header('Content-Length: '.filesize($file));
+            ob_clean();
+            flush();
+            readfile($file);
+
+            exit;
+        }
+    }
+}
+

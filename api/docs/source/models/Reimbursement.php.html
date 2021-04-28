@@ -1,0 +1,287 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class Reimbursement extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'm_reimbursement';
+    }
+
+    /**
+     * Ambil semua data pelatihan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from($this-&gt;table)
+            -&gt;where('is_deleted', '=', 0)
+
+        ;
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key =&gt; $val) {
+                $this-&gt;db-&gt;where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+        foreach ($models as $key =&gt; $val) {
+            $models[$key]-&gt;tipe_nilai = isset($val-&gt;tipe_nilai) ? (string) $val-&gt;tipe_nilai : null;
+            $models[$key]-&gt;tipe_expired = isset($val-&gt;tgl_expired) ? '2' : '1';
+        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data pelatihan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        $dataModel = $data['model'];
+        $tipeExpired1 = isset($data['tipe_expired_1']) ? $data['tipe_expired_1'] : null;
+        $tipeExpired2 = isset($data['tipe_expired_2']) ? $data['tipe_expired_2'] : null;
+        $tipeNilai1 = isset($data['tipe_nilai_1']) ? $data['tipe_nilai_1'] : null;
+        $tipeNilai2 = isset($data['tipe_nilai_2']) ? $data['tipe_nilai_2'] : null;
+        $listReimbursementDet = $data['list_reimbursement_det'];
+
+        try {
+            $this-&gt;db-&gt;startTransaction();
+            if (0 == $dataModel['is_unlimited'] || '0' == $dataModel['is_unlimited']) {
+                if (1 == $dataModel['is_expired'] || '1' == $dataModel['is_expired']) {
+                    if (1 == $dataModel['tipe_expired'] || '1' == $dataModel['tipe_expired'] &amp;&amp; isset($tipeExpired1)) {
+                        $thisMonth = date('M');
+                        $dataModel['bulan_expired'] = (int) $tipeExpired1;
+                        $dataModel['tgl_expired'] = null;
+                    } elseif (isset($tipeExpired2)) {
+                        $dataModel['tgl_expired'] = (int) $tipeExpired2['tanggal'];
+                        $dataModel['bulan_expired'] = (int) $tipeExpired2['bulan'];
+                    }
+                }
+            }
+
+            //tipe nilai
+            if (1 == $dataModel['tipe_nilai'] || '1' == $dataModel['tipe_nilai'] &amp;&amp; isset($tipeNilai1)) {
+                $dataModel['nilai'] = $tipeNilai1;
+            }
+            if (isset($dataModel['id']) &amp;&amp; !empty($dataModel['id']) &amp;&amp; '' != $dataModel['id']) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $dataModel, ['id' =&gt; $dataModel['id']]);
+            } else {
+                $kode = $this-&gt;generate_kode();
+                $dataModel['kode'] = $kode['data'];
+                $dataModel['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : '';
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $dataModel);
+            }
+            if (!empty($model) &amp;&amp; isset($data['list_reimbursement_det']) &amp;&amp; '' != $data['list_reimbursement_det'] &amp;&amp; [] != $data['list_reimbursement_det']) {
+                if (isset($dataModel['id']) &amp;&amp; !empty($dataModel['id']) &amp;&amp; '' != $dataModel['id']) {
+                    $this-&gt;db-&gt;delete('m_reimbursement_det', ['m_reimbursement_id' =&gt; $dataModel['id']]);
+                }
+                $m_reimbursement_id = $model-&gt;id;
+                foreach ($listReimbursementDet as $k_Rdet =&gt; $v_RDet) {
+                    $v_RDet['m_reimbursement_id'] = $m_reimbursement_id;
+                    $modelRDet = $this-&gt;db-&gt;insert('m_reimbursement_det', $v_RDet);
+                }
+            }
+            $this-&gt;db-&gt;endTransaction();
+            // Return data pelatihan
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            $this-&gt;db-&gt;startTransaction();
+            $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; 1], ['id' =&gt; $params['id']]);
+            $this-&gt;db-&gt;delete('m_formula', ['m_reimbursement_id' =&gt; $params['id']]);
+            $this-&gt;db-&gt;delete('m_reimbursement_det', ['m_reimbursement_id' =&gt; $params['id']]);
+            $this-&gt;db-&gt;endTransaction();
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' =&gt; 'required',
+            'is_expired' =&gt; 'required',
+            'is_unlimited' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiDetail($data, $custom = [])
+    {
+        $validasi = [
+            'list_reimbursement_det' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiKode($data)
+    {
+        return parent::validasiKodeCore($data, $this-&gt;table);
+    }
+
+    public function getDetail($id)
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('m_reimbursement_det')
+            -&gt;where('m_reimbursement_id', '=', $id)
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function generate_kode()
+    {
+        $this-&gt;dbModel = Db::db();
+        $cekKode = $this-&gt;db-&gt;select('id')
+            -&gt;from($this-&gt;table)
+            -&gt;orderBy('id DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $tahun = date('y');
+            $bulan = date('m');
+            $tipe = 'SDR';
+            $kode_item = (substr($kode_terakhir, -3) + 1);
+            $kode = substr('000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$tahun.$bulan.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

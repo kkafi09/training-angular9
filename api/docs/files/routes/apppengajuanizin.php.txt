@@ -1,0 +1,115 @@
+<?php
+
+use Model\PengajuanIzin;
+
+//  Ambil semua pelatihan
+$app->get('/apppengajuanizin/index', function ($request, $response) {
+    $params = $request->getParams();
+    $izin = new PengajuanIzin();
+
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : 20;
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : 0;
+    $params['params'] = isset($params['params']) ? $params['params'] : [];
+    $params['approvedByMe'] = isset($params['approvedByMe']) ? $params['approvedByMe'] : false;
+
+    $getDataPengajuanIzin = $izin->getAll($params['params'], $params['limit'], $params['offset'], $params['approvedByMe']);
+
+    return successResponse($response, [
+        'list' => $getDataPengajuanIzin['data'],
+        'totalItems' => $getDataPengajuanIzin['totalItem'],
+    ]);
+});
+
+// Save pelatihan
+$app->post('/apppengajuanizin/save', function ($request, $response) {
+    $data = $request->getParams();
+    $pengajuanIzin = new PengajuanIzin();
+    $validasi = $pengajuanIzin->validasi($data['model']);
+    $validasiDetail = $pengajuanIzin->validasiDetail($data);
+    $validasiAll = array_merge(true !== $validasi ? $validasi : [], true !== $validasiDetail ? $validasiDetail : []);
+//    $checkTanggal = $pengajuanIzin->checkTanggal($data);
+
+    if (true === $validasi && true === $validasiDetail) {
+//        if (!$checkTanggal['status']) {
+//            return unprocessResponse($response, [$checkTanggal['pesan']]);
+//        }
+        $save = $pengajuanIzin->save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasiAll);
+});
+
+// Hapus pelatihan
+$app->post('/apppengajuanizin/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $izin = new PengajuanIzin();
+    $delete = $izin->delete($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+$app->post('/apppengajuanizin/deleteFile', function ($request, $response) {
+    $data = $request->getParams();
+    $izin = new PengajuanIzin();
+    $delete = $izin->deleteFile($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+$app->get('/apppengajuanizin/getFile', function ($request, $response) {
+    $params = $request->getParams();
+    $izin = new PengajuanIzin();
+    $get = $izin->getFile($params['reff_type'], $params['id']);
+
+    if ($get['totalItem'] > 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app->get('/apppengajuanizin/getDataRembursement', function ($request, $response) {
+    $params = $request->getParams();
+    $izin = new PengajuanIzin();
+    $get = $izin->getAll();
+
+    if ($get['totalItem'] > 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app->get('/apppengajuanizin/getKode', function ($request, $response) {
+    $params = $request->getParams();
+    $izin = new PengajuanIzin();
+    $get = $izin->generate_kode();
+
+    if (isset($get)) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app->get('/apppengajuanizin/getSisaCuti', function ($request, $response) {
+    $params = $request->getParams();
+    $izin = new PengajuanIzin();
+
+    $sisa = '12 Hari';
+
+    return successResponse($response, $sisa);
+});
+

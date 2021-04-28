@@ -1,0 +1,343 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class Lembur
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_lembur';
+    }
+
+    /**
+     * Ambil semua data terminasi.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     *
+     * @return array
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $approvedByMe = false)
+    {
+        $this->db->select($this->table.'.*, 
+                karyawan_data.nama as nama_karyawan,
+                karyawan.nik as nik_karyawan,
+                m_jabatan.nama as nama_jabatan
+            ')
+            ->from($this->table)
+            ->join('left join', 'karyawan', 'karyawan.id = '.$this->table.'.karyawan_id')
+            ->join('left join', 'karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            ->join('left join', 'k_jabatan', 'karyawan.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+        ;
+
+        if($approvedByMe){
+            $this->db->join('join', 't_approval', 't_lembur.id = t_approval.reff_id and t_approval.reff_type = "t_lembur"')
+                    ->andWhere('t_approval.is_aktif', '=', 1)
+                    ->andWhere('t_approval.k_approval_id', '=', $_SESSION['user']['userId'])
+                    ->andWhere('t_approval.status', '=', 1);
+        }
+
+        // Filter
+        if (isset($params) && !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) && is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($params) && !empty($params)) {
+            foreach ($filter as $key => $val) {
+                if (!empty($val)) {
+                    if ('kode' == $key) {
+                        $this->db->where('t_lembur.kode', 'like', $val);
+                    } elseif ('nama' == $key) {
+                        $this->db->where('karyawan_data.nama', 'like', $val);
+                    } elseif ('status' == $key) {
+                        $this->db->where('t_lembur.is_approve', '=', $val);
+                    } elseif ('lembur_id' == $key) {
+                        $this->db->where('t_lembur.id', '=', $val);
+                    } elseif ('karyawan_id' == $key) {
+                        $this->db->where('karyawan.id', '=', $val);
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) && !empty($limit)) {
+            $this->db->limit($limit);
+        }
+
+        // Set offset
+        if (isset($offset) && !empty($offset)) {
+            $this->db->offset($offset);
+        }
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        $arr = [];
+        foreach ($models as $key => $val) {
+            $arr[$key]['id'] = $val->id;
+            $arr[$key]['kode'] = $val->kode;
+            $arr[$key]['karyawan_id'] = $val->karyawan_id;
+            $arr[$key]['tgl'] = date('d/m/Y', strtotime($val->tgl));
+            $arr[$key]['nominal'] = $val->nominal;
+            $arr[$key]['keterangan'] = $val->keterangan;
+            $arr[$key]['sumber'] = $val->sumber;
+            $arr[$key]['is_approve'] = $val->is_approve;
+            $arr[$key]['created_by'] = $val->created_by;
+            $arr[$key]['created_at'] = $val->created_at;
+            $arr[$key]['modified_by'] = $val->modified_by;
+            $arr[$key]['modified_at'] = $val->modified_at;
+            $arr[$key]['nama_karyawan'] = $val->nama_karyawan;
+            $arr[$key]['tgl_mulai'] = date('d/m/Y', strtotime(substr($val->jam_mulai, 0, 10)));
+            $arr[$key]['tgl_selesai'] = date('d/m/Y', strtotime(substr($val->jam_selesai, 0, 10)));
+
+            $arr[$key]['jam_mulai']['hour'] = (int) substr($val->jam_mulai, 11, 2);
+            $arr[$key]['jam_mulai']['minute'] = (int) substr($val->jam_mulai, 14, 2);
+            $arr[$key]['jam_mulai']['second'] = (int) substr($val->jam_mulai, 17, 2);
+
+            $arr[$key]['jam_selesai']['hour'] = (int) substr($val->jam_selesai, 11, 2);
+            $arr[$key]['jam_selesai']['minute'] = (int) substr($val->jam_selesai, 14, 2);
+            $arr[$key]['jam_selesai']['second'] = (int) substr($val->jam_selesai, 18, 2);
+
+            $arr[$key]['jam_mulai_txt'] = date('H:i:s', strtotime($val->jam_mulai));
+            $arr[$key]['jam_selesai_txt'] = date('H:i:s', strtotime($val->jam_selesai));
+
+            $arr[$key]['waktu'] = substr($val->jam_mulai, 11, 5).' - '.substr($val->jam_selesai, 11, 5);
+        }
+
+        return [
+            'data' => $arr,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil total jam dan nominal lembur.
+     *
+     * @param int  $karyawanId id karyawan
+     * @param Date $date       Tanggal untuk periode bulan dan tahun
+     *
+     * @return array array total jam dan total rupiah
+     */
+    public function getTotal($karyawanId, $date = null)
+    {
+        $date = date('Y-m-d');
+        $month = date('m', strtotime($date));
+        $year = date('Y', strtotime($date));
+
+        $lembur = $this->db->select('
+            sum(time_to_sec(timediff(jam_selesai, jam_mulai))) as totalDetik,
+            sum(nominal) as nominal
+        ')
+            ->from('t_lembur')
+            ->where('karyawan_id', '=', $karyawanId)
+            ->andWhere('is_approve', '=', 1)
+            ->customWhere('month(tgl) = "'.$month.'" and year(tgl)="'.$year.'"', 'AND')
+            ->find()
+        ;
+
+        $totalDetik = isset($lembur->totalDetik) ? $lembur->totalDetik : 0;
+        $nominal = isset($lembur->nominal) ? $lembur->nominal : 0;
+
+        $minutes = floor(($totalDetik % 3600) / 60);
+        $hours = floor($totalDetik / 3600);
+
+        return [
+            'totalJam' => $hours.' Jam '.$minutes.' Menit',
+            'totalRp' => $nominal,
+        ];
+    }
+
+    /**
+     * Ambil gaji karyawan.
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    public function getGaji($data)
+    {
+        $gaji = $this->db->select('gaji_pokok')
+            ->from('karyawan')
+            ->where('id', '=', $data['id'])
+            ->find()
+        ;
+
+        return [
+            'data' => $gaji,
+        ];
+    }
+
+    /**
+     * Ambil nominal lembur berdasarkan periode dan penggajian.
+     *
+     * @param string $mulai
+     * @param string $selesai
+     * @param int    $payrollId
+     *
+     * @return array
+     */
+    public function getLemburByPeriode($mulai, $selesai, $payrollId = null)
+    {
+        $this->db->select('sum(nominal) as total, t_lembur.karyawan_id')
+            ->from('t_lembur')
+            ->leftJoin('karyawan', 'karyawan.id = t_lembur.karyawan_id')
+            ->customWhere('t_lembur.tgl >= "'.$mulai.'" and t_lembur.tgl <= "'.$selesai.'"')
+            ->andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->groupBy('karyawan_id')
+        ;
+        if (!empty($payrollId)) {
+            $this->db->andWhere('t_lembur.t_payroll_id', '=', $payrollId);
+        } else {
+            $this->db->customWhere('t_lembur.t_payroll_id = 0 or t_lembur.t_payroll_id is null', 'AND');
+        }
+        $lembur = $this->db->findAll();
+        $arr = [];
+        foreach ($lembur as $key => $value) {
+            $arr[$value->karyawan_id] = $value->total;
+        }
+
+        return $arr;
+    }
+
+    /**
+     * Generate kode terminasi.
+     *
+     * @return array
+     */
+    public function generateKode()
+    {
+        $cekKode = $this->db->select('kode')
+            ->from($this->table)
+            ->orderBy('kode DESC')
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $tipe = 'LBR';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $tanggal = date('y').date('m');
+            $kode = $tipe.$tanggal.$kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    /**
+     * Simpan data terminasi.
+     *
+     * @param array  $params
+     * @param string $customParams
+     * @param mixed  $data
+     *
+     * @return array
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (!isset($data['id'])) {
+                $data['is_approve'] = 1;
+                $data['tgl'] = $data['tgl_mulai'];
+                $data['jam_mulai'] = $data['tgl_mulai'].' '.$data['jam_mulai']['hour'].':'.$data['jam_mulai']['minute'].':'.$data['jam_mulai']['second'];
+                $data['jam_selesai'] = $data['tgl_selesai'].' '.$data['jam_selesai']['hour'].':'.$data['jam_selesai']['minute'].':'.$data['jam_selesai']['second'];
+
+                $model = $this->db->insert($this->table, $data);
+            } elseif (empty($customParams)) {
+                $data['tgl'] = $data['tgl_mulai'];
+                $data['jam_mulai'] = $data['tgl_mulai'].' '.$data['jam_mulai']['hour'].':'.$data['jam_mulai']['minute'].':'.$data['jam_mulai']['second'];
+                $data['jam_selesai'] = $data['tgl_selesai'].' '.$data['jam_selesai']['hour'].':'.$data['jam_selesai']['minute'].':'.$data['jam_selesai']['second'];
+
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+            } else {
+                $model = $this->db->update($this->table, $data, $customParams);
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function delete($data, $karyawan_id = [])
+    {
+        try {
+            if (isset($data['id'])) {
+                $model = $this->db->delete($this->table, ['id' => $data['id']]);
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            // 'tgl' => 'required',
+            'karyawan_id' => 'required',
+            'jam_mulai' => 'required',
+            'jam_selesai' => 'required',
+            'nominal' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

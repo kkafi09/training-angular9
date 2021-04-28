@@ -1,0 +1,102 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\JadwalKerjaKaryawan;
+use Service\Landa;
+
+// Ambil semua jadwal kerja
+$app-&gt;get('/t_jadwalkerja/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $jadwalKerja = new JadwalKerjaKaryawan();
+        
+    $getDataJadwalKerja = $jadwalKerja-&gt;getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataJadwalKerja['data'],
+        'totalItems' =&gt; $getDataJadwalKerja['totalItem'],
+    ]);
+});
+
+// Ambil detail jadwal kerja
+$app-&gt;get('/t_jadwalkerja/getDetail', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $jadwalKerja = new JadwalKerjaKaryawan();
+    $getDetail = $jadwalKerja-&gt;getDetail($data);
+
+    return successResponse($response, [
+        'list' =&gt; array_values($getDetail['data'])
+    ]);
+});
+
+// Save jadwal kerja
+$app-&gt;post('/t_jadwalkerja/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $jadwalKerja = new JadwalKerjaKaryawan();
+    $validasi = $jadwalKerja-&gt;validasi($data['data']);
+
+    if (true === $validasi) {
+        // Proses simpan ke dalam database
+        $save = $jadwalKerja-&gt;save($data);
+
+        if ($save['status']) {
+             return successResponse($response, $save);
+        }
+        return unprocessResponse($response, [$save['error']]);
+    }
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus jadwal kerja
+$app-&gt;post('/t_jadwalkerja/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $jadwalKerja = new JadwalKerjaKaryawan();
+    $model = $jadwalKerja-&gt;save($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

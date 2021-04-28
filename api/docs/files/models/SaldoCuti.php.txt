@@ -1,0 +1,367 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class SaldoCuti extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_saldo_cuti';
+    }
+
+    /**
+     * Ambil semua data saldo cuti.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('t_saldo_cuti.*, m_time_off.nama as nm_cuti')
+            ->from($this->table)
+            ->leftJoin('m_time_off', 'm_time_off.id = t_saldo_cuti.m_time_off_id')
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere($this->table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil semua data saldo cuti.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAllid($params = [])
+    {
+        $this->db->select('karyawan_data.*, karyawan.*,k_jabatan.m_jabatan_id, m_jabatan.nama as nm_jabatan,t_saldo_cuti_det.id as idsaldodet, t_saldo_cuti_det.saldo')
+            ->from('t_saldo_cuti_det')
+            ->join('left join', 'karyawan', 'karyawan.id = t_saldo_cuti_det.karyawan_id')
+            ->join('left join', 'karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id AND k_jabatan.aktif = 1')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->andWhere('t_saldo_cuti_det.t_saldo_cuti_id', '=', $params['id'])
+        ;
+
+        $models = $this->db->findAll();
+        foreach ($models as $key => $value) {
+            $value->is_edittable = 1;
+        }
+        $totalItem = $this->db->count();
+        // print_r($model);die;
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function getTimeOff($params = [])
+    {
+        $this->db->select('*')
+            ->from('m_time_off')
+        ;
+
+        if (isset($params['id']) && 'null' != $params['id']) {
+            $this->db->customWhere('m_time_off.id = '.$params['id'], 'AND');
+        } else {
+            $this->db->where('is_used', '=', 1);
+        }
+
+        $models = $this->db->findAll();
+
+        return [
+            'data' => $models,
+        ];
+    }
+
+    public function getAllKaryawan($params = [])
+    {
+        if (1 == $params['tipe']) {
+            $this->db->select('karyawan_data.*, karyawan.*,k_jabatan.m_jabatan_id, m_jabatan.nama as nm_jabatan')
+                ->from('karyawan_data')
+                ->join('left join', 'karyawan', 'karyawan_data.id = karyawan.karyawan_data_id')
+                ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id AND k_jabatan.aktif = 1')
+                ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+                ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ;
+
+            $models = $this->db->findAll();
+            $arr_cuti = [];
+            foreach ($models as $key => $value) {
+                $value->saldo = 0;
+                $arr_cuti[$key] = (array) $value;
+            }
+        } else {
+            $models = $this->db->select('karyawan_data.*, karyawan.*,k_jabatan.m_jabatan_id, m_jabatan.nama as nm_jabatan')
+                ->from('karyawan_data')
+                ->join('left join', 'karyawan', 'karyawan_data.id = karyawan.karyawan_data_id')
+                ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id AND k_jabatan.aktif = 1')
+                ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+                ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+                ->findAll()
+            ;
+
+            // print_r($models);die;
+            $arr_cuti = [];
+            foreach ($models as $key => $value) {
+                $cekjatahcuti = $this->db->select('t_saldo_cuti.tgl_mulai, t_saldo_cuti.m_time_off_id,t_saldo_cuti_det.saldo as saldolama, t_saldo_cuti_det.karyawan_id')
+                    ->from('t_saldo_cuti')
+                    ->join('left join', 't_saldo_cuti_det', 't_saldo_cuti.id = t_saldo_cuti_det.t_saldo_cuti_id')
+                    ->where('t_saldo_cuti.m_time_off_id', '=', $params['m_time_off_id'])
+                    ->andWhere('t_saldo_cuti_det.karyawan_id', '=', $value->id)
+                    ->orderBy('t_saldo_cuti.id DESC')
+                    ->find()
+                ;
+
+                $value->durasi = $cekjatahcuti->saldolama;
+                $tglnya = $cekjatahcuti->tgl_mulai;
+                $arr_cuti[$key] = (array) $value;
+                $cekpengajuan = $this->db->select('tgl_mulai, tgl_selesai')
+                    ->from('t_ijin')
+                    ->where('t_ijin.tgl_mulai', '>=', ''.$tglnya.'')
+                    ->andWhere('karyawan_id', '=', $value->id)
+                    ->andWhere('m_time_off_id', '=', $params['m_time_off_id'])
+                    ->findAll()
+                ;
+                // print_r($cekpengajuan);die;
+                foreach ($cekpengajuan as $keys => $vals) {
+                    $date1 = date_create($vals->tgl_mulai);
+                    $date2 = date_create($vals->tgl_selesai);
+                    $diff = date_diff($date1, $date2);
+                    $vals->selisih = $diff->format('%a');
+                }
+                $arr_cuti[$key]['ijin'] = $cekpengajuan;
+            }
+
+            foreach ($arr_cuti as $key => $value) {
+                $sumijin = 0;
+                foreach ($value['ijin'] as $keys => $val) {
+                    $sumijin += $val->selisih;
+                    $arr_cuti[$key]['totalcuti'] = $sumijin;
+                }
+            }
+
+            foreach ($arr_cuti as $key => $value) {
+                // print_r($value);die;
+                if (isset($value['totalcuti'])) {
+                    $arr_cuti[$key]['totalcuti'] = $value['totalcuti'];
+                } else {
+                    $arr_cuti[$key]['totalcuti'] = 0;
+                }
+
+                $arr_cuti[$key]['saldolama'] = $arr_cuti[$key]['durasi'] - $arr_cuti[$key]['totalcuti'];
+                $arr_cuti[$key]['saldo'] = $arr_cuti[$key]['durasi'] - $arr_cuti[$key]['totalcuti'];
+            }
+        }
+        // print_r($arr_cuti);die;
+        return [
+            'data' => $arr_cuti,
+        ];
+    }
+
+    public function getAllKaryawanNew($params = [])
+    {
+        $idkaryawanavailable = [];
+        if (isset($params) && !empty($params)) {
+            foreach ($params as $key => $value) {
+                $idkaryawanavailable[] = $value['id'];
+            }
+            $idkaryawantersedia = implode(',', $idkaryawanavailable);
+        } else {
+            $idkaryawantersedia = 0;
+        }
+
+        $this->db->select('karyawan_data.*, karyawan.*,k_jabatan.m_jabatan_id, m_jabatan.nama as nm_jabatan')
+            ->from('karyawan_data')
+            ->join('left join', 'karyawan', 'karyawan_data.id = karyawan.karyawan_data_id')
+            ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id AND k_jabatan.aktif = 1')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->customWhere('karyawan.id NOT IN ('.$idkaryawantersedia.')', 'AND')
+        ;
+
+        $models = $this->db->findAll();
+
+        foreach ($models as $key => $value) {
+            $value->saldo = 0;
+        }
+
+        return [
+            'data' => $models,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data saldo cuti.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (!isset($data['model']['id'])) {
+                $this->db->startTransaction();
+                $data['model']['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : null;
+                if (1 == $data['model']['tipe']) {
+                    $data['model']['tgl_mulai'] = date('Y/01/01');
+                } else {
+                    $data['model']['tgl_mulai'] = implode('-', $data['model']['tgl_mulai']);
+                }
+                $data['model']['tgl_selesai'] = date('Y/12/31');
+
+                $model = $this->db->insert($this->table, $data['model']);
+
+                $inputdet = [];
+                if (isset($data['detail']) && !empty($data['detail'])) {
+                    foreach ($data['detail'] as $key => $value) {
+                        $inputdet['t_saldo_cuti_id'] = $model->id;
+                        $inputdet['karyawan_id'] = $value['id'];
+                        $inputdet['saldo'] = $value['saldo'];
+
+                        $saldocuti_det = $this->db->insert('t_saldo_cuti_det', $inputdet);
+                    }
+                }
+                $this->db->endTransaction();
+            } else {
+                $this->db->startTransaction();
+
+                if (isset($data['model']['tgl_mulai']) && is_array($data['model']['tgl_mulai'])) {
+                    $data['model']['tgl_mulai'] = implode('-', $data['model']['tgl_mulai']);
+                }
+                $model = $this->db->update($this->table, $data['model'], ['id' => $data['model']['id']]);
+
+                if (isset($data['detail']) && !empty($data['detail'])) {
+                    foreach ($data['detail'] as $key => $value) {
+                        if (isset($value['idsaldodet']) && !empty($value['idsaldodet'])) {
+                            $inputdet['saldo'] = $value['saldo'];
+                            $saldocuti_det = $this->db->update('t_saldo_cuti_det', $inputdet, ['id' => $value['idsaldodet']]);
+                        } else {
+                            $inputdet['t_saldo_cuti_id'] = $model->id;
+                            $inputdet['karyawan_id'] = $value['id'];
+                            $inputdet['saldo'] = $value['saldo'];
+
+                            $saldocuti_det = $this->db->insert('t_saldo_cuti_det', $inputdet);
+                        }
+                    }
+                }
+                $this->db->endTransaction();
+            }
+            // Return data perusahaan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function deletedetail($params)
+    {
+        try {
+            // print_r($params);die;
+            $this->db->startTransaction();
+
+            $saldocuti_det = $this->db->delete('t_saldo_cuti_det', ['id' => $params['id']]);
+
+            $this->db->endTransaction();
+            // Return data payroll
+            return [
+                'status' => true,
+                'data' => $saldocuti_det,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        // print_r($params);die;
+        try {
+            $this->db->startTransaction();
+            $model = $this->db->delete('t_saldo_cuti', ['id' => $params['id']]);
+            $models = $this->db->delete('t_saldo_cuti_det', ['t_saldo_cuti_id' => $params['id']]);
+            $this->db->endTransaction();
+            // Return data payroll
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'm_time_off_id' => 'required',
+            'tipe' => 'required',
+        ];
+        \GUMP::set_field_name('id_cuti', 'Data Cuti');
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

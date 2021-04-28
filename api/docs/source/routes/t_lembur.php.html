@@ -1,0 +1,124 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\Lembur;
+use Service\Landa;
+
+// Get lembur
+$app-&gt;get('/t_lembur/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $lembur = new Lembur();
+    $getAll = $lembur-&gt;getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getAll['data'],
+        'totalItems' =&gt; $getAll['totalItem'],
+    ]);
+});
+
+// Get gaji karyawan
+$app-&gt;get('/t_lembur/getgaji', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $lembur = new Lembur();
+    $getGaji = $lembur-&gt;getGaji($params);
+
+    return successResponse($response, $getGaji['data']-&gt;gaji_pokok);
+});
+
+// Save lembur
+$app-&gt;post('/t_lembur/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $lembur = new Lembur();
+    $landa = new Landa();
+    $validasi = $lembur-&gt;validasi($data);
+
+    if (true === $validasi) {
+        if (!isset($data['id'])) {
+            $kode = $lembur-&gt;generateKode();
+            $data['kode'] = $kode['data'];
+        }
+
+        $data['tgl_mulai'] = $landa-&gt;arrayToDate($data['tgl_mulai']);
+        $data['tgl_selesai'] = $landa-&gt;arrayToDate($data['tgl_selesai']);
+
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $lembur-&gt;save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus lembur
+$app-&gt;post('/t_lembur/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $lembur = new Lembur();
+    $model = $lembur-&gt;delete(['id' =&gt; $data['id']]);
+
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Get total lembur
+$app-&gt;get('/t_lembur/getTotal', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $lembur = new Lembur();
+
+    $karyawanId = isset($params['karyawan_id']) ? $params['karyawan_id'] : 0;
+    $totalLembur = $lembur-&gt;getTotal($karyawanId);
+
+    return successResponse($response, $totalLembur);
+});</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

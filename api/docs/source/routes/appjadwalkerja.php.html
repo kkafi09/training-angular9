@@ -1,0 +1,151 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\JadwalKerja;
+use Service\Landa;
+
+// Ambil semua jadwal kerja
+$app-&gt;get('/appjadwalkerja/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $jadwalKerja = new JadwalKerja();
+    if (!empty($params)) {
+        $getDataJadwalKerja = $jadwalKerja-&gt;getAll($params['params'], $params['limit'], $params['offset']);
+    } else {
+        $getDataJadwalKerja = $jadwalKerja-&gt;getAll();
+    }
+
+    foreach ($getDataJadwalKerja['data'] as $key =&gt; $val) {
+        $val-&gt;tgl_mulai = date('d/m/Y', strtotime($val-&gt;tgl_mulai));
+    }
+
+    return successResponse($response, [
+        'list' =&gt; $getDataJadwalKerja['data'],
+        'totalItems' =&gt; $getDataJadwalKerja['totalItem'],
+    ]);
+});
+
+// Ambil detail jadwal kerja
+$app-&gt;post('/appjadwalkerja/getJadwal', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $jadwalKerja = new JadwalKerja();
+    $getDetailJadwalKerja = $jadwalKerja-&gt;getDetail($data);
+
+    return successResponse($response, [
+        'list' =&gt; $getDetailJadwalKerja['data'],
+    ]);
+});
+
+// Ambil list jam kerja
+$app-&gt;get('/appjadwalkerja/jamkerja', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $jadwalKerja = new JadwalKerja();
+    $listJamKerja = $jadwalKerja-&gt;getJamKerja();
+
+    foreach ($listJamKerja['data'] as $key =&gt; $val) {
+        $val-&gt;jam_masuk = substr($val-&gt;jam_masuk, 0, 5);
+        $val-&gt;jam_pulang = substr($val-&gt;jam_pulang, 0, 5);
+        $val-&gt;m_istirahat = substr($val-&gt;m_istirahat, 0, 5);
+        $val-&gt;s_istirahat = substr($val-&gt;s_istirahat, 0, 5);
+        $val-&gt;t_before = substr($val-&gt;t_before, 0, 5);
+        $val-&gt;t_after = substr($val-&gt;t_after, 0, 5);
+    }
+
+    return successResponse($response, [
+        'list' =&gt; $listJamKerja['data'],
+    ]);
+});
+
+// Save jadwal kerja
+$app-&gt;post('/appjadwalkerja/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $landa = new Landa();
+    $jadwalKerja = new JadwalKerja();
+    $validasi = $jadwalKerja-&gt;validasi($data['tipe'], $data['data']);
+    $validasiKode = $jadwalKerja-&gt;validasiKode($data['tipe'], $data['data']);
+
+    if (true === $validasi) {
+        // Proses simpan ke dalam database
+        if (true == $validasiKode) {
+            if ('jadwal' == $data['tipe']) {
+                $data['data']['tgl_mulai'] = $landa-&gt;arrayToDate($data['data']['tgl_mulai']);
+            }
+
+            $save = $jadwalKerja-&gt;save($data);
+
+            if ($save['status']) {
+                return successResponse($response, $save);
+            }
+
+            return unprocessResponse($response, [$save['error']]);
+        }
+
+        return unprocessResponse($response, 'Kode Telah Tersedia');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus jadwal kerja
+$app-&gt;post('/appjadwalkerja/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $jadwalKerja = new JadwalKerja();
+    $model = $jadwalKerja-&gt;save($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Generate kode jadwal kerja
+$app-&gt;get('/appjadwalkerja/generatekode', function ($request, $response) {
+    $jadwalKerja = new JadwalKerja();
+
+    $kode = $jadwalKerja-&gt;generateKode();
+
+    return successResponse($response, $kode['data']);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

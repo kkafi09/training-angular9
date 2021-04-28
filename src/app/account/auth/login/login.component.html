@@ -1,0 +1,74 @@
+<div class="account-pages mt-5 mb-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 col-xl-5">
+                <div class="card overflow-hidden">
+                    <div class="bg-soft-primary">
+                        <div class="row">
+                            <div class="col-7">
+                                <div class="text-primary p-4">
+                                    <h5 class="text-primary">Welcome To Angular 9 For Trainer!</h5>
+                                    <p>Sign in to continue</p>
+                                </div>
+                            </div>
+                            <div class="col-5 align-self-end">
+                                <img src="assets/images/profile-img.png" alt="" class="img-fluid">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body pt-0">
+                        <div>
+                            <a href="/">
+                                <div class="avatar-md profile-user-wid mb-4">
+                                    <span class="avatar-title rounded-circle bg-light">
+                                        <img [src]="listGambar.logo_login" alt="" class="rounded-circle" height="34">
+                                    </span>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="p-2">
+                            <form class="form-horizontal" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+                                <ngb-alert type="danger" *ngIf="error" [dismissible]="false">{{ error }}</ngb-alert>
+                                <div class="form-group mb-3">
+                                    <label for="email">Email /Username</label>
+                                    <input type="email" formControlName="email" class="form-control" id="email"
+                                        placeholder="Email / Username" />
+
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="password">Password</label>
+                                    <input type="password" formControlName="password" class="form-control" id="password"
+                                        [ngClass]="{ 'is-invalid': submitted && f.password.errors }"
+                                        placeholder="Password" />
+                                    <div *ngIf="submitted && f.password.errors" class="invalid-feedback">
+                                        <div *ngIf="f.password.errors.required">Password is required</div>
+                                    </div>
+                                </div>
+                                <!-- <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="customControlInline">
+                                    <label class="custom-control-label" for="customControlInline">Remember me</label>
+                                </div> -->
+                                <div class="mt-3">
+                                    <button class="btn btn-primary btn-block" type="submit">Log In</button>
+                                </div>
+                                <!-- <div class="text-center mt-2 mb-2" style="color: #a0a2a8;">
+                                    or
+                                </div>
+                                <div class=" mb-3">
+                                    <button class="btn btn-block" style="background-color: #DB5353; color: #ffffff;"
+                                        (click)="loginWithGoogle()" type="button"> <i class="fab fa-google mr-2"></i>
+                                        Login With Google</button>
+                                </div> -->
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-5 text-center">
+                    <p style="margin-bottom: 3px;">Developed with <i class="fas fa-heart text-danger"></i> by Venturo
+                        Camp</p>
+                    <p style="color: #a0a2a8;">© {{year}} Landa System.id v.1.0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

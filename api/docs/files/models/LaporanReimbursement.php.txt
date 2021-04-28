@@ -1,0 +1,110 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanReimbursement
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_reimbursement';
+    }
+
+    /**
+     * Ambil semua data Pengajuan Reimbursement.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+        if ('null' != $params['periode_mulai'] && 'null' != $params['periode_selesai']) {
+            $tanggal_awal = date('Y-m-d', strtotime($params['periode_mulai']));
+            $tanggal_akhir = date('Y-m-d', strtotime($params['periode_selesai']));
+        } else {
+            $tanggal_awal = null;
+            $tanggal_akhir = null;
+        }
+
+        $this->db->select($this->table.'.*, karyawan_data.nama as nama_karyawan,t_reimbursement_det.id as det_id,
+                                                    t_reimbursement_det.nilai_act,t_reimbursement_det.nilai_req,
+                                                    m_jabatan.nama as nama_jabatan,m_reimbursement_det.nama as nama_det_reim,
+                                                    t_reimbursement_det.keterangan as keterangan_list,m_reimbursement.nama as nama_reim
+                                                    ')
+            ->from($this->table)
+            ->join('left join', 'karyawan', $this->table.'.karyawan_id = karyawan.id')
+            ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->join('left join', 'k_jabatan', 'karyawan.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1 and k_jabatan.is_deleted = 0')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->join('left join', 't_reimbursement_det', 't_reimbursement_det.t_reimbursement_id = '.$this->table.'.id')
+            ->join('left join', 'm_reimbursement', 't_reimbursement.m_reimbursement_id = m_reimbursement.id')
+            ->join('left join', 'm_reimbursement_det', 't_reimbursement_det.m_reimbursement_det_id = m_reimbursement_det.id')
+            ->where('m_reimbursement.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+
+        ;
+
+        if (null != $tanggal_awal && null != $tanggal_akhir) {
+            $this->db->andWhere($this->table.'.tgl', '>=', $tanggal_awal)
+                ->andWhere($this->table.'.tgl', '<=', $tanggal_akhir)
+            ;
+        }
+
+        if ('null' != $params['karyawan_id'] && '' != $params['karyawan_id']) {
+            $this->db->andWhere($this->table.'.karyawan_id', '=', $params['karyawan_id']);
+        }
+        if ('null' != $params['m_reimbursement_id'] && '' != $params['m_reimbursement_id']) {
+            $this->db->andWhere($this->table.'.m_reimbursement_id', '=', $params['m_reimbursement_id']);
+        }
+        if ('null' != $params['status'] && '' != $params['status']) {
+            $this->db->andWhere($this->table.'.is_approve', '=', $params['status']);
+        }
+
+        $models = $this->db->findAll();
+        $arr = [];
+        $arrTotal = [];
+
+        foreach ($models as $key => $val) {
+            if (!isset($arr[$val->karyawan_id]['total_req'])) {
+                $arr[$val->karyawan_id]['total_req'] = 0;
+            }
+            if (!isset($arr[$val->karyawan_id]['total_acc'])) {
+                $arr[$val->karyawan_id]['total_acc'] = 0;
+            }
+            if (!isset($arrTotal['total_req'])) {
+                $arrTotal['total_req'] = 0;
+            }
+            if (!isset($arrTotal['total_acc'])) {
+                $arrTotal['total_acc'] = 0;
+            }
+            $arr[$val->karyawan_id]['list'][] = $val;
+            $arr[$val->karyawan_id]['nama_karyawan'] = $val->nama_karyawan;
+            $arr[$val->karyawan_id]['nama_jabatan'] = $val->nama_jabatan;
+            @$arr[$val->karyawan_id]['total_req'] += isset($val->nilai_req) ? $val->nilai_req : 0;
+            @$arr[$val->karyawan_id]['total_acc'] += isset($val->nilai_acc) ? $val->nilai_acc : 0;
+            @$arrTotal['total_req'] += isset($val->nilai_req) ? $val->nilai_req : 0;
+            @$arrTotal['total_acc'] += isset($val->nilai_acc) ? $val->nilai_acc : 0;
+        }
+
+        return [
+            'status' => true,
+            'list' => array_values($arr),
+            'total' => $arrTotal,
+            'periode' => null != $tanggal_awal && null != $tanggal_akhir ? date('d/m/Y', strtotime($tanggal_awal)).' s/d '.date('d/m/Y', strtotime($tanggal_akhir)) : null,
+        ];
+    }
+}
+

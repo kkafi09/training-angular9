@@ -1,0 +1,103 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\KStatus;
+use Service\Landa;
+
+// Ambil semua status
+$app-&gt;get('/k_status/index/{id}', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $params['idkaryawan'] = $request-&gt;getAttribute('id');
+    $KStatus = new KStatus();
+    $getDataKStatus = $KStatus-&gt;getAll($params);
+
+    foreach ($getDataKStatus['data'] as $key =&gt; $val) {
+        if (null != $val-&gt;tgl_mulai) {
+            $val-&gt;tgl_mulai = date('d/m/Y', strtotime($val-&gt;tgl_mulai));
+        }
+
+        if (null != $val-&gt;tgl_selesai &amp;&amp; '-' != $val-&gt;tgl_selesai) {
+            $val-&gt;tgl_selesai = date('d/m/Y', strtotime($val-&gt;tgl_selesai));
+        }
+    }
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKStatus['data'],
+        'totalItems' =&gt; $getDataKStatus['totalItem'],
+    ]);
+});
+// Save status
+$app-&gt;post('/k_status/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $landa = new Landa();
+    $KStatus = new KStatus();
+    $validasi = $KStatus-&gt;validasi($data);
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $KStatus-&gt;save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Hapus status
+$app-&gt;post('/k_status/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $KStatus = new KStatus();
+    $model = $KStatus-&gt;save(['is_deleted' =&gt; 1, 'id' =&gt; $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

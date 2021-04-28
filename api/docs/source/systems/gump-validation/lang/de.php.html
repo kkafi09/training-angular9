@@ -1,0 +1,91 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+return [
+    'validate_required' =&gt; 'Das Feld &quot;{field}&quot; ist erforderlich.',
+    'validate_valid_email' =&gt; 'Das Feld &quot;{field}&quot; muss eine g&amp;uuml;ltige E-Mail-Adresse sein.',
+    'validate_max_len' =&gt; 'Das Feld &quot;{field}&quot; darf maximal {param} Zeichen enthalten.',
+    'validate_min_len' =&gt; 'Das Feld &quot;{field}&quot; muss mindestens {param} Zeichen enthalten.',
+    'validate_exact_len' =&gt; 'Das Feld &quot;{field}&quot; muss genau {param} Zeichen enthalten.',
+    'validate_alpha' =&gt; 'Das Feld &quot;{field}&quot; darf nur Buchstaben enthalten.',
+    'validate_alpha_numeric' =&gt; 'Das Feld &quot;{field}&quot; darf nur Buchstaben und Ziffern enthalten.',
+    'validate_alpha_numeric_space' =&gt; 'Das Feld &quot;{field}&quot; darf nur Buchstaben, Ziffern und Leerzeichen enthalten.',
+    'validate_alpha_dash' =&gt; 'Das Feld &quot;{field}&quot; darf nur Buchstaben und Bindestriche enthalten.',
+    'validate_alpha_space' =&gt; 'Das Feld &quot;{field}&quot; darf nur Buchstaben und Leerzeichen enthalten.',
+    'validate_numeric' =&gt; 'Das Feld &quot;{field}&quot; muss eine Nummer sein.',
+    'validate_integer' =&gt; 'Das Feld &quot;{field}&quot; muss eine Nummer ohne Nachkommastellen (ganze Zahl) sein.',
+    'validate_boolean' =&gt; 'Das Feld &quot;{field}&quot; muss entweder wahr oder falsch sein.',
+    'validate_float' =&gt; 'Das Feld &quot;{field}&quot; muss eine Nummer mit einem Dezimalpunkt (Gleitpunktzahl) sein.',
+    'validate_valid_url' =&gt; 'Das Feld &quot;{field}&quot; muss eine URL sein.',
+    'validate_url_exists' =&gt; 'Die im Feld &quot;{field}&quot; angegebene URL existiert nicht.',
+    'validate_valid_ip' =&gt; 'Das Feld &quot;{field}&quot; muss eine g&amp;uuml;ltige IP-Adresse sein.',
+    'validate_valid_ipv4' =&gt; 'Das Feld &quot;{field}&quot; muss eine g&amp;uuml;ltige IPv4-Adresse enthalten.',
+    'validate_valid_ipv6' =&gt; 'Das Feld &quot;{field}&quot; muss eine g&amp;uuml;ltige IPv6-Adresse enthalten.',
+    'validate_guidv4' =&gt; 'Das Feld &quot;{field}&quot; muss eine g&amp;uuml;ltige GUID enthalten.',
+    'validate_valid_cc' =&gt; 'Das Feld &quot;{field}&quot; ist keine g&amp;uuml;ltige Kreditkartennummer.',
+    'validate_valid_name' =&gt; 'Das Feld &quot;{field}&quot; muss ein voller Name sein.',
+    'validate_contains' =&gt; 'Das Feld &quot;{field}&quot; kann nur eines der folgenden sein: {param}',
+    'validate_contains_list' =&gt; 'Das Feld &quot;{field}&quot; ist keine g&amp;uuml;ltige Wahl.',
+    'validate_doesnt_contain_list' =&gt; 'Das Feld &quot;{field}&quot; enth&amp;auml;lt einen nicht akzeptierten Wert.',
+    'validate_street_address' =&gt; 'Das Feld &quot;{field}&quot; muss eine g&amp;uuml;ltige Stra&amp;szlig;enangabe sein.',
+    'validate_date' =&gt; 'Das Feld &quot;{field}&quot; muss ein g&amp;uuml;ltiges Datum sein.',
+    'validate_min_numeric' =&gt; 'Das Feld &quot;{field}&quot; muss ein numerischer Wert gr&amp;ouml;&amp;szlig;ergleich {param} sein.',
+    'validate_max_numeric' =&gt; 'Das Feld &quot;{field}&quot; muss ein numerischer Wert kleinergleich {param} sein.',
+    'validate_min_age' =&gt; 'Das Feld &quot;{field}&quot; muss ein Alter gr&amp;ouml;&amp;szlig;ergleich {param} haben.',
+    'validate_invalid' =&gt; 'Das Feld &quot;{field}&quot; ist ung&amp;uuml;ltig.',
+    'validate_starts' =&gt; 'Das Feld &quot;{field}&quot; muss mit {param} beginnen.',
+    'validate_extension' =&gt; 'Das Feld &quot;{field}&quot; kann nur eine der folgenden Erweiterungen haben: {param}',
+    'validate_required_file' =&gt; 'Das Feld &quot;{field}&quot; ist erforderlich.',
+    'validate_equalsfield' =&gt; 'Das Feld &quot;{field}&quot; ist nicht gleich dem Feld &quot;{param}&quot;.',
+    'validate_iban' =&gt; 'Das Feld &quot;{field}&quot; muss eine g&amp;uuml;ltige IBAN enthalten.',
+    'validate_phone_number' =&gt; 'Das Feld &quot;{field}&quot; muss eine g&amp;uuml;ltige Telefonnummer sein.',
+    'validate_regex' =&gt; 'Das Feld &quot;{field}&quot; muss einen Wert im g&amp;uuml;ltigem Format enthalten.',
+    'validate_valid_json_string' =&gt; 'Das Feld &quot;{field}&quot; muss eine g&amp;uuml;ltige JSON-Format-Zeichenfolge enthalten.',
+    'validate_valid_array_size_greater' =&gt; 'Das Feld &quot;{field}&quot; muss ein Array mit einer Gr&amp;ouml;&amp;szlig;e gr&amp;ouml;&amp;szlig;ergleich {param} sein.',
+    'validate_valid_array_size_lesser' =&gt; 'Das Feld &quot;{field}&quot; muss ein Array mit einer Gr&amp;ouml;&amp;szlig;e kleinergleich {param} sein.',
+    'validate_valid_array_size_equal' =&gt; 'Das Feld &quot;{field}&quot; muss ein Array mit einer Gr&amp;ouml;&amp;szlig;e gleich {param} sein.',
+];
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

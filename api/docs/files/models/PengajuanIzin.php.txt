@@ -1,0 +1,436 @@
+<?php
+
+namespace Model;
+
+use DateInterval;
+use DatePeriod;
+use DateTime;
+use Service\Db;
+use Service\Landa;
+use Service\Firebase;
+
+class PengajuanIzin extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_ijin';
+    }
+
+    /**
+     * Ambil semua data pelatihan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $approvedByMe = false)
+    {
+        $this->db->select($this->table.'.*,
+                t_ijin.tgl_mulai as tanggal_mulai,
+                t_ijin.tgl_selesai as tanggal_selesai,
+                karyawan_data.nama as nama_karyawan,
+                m_time_off.nama as nama_izin,
+                karyawan.nik as nik_karyawan,
+                m_jabatan.nama as nama_jabatan
+            ')
+            ->from($this->table)
+            ->join('left join', 'm_time_off', $this->table.'.m_time_off_id = m_time_off.id')
+            ->join('left join', 'karyawan', $this->table.'.karyawan_id = karyawan.id')
+            ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->join('left join', 'k_jabatan', 'karyawan.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+
+        if($approvedByMe){
+            $this->db->join('join', 't_approval', 't_ijin.id = t_approval.reff_id and t_approval.reff_type = "t_ijin"')
+                    ->andWhere('t_approval.is_aktif', '=', 1)
+                    ->andWhere('t_approval.k_approval_id', '=', $_SESSION['user']['userId'])
+                    ->andWhere('t_approval.status', '=', 1);
+        }
+
+        // Filter
+        if (isset($params) && !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) && is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($filter) && !empty($filter)) {
+            foreach ($filter as $key => $val) {
+                if (!empty($val) || '' != $val) {
+                    if ('id' == $key || 'izin_id' == $key) {
+                        $this->db->where('t_ijin.id', '=', $val);
+                    } elseif ('m_time_off_id' == $key) {
+                        $this->db->where('m_time_off_id', '=', $val);
+                    } elseif ('status' == $key) {
+                        $this->db->where('t_ijin.status', '=', $val);
+                    } elseif ('karyawan_id' == $key) {
+                        $this->db->where('karyawan_id', '=', $val);
+                    } elseif ('is_approve' == $key) {
+                        $this->db->where('t_ijin.is_approve', '=', $val);
+                    } elseif ('kode' == $key) {
+                        $this->db->where('t_ijin.kode', 'LIKE', $val);
+                    } elseif ('status' == $key) {
+                        if($approvedByMe){
+                            $this->db->where('t_approval.status', '=', $val);                            
+                        }
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) && !empty($limit)) {
+            $this->db->limit($limit);
+        }
+        // Set offset
+        if (isset($offset) && !empty($offset)) {
+            $this->db->offset($offset);
+        }
+
+        $this->db->orderBy('created_at DESC');
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data pelatihan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        $landa = new Landa();
+        $dataModel = $data['model'];
+        $list_file = $data['fileUpload'];
+
+        try {
+            $this->db->startTransaction();
+            $dataModel['tgl_mulai'] = isset($dataModel['tgl_mulai']) ? ($landa->arrayToDate($dataModel['tgl_mulai'])) : null;
+            $dataModel['tgl_selesai'] = isset($dataModel['tgl_selesai']) ? ($landa->arrayToDate($dataModel['tgl_selesai'])) : null;
+            if (1 == $dataModel['sumber']) {
+                $dataModel['is_approve'] = 1;
+            }
+
+            if (isset($dataModel['id']) && !empty($dataModel['id']) && '' != $dataModel['id']) {
+                $model = $this->db->update($this->table, $dataModel, ['id' => $dataModel['id']]);
+            } else {
+                $kode = $this->generate_kode();
+                $dataModel['kode'] = $kode['data'];
+                $model = $this->db->insert($this->table, $dataModel);
+                if (2 == $model->sumber || (1 == $model->sumber && $model->karyawan_id == $_SESSION['user']['userId'])) {
+                    // Ambil data karyawan
+                    $karyawan = new Karyawan();
+                    $dataKaryawan = $karyawan->getKaryawan(['karyawan.id' => $model->karyawan_id]);
+
+                    if (isset($dataKaryawan->id)) {
+                        // Set data karyawan yang pengajuan
+                        $arrKaryawan['karyawan_id'] = $dataKaryawan->id;
+                        $arrKaryawan['keterangan'] = 'Mengajukan Izin';
+                        $arrKaryawan['m_jabatan_id'] = $dataKaryawan->m_jabatan_id;
+                        $arrKaryawan['m_jabatan_level_id'] = $dataKaryawan->m_jabatan_level_id;
+
+                        // Set approval Line
+                        $approvalLine = new ApprovalLine();
+                        $isApprove = $approvalLine->setApprovalLine($arrKaryawan, 't_ijin', $model->id);
+
+                        if ($isApprove['status']) {
+                            // Updte status belum approve
+                            $this->db->update($this->table, ['is_approve' => 0], ['id' => $model->id]);
+
+                            // kirim notifikasi ke atasan / yang approve
+                            if (!empty($isApprove['data'])) {
+                                foreach ($isApprove['data'] as $key => $value) {
+                                    $firebase = new Firebase();
+                                    $firebase->sendNotif('person', 'Pengajuan Izin', 'Ada pengajuan Izin baru', [
+                                        'idKaryawan' => $value['idKaryawan'],
+                                        'tipe' => 'izin',
+                                        'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (isset($dataModel['id']) && !empty($dataModel['id']) && '' != $dataModel['id']) {
+                $this->db->delete('t_ijin_det', ['t_ijin_id' => $dataModel['id']]);
+            }
+            $izin_det = $this->createDateRange($dataModel['tgl_mulai'], $dataModel['tgl_selesai']);
+
+            foreach ($izin_det as $ket => $val) {
+                $val_det['tgl'] = $val;
+                $val_det['t_ijin_id'] = $model->id;
+                $modelRDet = $this->db->insert('t_ijin_det', $val_det);
+            }
+
+            if (!empty($model) && isset($data['fileUpload']) && '' != $data['fileUpload'] && [] != $data['fileUpload']) {
+                if (isset($dataModel['id']) && !empty($dataModel['id']) && '' != $dataModel['id']) {
+                    $this->db->delete('t_ijin_file', ['t_ijin_id' => $dataModel['id']]);
+                }
+                $t_izin_id = $model->id;
+                foreach ($list_file as $k_Rfile => $v_RFile) {
+                    $v_RFile['nama_file'] = isset($v_RFile['File']) ? $this->saveFile($v_RFile['File']) : $v_RFile['nama_file'];
+                    $v_RFile['t_ijin_id'] = $model->id;
+                    $modelRDet = $this->db->insert('t_ijin_file', $v_RFile);
+                }
+            }
+            $this->db->endTransaction();
+
+            return [
+                'status' => true,
+                //                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            $this->db->startTransaction();
+            $this->db->delete($this->table, ['id' => $params['id']]);
+            $this->db->delete('t_ijin_file', ['t_ijin_id' => $params['id']]);
+            $this->db->endTransaction();
+
+            return [
+                'status' => true,
+                'data' => $this->table,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function deleteFile($params)
+    {
+        try {
+            $this->db->startTransaction();
+
+            $this->db->delete('t_ijin_file', ['t_ijin_id' => $params['id']]);
+
+            return [
+                'status' => true,
+                'data' => 'file',
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'karyawan_id' => 'required',
+            'm_time_off_id' => 'required',
+            'tgl_mulai' => 'required',
+            'tgl_selesai' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiDetail($data, $custom = [])
+    {
+        $validasi = [
+            'fileUpload' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function checkTanggal($data)
+    {
+        $landa = new Landa();
+        $dataModel = $data['model'];
+        $dataModel['tgl_mulai'] = isset($dataModel['tgl_mulai']) ? ($landa->arrayToDate($dataModel['tgl_mulai'])) : null;
+        $dataModel['tgl_selesai'] = isset($dataModel['tgl_selesai']) ? ($landa->arrayToDate($dataModel['tgl_selesai'])) : null;
+        $jumlah_pengajuan = $this->createDateRange($dataModel['tgl_mulai'], $dataModel['tgl_selesai']);
+        $this->db->select('m_time_off.*')
+            ->from('m_time_off')
+            ->where('m_time_off.id', '=', $dataModel['m_time_off_id'])
+        ;
+        $model = $this->db->find();
+        if (count($jumlah_pengajuan) > $model->durasi) {
+            return [
+                'status' => false,
+                'pesan' => 'durasi pengajuan maksimal '.$model->durasi.' hari',
+            ];
+        }
+
+        return [
+            'status' => true,
+        ];
+    }
+
+    public function validasiKode($data)
+    {
+        return parent::validasiKodeCore($data, $this->table);
+    }
+
+    public function getFile($reff_type, $id)
+    {
+        $this->db->select('*')
+            ->from('t_ijin_file')
+            ->where($reff_type, '=', $id)
+        ;
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+        foreach ($models as $key => $val) {
+            $models[$key]->fileUrl = config('SITE_URL').'api/assets/filePengajuanIzin/'.$val->nama_file;
+        }
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function saveFile($params, $path = 'assets/filePengajuanIzin/')
+    {
+        $landa = new Landa();
+        if (isset($params['base64']) && !empty($params['base64'])) {
+             if (!file_exists($path)) {
+                mkdir($path, 0777, true);
+            }
+            $kode = $this->generate_kode_file();
+            $batas = strpos($params['base64'], 'base64,');
+            $batas_potong = $batas + 7;
+            $file['filename'] = $params['filename'];
+            $file['base64'] = substr($params['base64'], $batas_potong);
+            $uploadFile = $landa->base64ToFilePath($file, $path, $kode['data']);
+            $customnamafile = $uploadFile['data']['fileName'];
+            if ($uploadFile['status']) {
+                return  $customnamafile;
+            }
+
+            return unprocessResponse('gagal', [$uploadFile['error']]);
+        }
+    }
+
+    public function generate_kode_file()
+    {
+        $this->dbModel = Db::db();
+        $cekKode = $this->db->select('id')
+            ->from($this->table)
+            ->orderBy('id DESC')
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $tipe = 'FI';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    public function generate_kode()
+    {
+        $this->dbModel = Db::db();
+        $cekKode = $this->db->select('id')
+            ->from($this->table)
+            ->orderBy('id DESC')
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $tahun = date('y');
+            $bulan = date('m');
+            $tipe = 'PI';
+            $kode_item = (substr($kode_terakhir, -5) + 1);
+            $kode = substr('00000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$tahun.$bulan.$kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    public function createDateRange($startDate, $endDate, $format = 'Y-m-d')
+    {
+        $begin = new DateTime($startDate);
+        $end = new DateTime($endDate.'+1 day');
+
+        $interval = new DateInterval('P1D'); // 1 Day
+        $dateRange = new DatePeriod($begin, $interval, $end);
+
+        $range = [];
+        foreach ($dateRange as $date) {
+            $range[] = $date->format($format);
+        }
+
+        return $range;
+    }
+}
+

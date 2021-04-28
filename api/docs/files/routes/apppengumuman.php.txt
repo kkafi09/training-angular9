@@ -1,0 +1,68 @@
+<?php
+
+use Model\Pengumuman;
+use Service\Firebase;
+use Service\Landa;
+
+// Ambil semua pengumuman
+$app->get('/apppengumuman/index', function ($request, $response) {
+    $params = $request->getParams();
+    $pengumuman = new Pengumuman();
+    $getDatapengumuman = $pengumuman->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDatapengumuman['data'],
+        'totalItems' => $getDatapengumuman['totalItem'],
+    ]);
+});
+// Save pengumuman
+$app->post('/apppengumuman/save', function ($request, $response) {
+    $data = $request->getParams();
+    $landa = new Landa();
+    $pengumuman = new Pengumuman();
+    $validasi = $pengumuman->validasi($data);
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $pengumuman->save($data);
+        if ($save['status']) {
+            $firebase = new Firebase();
+            $judul = $save['data']->judul;
+            $data = [
+                'tipe' => 'pengumuman',
+                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+            ];
+            $kirimnotif = $firebase->sendNotif('company', 'Pengumuman', $judul, $data);
+
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Hapus pengumuman
+$app->post('/apppengumuman/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $pengumuman = new Pengumuman();
+    $model = $pengumuman->save(['is_deleted' => 1, 'id' => $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+
+$app->get('/apppengumuman/getData', function ($request, $response) {
+    $params = $request->getParams();
+    $pengumuman = new Pengumuman();
+    $getDatapengumuman = $pengumuman->getData();
+
+    return successResponse($response, [
+        'list' => $getDatapengumuman['data'],
+        'totalItems' => $getDatapengumuman['totalItem'],
+    ]);
+});
+

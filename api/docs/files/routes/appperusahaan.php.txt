@@ -1,0 +1,202 @@
+<?php
+
+use Model\HakAkses;
+use Model\Karyawan;
+use Model\Perusahaan;
+use Service\Landa;
+
+// Ambil semua akses perusahaan
+$app->get('/appperusahaan/getAkses', function ($request, $response) {
+    $params = $request->getParams();
+    $perusahaan = new Perusahaan();
+
+    if (isset($_SESSION['user']['userId']) && $_SESSION['user']['userId'] > 0) {
+        $karyawan = new Karyawan();
+        $getKaryawan = $karyawan->getKaryawan(['id' => $_SESSION['user']['userId']]);
+        $m_roles_id = isset($getKaryawan->m_roles_id) ? $getKaryawan->m_roles_id : 1;
+        // Ambil hak akses
+        $akses = new HakAkses();
+        $getAkses = $akses->getAll(['id' => $m_roles_id], 1, 0);
+        $hakAkses = isset($getAkses['data'][0]) ? (array) $getAkses['data'][0] : [];
+        $aksesPerusahaan = isset($hakAkses['akses_perusahaan']) ? $hakAkses['akses_perusahaan'] : [];
+        $list = $perusahaan->getByIdArr($aksesPerusahaan);
+        $getDataperusahaan['data'] = $list;
+    } else {
+        $getDataperusahaan = $perusahaan->getAll();
+    }
+
+    return successResponse($response, [
+        'list' => $getDataperusahaan['data'],
+    ]);
+});
+
+// Ambil semua perusahaan
+$app->get('/appperusahaan/index', function ($request, $response) {
+    $params = $request->getParams();
+    $perusahaan = new Perusahaan();
+
+    $params['params'] = isset($params['params']) ? $params['params'] : [];
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : '';
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : '';
+
+    $getDataperusahaan = $perusahaan->getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' => $getDataperusahaan['data'],
+        'totalItems' => $getDataperusahaan['totalItem'],
+    ]);
+});
+
+$app->get('/appperusahaan/legalitas', function ($request, $response) {
+    $params = $request->getParams();
+    $perusahaan = new Perusahaan();
+
+    $getLegalitas = $perusahaan->getLegalitas($params);
+
+    return successResponse($response, $getLegalitas['data']);
+});
+
+// Simpan perusahaan
+$app->post('/appperusahaan/save', function ($request, $response) {
+    $data = $request->getParams();
+    $landa = new Landa();
+    $perusahaan = new Perusahaan();
+
+    if (isset($data['id']) && !empty($data['id']) && empty($data['parent_id'])) {
+        $validasi = $perusahaan->validasi($data, [], $data['id']);
+    } else {
+        $validasi = $perusahaan->validasi($data);
+    }
+    $validasiKode = $perusahaan->validasiKode($data);
+
+    if (true === $validasi) {
+        if (true == $validasiKode) {
+            // Upload logo perusahaan
+            if (isset($data['logo']) && !empty($data['logo'])) {
+                $path = $_SERVER['DOCUMENT_ROOT'].config('PATH_UPLOAD').'/assets/img/perusahaan/';
+                $uploadFile = $landa->base64ToImage($path, $data['logo']);
+                if ($uploadFile['status']) {
+                    $data['logo'] = $uploadFile['data'];
+                } else {
+                    return unprocessResponse($response, [$uploadFile['error']]);
+                }
+            }
+
+            // Upload file perusahaan
+            if (isset($data['listLegalitas']) && !empty($data['listLegalitas'])) {
+                $path = 'assets/fileperusahaan';
+                $kode = $data['kode'];
+
+                foreach ($data['listLegalitas'] as $key => $val) {
+                    if (isset($val['fileUpload'])) {
+                        $batas = strpos($val['fileUpload'], 'base64,');
+                        $batas_potong = $batas + 7;
+                        $file['filename'] = $val['nama'];
+                        $file['base64'] = substr($val['fileUpload'], $batas_potong);
+
+                        $uploadFile = $landa->base64ToFilePath($file, $path, $kode);
+                        $customNamafile = $uploadFile['data']['fileName'];
+
+                        if ($uploadFile['status']) {
+                            $val['nama'] = $customNamafile;
+                        } else {
+                            return unprocessResponse($response, [$uploadFile['error']]);
+                        }
+                    }
+                }
+            }
+
+            // Simpan data ke dalam database
+            $save = $perusahaan->save($data);
+            if ($save['status']) {
+                return successResponse($response, $save['data']);
+            }
+
+            return unprocessResponse($response, [$save['error']]);
+        }
+
+        return unprocessResponse($response, 'Kode Telah Digunakan');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus perusahaan
+$app->post('/appperusahaan/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $perusahaan = new Perusahaan();
+    $model = $perusahaan->save(['is_deleted' => 1, 'id' => $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Hapus perusahaan
+$app->post('/appperusahaan/delete-all', function ($request, $response) {
+    $data = $request->getParams();
+    $perusahaan = new Perusahaan();
+    $model = $perusahaan->deleteAll(['is_deleted' => 1, 'id' => $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Ambil struktur organisasi perusahaan
+$app->get('/appperusahaan/dataStruktur', function ($request, $response) {
+    $perusahaan = new Perusahaan();
+    $landa = new Landa();
+    $models = $perusahaan->getAll(['is_deleted' => 0]);
+    $arrChild = [];
+    foreach ($models['data'] as $value) {
+        $arrChild[] = [
+            'id' => $value->id,
+            'type' => '',
+            'name' => $value->nama,
+            'parent_id' => $value->parent_id,
+        ];
+    }
+    $tree = $landa->buildTree($arrChild);
+
+    return successResponse($response, ['list' => isset($tree[0]) ? $tree[0] : [], 'totalItems' => $models['totalItem']]);
+});
+
+// Import excel perusahaan
+$app->post('/appperusahaan/import', function ($request, $response) {
+    $data = $request->getParams();
+    $perusahaan = new Perusahaan();
+    $landa = new Landa();
+
+    $save = $landa->base64ToFile($data);
+    $excel = $save['data'];
+
+    $insert_excel = $perusahaan->import($excel);
+    $getDataPerusahaan = $perusahaan->getAll($data);
+
+    return successResponse($response, [
+        'list' => $getDataPerusahaan['data'],
+        'totalItems' => $getDataPerusahaan['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app->get('/appperusahaan/downloadFormatExcel', function ($request, $response) {
+    $perusahaan = new Perusahaan();
+    $file = 'assets/formatExcel/Perusahaan.xlsx';
+    $save = $perusahaan->download($file);
+
+    return successResponse($response, $save);
+});
+
+// Generate kode sertifikat
+$app->get('/appperusahaan/generatekode', function ($request, $response) {
+    $perusahaan = new Perusahaan();
+
+    $kode = $perusahaan->generateKode();
+
+    return successResponse($response, $kode['data']);
+});
+

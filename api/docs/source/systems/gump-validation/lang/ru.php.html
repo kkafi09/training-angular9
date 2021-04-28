@@ -1,0 +1,91 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+return [
+    'validate_required' =&gt; 'Поле {field} является обязательным',
+    'validate_valid_email' =&gt; 'Поле {field} должно быть Email адресом',
+    'validate_max_len' =&gt; 'Поле {field} должно быть максимум {param} символов',
+    'validate_min_len' =&gt; 'Поле {field} должно быть минимум {param} символов',
+    'validate_exact_len' =&gt; 'Поле {field} должно содержать ровно {param} символов',
+    'validate_alpha' =&gt; 'Поле {field} может содержать только буквы',
+    'validate_alpha_numeric' =&gt; 'Поле {field} может содержать только буквы и цифры',
+    'validate_alpha_numeric_space' =&gt; 'Поле {field} может содержать только буквы, цифры и пробелы',
+    'validate_alpha_dash' =&gt; 'Поле {field} может содержать только буквы и дефис',
+    'validate_alpha_space' =&gt; 'Поле {field} может содержать только буквы и пробел',
+    'validate_numeric' =&gt; 'Поле {field} должно быть числом',
+    'validate_integer' =&gt; 'Поле {field} должно быть целым числом',
+    'validate_boolean' =&gt; 'Поле {field} должно быть true или false',
+    'validate_float' =&gt; 'Поле {field} должно быть не целым числом',
+    'validate_valid_url' =&gt; 'Поле {field} должно быть ссылкой',
+    'validate_url_exists' =&gt; 'Ссылка {field} не доступна',
+    'validate_valid_ip' =&gt; 'Поле {field} должно быть IP адресом',
+    'validate_valid_ipv4' =&gt; 'Поле {field} должно быть IPv4 адресом',
+    'validate_valid_ipv6' =&gt; 'Поле {field} должно быть IPv6 адресом',
+    'validate_guidv4' =&gt; 'Поле {field} должно быть GUID',
+    'validate_valid_cc' =&gt; 'Номер карты {field} не является валидным',
+    'validate_valid_name' =&gt; 'Поле {field} должно содержать полное имя',
+    'validate_contains' =&gt; 'Поле {field} может содержать следующие значения: {param}',
+    'validate_contains_list' =&gt; 'Значение {field} не может быть использовано как ответ',
+    'validate_doesnt_contain_list' =&gt; 'Значение {field} не может быть использовано',
+    'validate_street_address' =&gt; 'Поле {field} должно быть адресом',
+    'validate_date' =&gt; 'Поле {field} должно быть датой',
+    'validate_min_numeric' =&gt; 'Поле {field} должно быть числом не менее {param}',
+    'validate_max_numeric' =&gt; 'Поле {field} должно быть числом не более {param}',
+    'validate_min_age' =&gt; 'Возраст должен быть более {param}',
+    'validate_invalid' =&gt; 'Поле {field} не прошло проверку',
+    'validate_starts' =&gt; 'Поле {field} должно начинаться {param}',
+    'validate_extension' =&gt; 'Файл {field} должен быть следующим типом: {param}',
+    'validate_required_file' =&gt; 'Файл {field} обязателен к загрузке',
+    'validate_equalsfield' =&gt; 'Поле {field} должно быть идентичным {param}',
+    'validate_iban' =&gt; 'Поле {field} должно быть правильным IBAN',
+    'validate_phone_number' =&gt; 'Поле {field} должно быть правильным номером телефона',
+    'validate_regex' =&gt; 'Поле {field} должно содержать правильное значение',
+    'validate_valid_json_string' =&gt; 'Поле {field} должно быть валидной JSON строкой',
+    'validate_valid_array_size_greater' =&gt; 'Поле {field} должно содержать минимум {param} значений',
+    'validate_valid_array_size_lesser' =&gt; 'Поле {field} должно содержать максимум {param} значений',
+    'validate_valid_array_size_equal' =&gt; 'Поле {field} должно содержать ровно {param} значений',
+];
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

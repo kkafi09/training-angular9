@@ -1,0 +1,105 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\RiwayatKehadiran;
+use Service\Landa;
+
+// Ambil semua kehadiran
+$app-&gt;get('/appriwayatkehadiran/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $riwayatkehadiran = new RiwayatKehadiran();
+    $getDataKehadiran = $riwayatkehadiran-&gt;getAll();
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKehadiran['data'],
+    ]);
+});
+
+// Ambil karyawan organisasi dan jabatan
+$app-&gt;get('/appriwayatkehadiran/karyawanorg', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $riwayatkehadiran = new RiwayatKehadiran();
+    $getDataKehadiran = $riwayatkehadiran-&gt;getKaryawanOrg($params);
+    return successResponse($response, [
+        'list' =&gt; $getDataKehadiran['data'],
+    ]);
+});
+
+// Save kehadiran
+$app-&gt;post('/appriwayatkehadiran/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    // print_r($data);die;
+    $riwayatkehadiran = new RiwayatKehadiran();
+    $validasi = $riwayatkehadiran-&gt;validasi($data);
+
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $riwayatkehadiran-&gt;save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus kehadiran
+$app-&gt;post('/appriwayatkehadiran/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $riwayatkehadiran = new RiwayatKehadiran();
+    $model = $riwayatkehadiran-&gt;delete($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

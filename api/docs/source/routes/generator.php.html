@@ -1,0 +1,195 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+/**
+ * Validasi.
+ *
+ * @param array $data
+ * @param array $custom
+ *
+ * @return array
+ */
+function validasi($data, $custom = [])
+{
+    $validasi = [
+        'path' =&gt; 'required',
+        'table' =&gt; 'required',
+        'filePhp' =&gt; 'required',
+    ];
+    GUMP::set_field_name('m_roles_id', 'Hak Akses');
+
+    return validate($data, $validasi, $custom);
+}
+// Ambil semua tabel
+$app-&gt;get('/generator/getTabel', function ($request, $response) {
+    $db = $this-&gt;db;
+    $tabel = $db-&gt;findAll(&quot;SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_TYPE='BASE TABLE' and TABLE_SCHEMA = '&quot;.config('DB')['db']['DB_NAME'].&quot;'&quot;);
+    $arr = [];
+    foreach ($tabel as $key =&gt; $value) {
+        $arr[$value-&gt;TABLE_NAME] = $value-&gt;TABLE_NAME;
+    }
+
+    return successResponse($response, $arr);
+});
+// Proses generate
+$app-&gt;post('/generator/generate', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $validasi = validasi($params);
+    if (true === $validasi) {
+        $table = $params['table'];
+        $path = $params['path'];
+        $filePhp = $params['filePhp'];
+
+        $htmlJsPath = '../'.$path;
+        $phpPath = 'routes/'.$filePhp.'.php';
+        if (file_exists($htmlJsPath)) {
+            return unprocessResponse($response, [&quot;Folder {$path} tidak kosong, untuk keamanan file anda harap masukkan path yang lain !&quot;]);
+        }
+        if (file_exists($phpPath)) {
+            return unprocessResponse($response, [&quot;File {$filePhp}.php sudah ada, untuk keamanan file anda harap masukkan nama yang lain !&quot;]);
+        }
+
+        $db = $this-&gt;db;
+
+        /**
+         * CEK TABEL DETAIL.
+         */
+        $cekDetail = $db-&gt;find(&quot;SELECT TABLE_NAME FROM information_schema.tables WHERE table_schema = '&quot;.config('DB')['db']['DB_NAME'].&quot;' AND table_name = '&quot;.$table.&quot;_det' LIMIT 1;&quot;);
+        $listFieldDet = [];
+        $fieldRelasi = $table.'_id';
+        if (isset($cekDetail-&gt;TABLE_NAME) &amp;&amp; !empty($cekDetail-&gt;TABLE_NAME)) {
+            $listFieldDet = $db-&gt;findAll(&quot;DESCRIBE {$cekDetail-&gt;TABLE_NAME}&quot;);
+            foreach ($listFieldDet as $key =&gt; $value) {
+                $value-&gt;maks = get_string_between($value-&gt;Type, '(', ')');
+                if ('' == $value-&gt;maks) {
+                    $value-&gt;maks = '255';
+                }
+            }
+        }
+
+        $listField = $db-&gt;findAll(&quot;DESCRIBE {$table}&quot;);
+
+        $ctrl = str_replace('_', '', $table);
+        $tableName = str_replace('_', ' ', $table);
+        $firstField = '';
+        $is_deleted = false;
+        foreach ($listField as $key =&gt; $value) {
+            $value-&gt;nama = ucwords($value-&gt;Field);
+            $value-&gt;showField = '{{ row.'.$value-&gt;Field.' }}';
+            $value-&gt;maks = get_string_between($value-&gt;Type, '(', ')');
+            if ('' == $value-&gt;maks) {
+                $value-&gt;maks = '255';
+            }
+            if (1 == $key) {
+                $firstField = $value-&gt;Field;
+            }
+            if ('is_deleted' == $value-&gt;Field) {
+                $is_deleted = true;
+            }
+        }
+
+        $viewHtml = $this-&gt;view-&gt;fetch('generator/html.html', [
+            'ctrl' =&gt; $ctrl,
+            'field' =&gt; $listField,
+            'is_deleted' =&gt; $is_deleted,
+            'listFieldDet' =&gt; $listFieldDet,
+            'fieldRelasi' =&gt; $fieldRelasi,
+        ]);
+
+        $viewJs = $this-&gt;view-&gt;fetch('generator/js.html', [
+            'ctrl' =&gt; $ctrl,
+            'apiUrl' =&gt; $filePhp,
+            'firstField' =&gt; $firstField,
+            'is_deleted' =&gt; $is_deleted,
+            'listFieldDet' =&gt; $listFieldDet,
+            'fieldRelasi' =&gt; $fieldRelasi,
+        ]);
+
+        $viewPhp = $this-&gt;view-&gt;fetch('generator/php.html', [
+            'ctrl' =&gt; $ctrl,
+            'apiUrl' =&gt; $filePhp,
+            'tableName' =&gt; $tableName,
+            'table' =&gt; $table,
+            'field' =&gt; $listField,
+            'is_deleted' =&gt; $is_deleted,
+            'listFieldDet' =&gt; $listFieldDet,
+            'fieldRelasi' =&gt; $fieldRelasi,
+        ]);
+
+        $htmlJsPath = '../'.$path;
+        if (file_exists($htmlJsPath)) {
+            fopen($htmlJsPath.'/index.html', 'w');
+            file_put_contents($htmlJsPath.'/index.html', $viewHtml);
+        } else {
+            mkdir($htmlJsPath);
+            fopen($htmlJsPath.'/index.html', 'w');
+            file_put_contents($htmlJsPath.'/index.html', $viewHtml);
+        }
+
+        if (file_exists($htmlJsPath)) {
+            fopen($htmlJsPath.'/index.js', 'w');
+            file_put_contents($htmlJsPath.'/index.js', $viewJs);
+        } else {
+            mkdir($htmlJsPath);
+            fopen($htmlJsPath.'/index.js', 'w');
+            file_put_contents($htmlJsPath.'/index.js', $viewJs);
+        }
+
+        $phpPath = 'routes';
+        if (file_exists($phpPath)) {
+            fopen($phpPath.'/'.$filePhp.'.php', 'w');
+            file_put_contents($phpPath.'/'.$filePhp.'.php', '&lt;?php'.$viewPhp);
+        } else {
+            mkdir($phpPath);
+            fopen($phpPath.'/'.$filePhp.'.php', 'w');
+            file_put_contents($phpPath.'/'.$filePhp.'.php', '&lt;?php'.$viewPhp);
+        }
+
+        return successResponse($response, ['File PHP, JS dan HTML untuk tabel '.$table.' berhasil ditambah, silahkan buat hak akses dan config router nya']);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

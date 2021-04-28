@@ -1,0 +1,163 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanRiwayatPendidikan extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_pendidikan';
+    }
+
+    /**
+     * Ambil semua data perusahaan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('k_pendidikan.*,
+         	karyawan_data.nama as karyawan_nama, 
+         	karyawan.nik as karyawan_nik,
+         	m_pendidikan_tingkat.nama as pendidikan_tingkat')
+            ->from($this->table)
+            ->leftJoin('karyawan', $this->table.'.karyawan_id = karyawan.id')
+            ->leftJoin('karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->leftJoin('m_pendidikan_tingkat', $this->table.'.m_pendidikan_tingkat_id = m_pendidikan_tingkat.id')
+            ->where($this->table.'.is_deleted', '=', 0)
+        ;
+        if (isset($params['karyawan']) && !empty($params['karyawan']) && '' != $params['karyawan'] && 'null' != $params['karyawan']) {
+            $this->db->andWhere($this->table.'.karyawan_id', '=', $params['karyawan']);
+        }
+        if (isset($params['pendidikan']) && !empty($params['pendidikan']) && '' != $params['pendidikan'] && 'null' != $params['pendidikan']) {
+            $this->db->andWhere($this->table.'.m_pendidikan_tingkat_id', '=', (int) $params['pendidikan']);
+        }
+        if (isset($params['jurusan']) && !empty($params['jurusan']) && '' != $params['jurusan'] && 'null' != $params['jurusan']) {
+            $this->db->andWhere($this->table.'.jurusan', 'LIKE', $params['jurusan']);
+        }
+        if (isset($params['tahun_awal']) && !empty($params['tahun_awal']) && '' != $params['tahun_awal'] && 'null' != $params['tahun_awal']) {
+            $this->db->andWhere($this->table.'.tahun_selesai', '>=', $params['tahun_awal']);
+        }
+        if (isset($params['tahun_akhir']) && !empty($params['tahun_akhir']) && '' != $params['tahun_akhir'] && 'null' != $params['tahun_akhir']) {
+            $this->db->andWhere($this->table.'.tahun_selesai', '<=', $params['tahun_akhir']);
+        }
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function getPendidikan()
+    {
+        $this->db->select('*')->from('m_pendidikan_tingkat');
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function download($file)
+    {
+        parent::downloadFile($file);
+
+        return true;
+    }
+
+    public function print($params)
+    {
+        $print = '<html><body onload="window.print()">';
+        $print .= '<style type="text/css"> table, th, td {border: 1px solid black;} </style>';
+        $print .= '<div"><h4>Laporan Riwayat Pendidikan</h4></div>';
+        $print .= '<table>
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>NIK</th>
+                                    <th>Nama Karyawan</th>
+                                    <th>Tingkat Pendidikan</th>
+                                    <th>Instansi</th>
+                                    <th>Jurusan</th>
+                                    <th>Nilai</th>
+                                    <th>Tahun Lulus</th>
+                                </tr>
+                            </thead>
+                            <tbody>';
+        foreach ($params as $key) {
+            $print .= '<tr>';
+            $print .= '<td>'.$key['karyawan_nama'].'</td>';
+            $print .= '<td>'.$key['karyawan_nik'].'</td>';
+            $print .= '<td>'.$key['pendidikan_tingkat'].'</td>';
+            $print .= '<td>'.$key['institusi'].'</td>';
+            $print .= '<td>'.$key['jurusan'].'</td>';
+            $print .= '<td>'.$key['nilai'].'</td>';
+            $print .= '<td>'.$key['tahun_selesai'].'</td>';
+            $print .= '</tr>';
+        }
+        $print .= '</tbody></table>';
+        $print .= '</body></html>';
+
+        return [
+            'data' => $print,
+            'status' => true,
+        ];
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

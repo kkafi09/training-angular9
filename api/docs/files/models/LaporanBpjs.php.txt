@@ -1,0 +1,176 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanBpjs
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_payroll';
+    }
+
+    /**
+     * Ambil semua data bpjs.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+        if ('null' != $params['periode_mulai'] && 'null' != $params['periode_selesai']) {
+            $tanggal_awal = date('Y-m-d', strtotime($params['periode_mulai']));
+            $tanggal_akhir = date('Y-m-d', strtotime($params['periode_selesai']));
+        } else {
+            $tanggal_awal = null;
+            $tanggal_akhir = null;
+        }
+
+        // Ambil list bpjs
+        $this->db->select('t_payroll.*,t_payroll_det.id as idpayrolldet, t_payroll_det.karyawan_id, t_payroll_bpjs.*, karyawan_data.nama as nama_karyawan, m_jabatan.nama as nama_jabatan')
+            ->from($this->table)
+            ->join('left join', 't_payroll_det', 't_payroll.id = t_payroll_det.t_payroll_id')
+            ->join('left join', 't_payroll_bpjs', 't_payroll_det.id = t_payroll_bpjs.t_payroll_det_id')
+            ->join('left join', 'karyawan', 'karyawan.id = t_payroll_det.karyawan_id')
+            ->join('left join', 'karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            ->join('left join', 'k_jabatan', 'karyawan_data.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->where('t_payroll.status', '=', 3)
+            ->andWhere('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+
+        if (null != $tanggal_awal && null != $tanggal_akhir) {
+            $this->db->andWhere($this->table.'.periode_mulai', '>=', $tanggal_awal)
+                ->andWhere($this->table.'.periode_selesai', '<=', $tanggal_akhir)
+            ;
+        }
+
+        if ('null' != $params['karyawan_id'] && '' != $params['karyawan_id']) {
+            $this->db->andWhere('t_payroll_det.karyawan_id', '=', $params['karyawan_id']);
+        }
+
+        $models = $this->db->findAll();
+        $bpjsId = [];
+        foreach ($models as $key => $val) {
+            $bpjsId[$val->karyawan_id]['id'] = $val->karyawan_id;
+            $bpjsId[$val->karyawan_id]['nama_karyawan'] = $val->nama_karyawan;
+            $bpjsId[$val->karyawan_id]['nama_jabatan'] = $val->nama_jabatan;
+            $bpjsId[$val->karyawan_id]['detbpjs'][] = $val;
+        }
+
+        foreach ($bpjsId as $key => $value) {
+            $sumjkk = 0;
+            $sumjkk_perusahaan = 0;
+            $sumjht = 0;
+            $sumjht_perusahaan = 0;
+            $sumjkm = 0;
+            $sumjkm_perusahaan = 0;
+            $sumjp = 0;
+            $sumjp_perusahaan = 0;
+            $sumjk = 0;
+            $sumjk_perusahaan = 0;
+            foreach ($value['detbpjs'] as $keys => $val) {
+                $val->tgl = date('d/m/Y', strtotime($val->tgl));
+                if ('' == $val->jkk) {
+                    $val->jkk = 0;
+                }
+                if ('' == $val->jkk_perusahaan) {
+                    $val->jkk_perusahaan = 0;
+                }
+                if ('' == $val->jht) {
+                    $val->jht = 0;
+                }
+                if ('' == $val->jht_perusahaan) {
+                    $val->jht_perusahaan = 0;
+                }
+                if ('' == $val->jkm) {
+                    $val->jkm = 0;
+                }
+                if ('' == $val->jkm_perusahaan) {
+                    $val->jkm_perusahaan = 0;
+                }
+                if ('' == $val->jp) {
+                    $val->jp = 0;
+                }
+                if ('' == $val->jp_perusahaan) {
+                    $val->jp_perusahaan = 0;
+                }
+                if ('' == $val->jk) {
+                    $val->jk = 0;
+                }
+                if ('' == $val->jk_perusahaan) {
+                    $val->jk_perusahaan = 0;
+                }
+
+                $sumjkk += $val->jkk;
+                $bpjsId[$key]['totaljkk'] = $sumjkk;
+
+                $sumjkk_perusahaan += $val->jkk_perusahaan;
+                $bpjsId[$key]['totaljkkperusahaan'] = $sumjkk_perusahaan;
+
+                $sumjht += $val->jht;
+                $bpjsId[$key]['totaljht'] = $sumjht;
+
+                $sumjht_perusahaan += $val->jht_perusahaan;
+                $bpjsId[$key]['totaljhtperusahaan'] = $sumjht_perusahaan;
+
+                $sumjkm += $val->jkm;
+                $bpjsId[$key]['totaljkm'] = $sumjkm;
+
+                $sumjkm_perusahaan += $val->jkm_perusahaan;
+                $bpjsId[$key]['totaljkmperusahaan'] = $sumjkm_perusahaan;
+
+                $sumjp += $val->jp;
+                $bpjsId[$key]['totaljp'] = $sumjp;
+
+                $sumjp_perusahaan += $val->jp_perusahaan;
+                $bpjsId[$key]['totaljpperusahaan'] = $sumjp_perusahaan;
+
+                $sumjk += $val->jk;
+                $bpjsId[$key]['totaljk'] = $sumjk;
+
+                $sumjk_perusahaan += $val->jk_perusahaan;
+                $bpjsId[$key]['totaljkperusahaan'] = $sumjk_perusahaan;
+
+                $val->alljkk = $val->jkk + $val->jkk_perusahaan;
+                $val->alljkm = $val->jkm + $val->jkm_perusahaan;
+                $val->alljht = $val->jht + $val->jht_perusahaan;
+                $val->alljp = $val->jp + $val->jp_perusahaan;
+                $val->alljk = $val->jk + $val->jk_perusahaan;
+            }
+            $bpjsId[$key]['alljkk'] = $bpjsId[$key]['totaljkk'] + $bpjsId[$key]['totaljkkperusahaan'];
+            $bpjsId[$key]['alljht'] = $bpjsId[$key]['totaljht'] + $bpjsId[$key]['totaljhtperusahaan'];
+            $bpjsId[$key]['alljkm'] = $bpjsId[$key]['totaljkm'] + $bpjsId[$key]['totaljkmperusahaan'];
+            $bpjsId[$key]['alljp'] = $bpjsId[$key]['totaljp'] + $bpjsId[$key]['totaljpperusahaan'];
+            $bpjsId[$key]['alljk'] = $bpjsId[$key]['totaljk'] + $bpjsId[$key]['totaljkperusahaan'];
+        }
+
+        $arr = [];
+        $i = 0;
+        foreach ($bpjsId as $keys => $value) {
+            $arr[$i] = $value;
+            ++$i;
+        }
+
+        return [
+            'status' => true,
+            'data' => $arr,
+            'periode' => null != $tanggal_awal && null != $tanggal_akhir ? date('d/m/Y', strtotime($tanggal_awal)).' s/d '.date('d/m/Y', strtotime($tanggal_akhir)) : null,
+        ];
+    }
+}
+

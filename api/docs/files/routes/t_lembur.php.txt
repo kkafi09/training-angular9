@@ -1,0 +1,87 @@
+<?php
+
+use Model\Lembur;
+use Service\Landa;
+
+// Get lembur
+$app->get('/t_lembur/index', function ($request, $response) {
+    $params = $request->getParams();
+    $lembur = new Lembur();
+
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : 20;
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : 0;
+    $params['params'] = isset($params['params']) ? $params['params'] : [];
+    $params['approvedByMe'] = isset($params['approvedByMe']) ? $params['approvedByMe'] : false;
+
+    $getAll = $lembur->getAll($params['params'], $params['limit'], $params['offset'], $params['approvedByMe']);
+
+    return successResponse($response, [
+        'list' => $getAll['data'],
+        'totalItems' => $getAll['totalItem'],
+    ]);
+});
+
+// Get gaji karyawan
+$app->get('/t_lembur/getgaji', function ($request, $response) {
+    $params = $request->getParams();
+    $lembur = new Lembur();
+    $getGaji = $lembur->getGaji($params);
+
+    return successResponse($response, $getGaji['data']->gaji_pokok);
+});
+
+// Save lembur
+$app->post('/t_lembur/save', function ($request, $response) {
+    $data = $request->getParams();
+    $lembur = new Lembur();
+    $landa = new Landa();
+    $validasi = $lembur->validasi($data);
+
+    if (true === $validasi) {
+        if (!isset($data['id'])) {
+            $kode = $lembur->generateKode();
+            $data['kode'] = $kode['data'];
+        }
+
+        $data['tgl_mulai'] = $landa->arrayToDate($data['tgl_mulai']);
+        $data['tgl_selesai'] = $landa->arrayToDate($data['tgl_selesai']);
+
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $lembur->save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus lembur
+$app->post('/t_lembur/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $lembur = new Lembur();
+    $model = $lembur->delete(['id' => $data['id']]);
+
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Get total lembur
+$app->get('/t_lembur/getTotal', function ($request, $response) {
+    $params = $request->getParams();
+    $lembur = new Lembur();
+
+    $karyawanId = isset($params['karyawan_id']) ? $params['karyawan_id'] : 0;
+    $totalLembur = $lembur->getTotal($karyawanId);
+
+    return successResponse($response, $totalLembur);
+});
+

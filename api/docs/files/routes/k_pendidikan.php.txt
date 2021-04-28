@@ -1,0 +1,58 @@
+<?php
+
+use Model\KPendidikan;
+use Service\Landa;
+
+// Ambil semua KPendidikan
+$app->get('/k_pendidikan/index', function ($request, $response) {
+    $params = $request->getParams();
+    $kpendidikan = new KPendidikan();
+    $getDatakpendidikan = $kpendidikan->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDatakpendidikan['data'],
+        'totalItems' => $getDatakpendidikan['totalItem'],
+    ]);
+});
+// Ambil Master Tingkat Pendidikan
+$app->get('/k_pendidikan/pendidikan', function ($request, $response) {
+    $params = $request->getParams();
+    $kpendidikan = new KPendidikan();
+    $getDatatpendidikan = $kpendidikan->getTpendidikan($params);
+
+    return successResponse($response, [
+        'list' => $getDatatpendidikan['data'],
+    ]);
+});
+// Save KPendidikan
+$app->post('/k_pendidikan/save', function ($request, $response) {
+    $data = $request->getParams();
+    $landa = new Landa();
+    $kpendidikan = new KPendidikan();
+    $validasi = $kpendidikan->validasi($data);
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $kpendidikan->save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Hapus KPendidikan
+$app->post('/k_pendidikan/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $kpendidikan = new KPendidikan();
+    $model = $kpendidikan->save(['is_deleted' => 1, 'id' => $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+

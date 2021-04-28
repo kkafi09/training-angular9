@@ -1,0 +1,87 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\LaporanPembayaranKasbon;
+
+// Ambil semua kasbon
+$app-&gt;get('/l_pembayarankasbon/getAll', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $l_pembayarankasbon = new LaporanPembayaranKasbon();
+    $getRiwayatBayar = $l_pembayarankasbon-&gt;getAll($params);
+    $arr = [];
+    foreach ($getRiwayatBayar['data'] as $key =&gt; $value) {
+        $arr[$value-&gt;karyawan_id]['nama_karyawan'] = $value-&gt;nama_karyawan;
+        $arr[$value-&gt;karyawan_id]['nama_jabatan'] = $value-&gt;nama_jabatan;
+        $arr[$value-&gt;karyawan_id]['total'] = (isset($arr[$value-&gt;karyawan_id]['total']) ? $arr[$value-&gt;karyawan_id]['total'] : 0) + $value-&gt;total_bayar;
+        $arr[$value-&gt;karyawan_id]['detail'][] = (array) $value;
+    }
+
+    if (isset($params['is_export']) &amp;&amp; 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view-&gt;fetch('laporan/pembayaran_kasbon.html', [
+            'data' =&gt; array_values($arr),
+            'periode' =&gt; $getRiwayatBayar['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getRiwayatBayar['periode']) {
+            header('Content-Disposition: attachment;Filename=&quot;Laporan Pembayaran Kasbon ('.$getRiwayatBayar['periode'].').xls&quot;');
+        } else {
+            header('Content-Disposition: attachment;Filename=&quot;Laporan Pembayaran Kasbon (Semua Periode).xls&quot;');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) &amp;&amp; 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view-&gt;fetch('laporan/pembayaran_kasbon.html', [
+            'data' =&gt; array_values($arr),
+            'periode' =&gt; $getRiwayatBayar['periode'],
+        ]);
+        echo $content;
+        echo '&lt;script type=&quot;text/javascript&quot;&gt;window.print();setTimeout(function () { window.close(); }, 500);&lt;/script&gt;';
+    } else {
+        return successResponse($response, ['list' =&gt; array_values($arr), 'periode' =&gt; $getRiwayatBayar['periode']]);
+    }
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

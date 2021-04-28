@@ -1,0 +1,56 @@
+<?php
+
+use Model\Lisensi;
+use Model\Sertifikat;
+
+// ambil riwayat lisensi per karyawan
+$app->get('/applisensi/index', function ($request, $response) {
+    $params = $request->getParams();
+    $lisensi = new Lisensi();
+    $getDataLisensi = $lisensi->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDataLisensi['data'],
+        'totalItems' => $getDataLisensi['totalItem'],
+    ]);
+});
+
+// Ambil semua list sertifikat / lisensi
+$app->get('/applisensi/getSertifikat', function ($request, $response) {
+    $sertifikat = new Sertifikat();
+    $getDataSertifikat = $sertifikat->getAll();
+
+    return successResponse($response, [
+        'list' => $getDataSertifikat['data'],
+    ]);
+});
+
+// simpan data master lisensi
+$app->post('/applisensi/save', function ($request, $response) {
+    $params = $request->getParams();
+    $lisensi = new Lisensi();
+    $validasi = $lisensi->validasi($params);
+    if (true === $validasi) {
+        $save = $lisensi->save($params);
+        if ($save['status']) {
+            return successResponse($response, [$save['data']]);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus data lisensi
+$app->post('/applisensi/delete', function ($request, $response) {
+    $params = $request->getParams();
+    $lisensi = new Lisensi();
+    $delete = $lisensi->delete($params);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+

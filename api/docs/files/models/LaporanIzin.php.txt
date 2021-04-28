@@ -1,0 +1,98 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanIzin
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_ijin';
+    }
+
+    /**
+     * Ambil semua data test Pengajuan Reimbursement.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+//              echo json_encode($params);die();
+        if ('null' != $params['periode_mulai'] && 'null' != $params['periode_selesai']) {
+            $tanggal_awal = date('Y-m-d', strtotime($params['periode_mulai']));
+            $tanggal_akhir = date('Y-m-d', strtotime($params['periode_selesai']));
+        } else {
+            $tanggal_awal = null;
+            $tanggal_akhir = null;
+        }
+
+        $this->db->select($this->table.'.*, karyawan_data.nama as nama_karyawan,m_time_off.nama as nama_jenis_izin, Count(t_ijin_det.id) as total_hari, m_jabatan.nama as nama_jabatan
+                                                    ')
+            ->from($this->table)
+            ->join('left join', 'karyawan', $this->table.'.karyawan_id = karyawan.id')
+            ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->join('left join', 'k_jabatan', 'karyawan.id = k_jabatan.karyawan_id and k_jabatan.aktif = 1 and k_jabatan.is_deleted = 0')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->join('left join', 'm_time_off', 'm_time_off.id = '.$this->table.'.m_time_off_id')
+            ->join('left join', 't_ijin_det', 't_ijin_det.t_ijin_id = '.$this->table.'.id')
+            ->where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->groupBy($this->table.'.id')
+
+        ;
+
+        if (null != $tanggal_awal && null != $tanggal_akhir) {
+            $this->db->andWhere($this->table.'.tgl_mulai', '>=', $tanggal_awal)
+                ->andWhere($this->table.'.tgl_mulai', '<=', $tanggal_akhir)
+
+            ;
+        }
+
+        if ('null' != $params['karyawan_id'] && '' != $params['karyawan_id']) {
+            $this->db->andWhere($this->table.'.karyawan_id', '=', $params['karyawan_id']);
+        }
+        if ('null' != $params['m_time_off_id'] && '' != $params['m_time_off_id']) {
+            $this->db->andWhere($this->table.'.m_time_off_id', '=', $params['m_time_off_id']);
+        }
+
+        if ('null' != $params['status'] && '' != $params['status']) {
+            $this->db->andWhere($this->table.'.is_approve', '=', $params['status']);
+        }
+
+        $models = $this->db->findAll();
+        $arr = [];
+        $arrTotal = [];
+        foreach ($models as $key => $val) {
+            if (!isset($arr[$val->karyawan_id]['total_hari'])) {
+                $arr[$val->karyawan_id]['total_hari'] = 0;
+            }
+
+            $arr[$val->karyawan_id]['list'][] = $val;
+            $arr[$val->karyawan_id]['nama_karyawan'] = $val->nama_karyawan;
+            $arr[$val->karyawan_id]['nama_jabatan'] = $val->nama_jabatan;
+            @$arr[$val->karyawan_id]['total_hari'] += isset($val->total_hari) ? $val->total_hari : 0;
+        }
+
+        return [
+            'status' => true,
+            'list' => array_values($arr),
+            'total' => $arrTotal,
+            'periode' => null != $tanggal_awal && null != $tanggal_akhir ? date('d/m/Y', strtotime($tanggal_awal)).' s/d '.date('d/m/Y', strtotime($tanggal_akhir)) : null,
+        ];
+    }
+}
+

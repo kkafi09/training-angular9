@@ -1,0 +1,527 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class Jabatan extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_jabatan';
+    }
+
+    /**
+     * Ambil semua data jabatan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select($this->table.'.*, m_jabatan_level.nama as nama_jabatan, m_jabatan2.nama as nama_induk')
+            ->from($this->table)
+            ->where($this->table.'.is_deleted', '=', 0)
+            ->join('left join', 'm_jabatan as m_jabatan2', 'm_jabatan2.id = m_jabatan.parent_id')
+            ->join('left join', 'm_jabatan_level', 'm_jabatan_level.id = m_jabatan.m_jabatan_level_id')
+        ;
+
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key => $val) {
+                $this->db->where($key, 'like', $val);
+            }
+        }
+
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere('m_jabatan_level.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        $jabatan_child = $this->db->select('id, nama, parent_id')
+            ->from($this->table)
+            ->customWhere('parent_id IS NOT NULL')
+            ->andWhere('is_deleted', '=', 0)
+            ->findAll()
+        ;
+
+        $arrChild = [];
+        foreach ($jabatan_child as $key => $val) {
+            $arrChild[$val->parent_id][] = $val;
+        }
+
+        foreach ($models as $key => $val) {
+            $val->child = isset($arrChild[$val->id]) ? $arrChild[$val->id] : null;
+        }
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function getOrganisasi()
+    {
+        try {
+            $organisasi = $this->db->select('m_jabatan.*')
+                ->from($this->table)
+                ->leftJoin('m_jabatan_level', 'm_jabatan_level.id = m_jabatan.id')
+                ->where('m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+                ->where('m_jabatan.is_deleted', '=', 0)
+                ->findAll()
+            ;
+
+            return [
+                'status' => true,
+                'data' => $organisasi,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'data' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function getJabatan()
+    {
+        try {
+            $jabatan = $this->db->select('m_jabatan.*')
+                ->from($this->table)
+                ->join('left join', 'm_jabatan_level', 'm_jabatan_level.id = m_jabatan.m_jabatan_level_id')
+                ->where('m_jabatan_level.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+                ->where('m_jabatan.is_deleted', '=', 0)
+                ->findAll()
+            ;
+
+            return [
+                'status' => true,
+                'data' => $jabatan,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'data' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function getAllJabatan()
+    {
+        $jabatan = $this->db->select('*')->from($this->table)->findAll();
+
+        return ['data' => $jabatan];
+    }
+
+    /**
+     * Ambil list tugas berdasar jabatan.
+     *
+     * @param array $data data jabatan
+     *
+     * @return array
+     */
+    public function getTugas($data)
+    {
+        $this->db->select('*')
+            ->from('m_jabatan_tugas')
+            ->where('m_jabatan_id', '=', $data['id'])
+        ;
+
+        $tugas = $this->db->findAll();
+
+        return [
+            'data' => $tugas,
+        ];
+    }
+
+    /**
+     * Ambil list standar jabatan.
+     *
+     * @param array $data jabatan
+     *
+     * @return array
+     */
+    public function getStandar($data)
+    {
+        $this->db->select('*')
+            ->from('m_jabatan_standard')
+            ->where('m_jabatan_id', '=', $data['id'])
+        ;
+
+        $standar = $this->db->findAll();
+
+        return [
+            'data' => $standar,
+        ];
+    }
+
+    public function generateKode()
+    {
+        $cekKode = $this->db->select('kode')
+            ->from($this->table)
+            ->orderBy('kode DESC')
+            ->find()
+        ;
+
+        $kodePerusahaan = $this->db->select('kode')
+            ->from('m_perusahaan')
+            ->where('id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            ->find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode->kode;
+            } else {
+                $kode_terakhir = 0;
+            }
+
+            $tipe = 'PST';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $kodePerusahaan->kode.$tipe.$kode;
+
+            return [
+                'status' => true,
+                'data' => $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menyimpan data jabatan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (isset($data['jabatan'])) {
+                $jabatan = $data['jabatan'];
+                $tugas = $data['tugas'];
+                $standar = $data['standar'];
+                $jabatan['parent_id'] = isset($jabatan['parent_id']) && !empty($jabatan['parent_id']) ? (int) $jabatan['parent_id'] : null;
+
+                if (!isset($jabatan['id'])) {
+                    $jabatan['is_deleted'] = 0;
+
+                    $this->db->startTransaction();
+
+                    $model = $this->db->insert($this->table, $jabatan);
+                    foreach ($tugas as $key => $val) {
+                        $val['m_jabatan_id'] = $model->id;
+
+                        $dataTugas = $this->db->insert('m_jabatan_tugas', $val);
+                    }
+
+                    foreach ($standar as $key => $val) {
+                        $val['m_jabatan_id'] = $model->id;
+
+                        $dataStandar = $this->db->insert('m_jabatan_standard', $val);
+                    }
+
+                    $this->db->endTransaction();
+                } elseif (empty($customParams)) {
+                    $this->db->startTransaction();
+
+                    $model = $this->db->update($this->table, $jabatan, ['id' => $jabatan['id']]);
+                    $idTugas = [];
+                    foreach ($tugas as $key => $val) {
+                        $val['m_jabatan_id'] = $model->id;
+
+                        if (isset($val['id']) && !empty($val['id'])) {
+                            $dataTugas = $this->db->update('m_jabatan_tugas', $val, ['id' => $val['id']]);
+                        } else {
+                            $dataTugas = $this->db->insert('m_jabatan_tugas', $val);
+                        }
+                        $idTugas[$dataTugas->id] = $dataTugas->id;
+                    }
+
+                    $idStandard = [];
+                    foreach ($standar as $key => $val) {
+                        $val['m_jabatan_id'] = $model->id;
+
+                        if (isset($val['id']) && !empty($val['id'])) {
+                            $dataStandar = $this->db->update('m_jabatan_standard', $val, ['id' => $val['id']]);
+                        } else {
+                            $dataStandar = $this->db->insert('m_jabatan_standard', $val);
+                        }
+                        $idStandard[$dataStandar->id] = $dataStandar->id;
+                    }
+
+                    if (!empty($idTugas)) {
+                        $this->db->run('update m_jabatan_tugas set is_deleted = 1 where id NOT IN ('.implode(',', $idTugas).') and m_jabatan_id = "'.$model->id.'"');
+                    }
+
+                    if (!empty($idStandard)) {
+                        $this->db->run('update m_jabatan_standard set is_deleted = 1 where id NOT IN ('.implode(',', $idStandard).') and m_jabatan_id = "'.$model->id.'"');
+                    }
+
+                    $this->db->endTransaction();
+                }
+            } else {
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+            }
+            // Return data jabatan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function deleteAll($data)
+    {
+        try {
+            $jabatan = $this->db->select('m_jabatan.id')
+                ->from($this->table)
+                ->join('left join', 'm_jabatan_level', 'm_jabatan_level.id = m_jabatan.m_jabatan_level_id')
+                ->where('m_jabatan_level.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+                ->findAll()
+            ;
+
+            foreach ($jabatan as $key => $val) {
+                $model = $this->db->update($this->table, ['is_deleted' => $data['is_deleted']], ['id' => $val->id]);
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Import excel.
+     *
+     * @param array $data
+     * @param mixed $dataJabatanLevel
+     * @param mixed $dataJabatan
+     * @param mixed $removeExcel
+     */
+    public function import($data, $removeExcel = false)
+    {
+        try {
+            error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
+
+            try {
+                $inputFileType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($data['filePath']);
+                $objReader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
+                $objPhpSpreadsheet = $objReader->load($data['filePath']);
+            } catch (Exception $e) {
+                exit('Error loading file : "'.pathinfo($data['filePath'], PATHINFO_BASENAME).'": '.$e->getMessage());
+            }
+
+            // Ambil semua jabatan level
+            $jabatanLevel = new JabatanLevel();
+            $dataJabatanLevel = $jabatanLevel->getAll($data);
+            $arrJabatanLevel = [];
+            foreach ($dataJabatanLevel['data'] as $key => $val) {
+                $arrJabatanLevel[$val->level] = $val->id;
+            }
+
+            // Ambil semua jabatan
+            $dataJabatan = $this->getAllJabatan();
+            $arrJabatan = [];
+            foreach ($dataJabatan['data'] as $keys => $vals) {
+                $arrJabatan[$vals->kode] = $vals->id;
+                if ($val->id > $lastId) {
+                    $lastId = $val->id;
+                }
+            }
+
+            $sheet = $objPhpSpreadsheet->getSheet(0);
+            $highestRow = $sheet->getHighestRow();
+            $highestColumn = $sheet->getHighestColumn();
+
+            $jabatan = [];
+            $lastId = $lastId + 1;
+            for ($row = 2; $row <= $highestRow; ++$row) {
+                $kode = $sheet->getCell('C'.$row)->getFormattedValue();
+                $nama = $sheet->getCell('D'.$row)->getFormattedValue();
+                if (!empty($kode) && !empty($nama)) {
+                    $jabatan[$lastId]['m_jabatan_level_id'] = $sheet->getCell('A'.$row)->getFormattedValue();
+                    $jabatan[$lastId]['parent_id'] = $sheet->getCell('B'.$row)->getFormattedValue();
+                    $jabatan[$lastId]['kode'] = $sheet->getCell('C'.$row)->getFormattedValue();
+                    $jabatan[$lastId]['nama'] = $sheet->getCell('D'.$row)->getFormattedValue();
+
+                    // Memasukkan kode baru ke arrJabatan
+                    if (!isset($arrJabatan[$jabatan[$lastId]['kode']])) {
+                        $arrJabatan[$jabatan[$lastId]['kode']] = $lastId;
+                    }
+
+                    ++$lastId;
+                }
+            }
+
+            if ($removeExcel) {
+                unlink($data['filePath']);
+            }
+
+            foreach ($jabatan as $key => $val) {
+                // Set value untuk diinput ke m_jabatan
+                $val['m_jabatan_level_id'] = $arrJabatanLevel[$val['m_jabatan_level_id']];
+                $val['parent_id'] = $arrJabatan[$val['parent_id']];
+                $val['m_perusahaan_id'] = isset($_SESSION) ? $_SESSION['user']['m_perusahaan']['id'] : 0;
+
+                // Input ke m_jabatan
+                $model = $this->db->insert($this->table, $val);
+            }
+
+            // Return data
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Download format excel.
+     *
+     * @param string $file path file excel
+     *
+     * @return bool
+     */
+    public function download($file)
+    {
+        parent::downloadFile($file);
+
+        return true;
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     * @param mixed $jabatanId
+     */
+    public function validasi($data, $custom = [], $jabatanId = 0)
+    {
+        $jabatan = $this->db->select('*')->from($this->table)->where('is_deleted', '=', 0)->count();
+
+        // check jabatan holding, jika holding parent boleh kosong
+        if ($jabatanId > 0) {
+            $isHolding = $this->db->select('parent_id')->from($this->table)->where('id', '=', $jabatanId)->find();
+            $allowEmptyParent = empty($isHolding->parent_id) ? true : false;
+        } else {
+            $allowEmptyParent = false;
+        }
+
+        $validasi = [
+            'nama' => 'required',
+            'kode' => 'required',
+            'm_jabatan_level_id' => 'required',
+        ];
+
+        if ($jabatan > 0 && false == $allowEmptyParent) {
+            $validasi['parent_id'] = 'required';
+        }
+
+        \GUMP::set_field_name('m_jabatan_level_id', 'Level Jabatan');
+
+        return validate($data, $validasi, $custom);
+    }
+
+    /**
+     * Validasi kode.
+     *
+     * @param [type] $data [description]
+     *
+     * @return [type] [description]
+     */
+    public function validasiKode($data)
+    {
+        $dataKode = true;
+        $this->db->select('m_perusahaan_id as id')
+            ->from('m_jabatan_level')
+            ->where('id', '=', $data['m_jabatan_level_id'])
+            ->where('is_deleted', '=', 0)
+        ;
+
+        $perusahaan = $this->db->find();
+
+        $this->db->select($this->table.'.kode')
+            ->from($this->table)
+            ->join('left join', 'm_jabatan_level', 'm_jabatan_level.id = '.$this->table.'.m_jabatan_level_id')
+            ->where('m_jabatan_level.m_perusahaan_id', '=', $perusahaan->id)
+            ->where($this->table.'.is_deleted', '=', 0)
+        ;
+
+        $models = $this->db->findAll();
+
+        foreach ($models as $key => $value) {
+            if ($value->kode == $data['kode']) {
+                if (isset($data['id']) && !empty($data['id'])) {
+                    $kodeFromId = $this->db->select('kode')
+                        ->from($this->table)
+                        ->leftJoin('m_jabatan_level', 'm_jabatan_level.id = '.$this->table.'.m_jabatan_level_id')
+                        ->where($this->table.'.is_deleted', '=', 0)
+                        ->andWhere($this->table.'.id', '=', $data['id'])
+                        ->andWhere('m_jabatan_level.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+                        ->find()->kode;
+                    if ($kodeFromId != $data['kode']) {
+                        $dataKode = false;
+                    }
+                } else {
+                    $dataKode = false;
+                }
+            }
+        }
+
+        return $dataKode;
+    }
+}
+

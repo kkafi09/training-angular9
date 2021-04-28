@@ -1,0 +1,166 @@
+<div class="container-fluid" *ngIf="!showForm">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="page-title-box d-flex align-items-center justify-content-between">
+                <h4 class="mb-0 font-size-18">{{pageTitle}}</h4>
+                <div class="page-title-right d-lg-block">
+                    <button type="button" class="btn btn-primary btn-sm" (click)="create()">
+                        <i class="fa fa-plus font-size-14 align-middle"></i>
+                        Tambah Data Barang
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row mb-15">
+                        <div class="col-md-12">
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <input type="text" class="form-control form-control-sm"
+                                        [(ngModel)]="modelParam.nama" name="paramnama" (keyup)="reloadDataTable()">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table datatable [dtOptions]="dtOptions" class="table table-hover mobile-optimised mb-0"
+                                data-page-length='20'>
+                                <thead class="thead-light">
+                                    <tr class="text-center">
+                                        <th>No</th>
+                                        <th>Nama</th>
+                                        <th>Kategori</th>
+                                        <th>Tanggal</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let val of listData;index as i" class="text-center"
+                                        (dblclick)="view(val)">
+                                        <td data-th="No">{{i + 1}}</td>
+                                        <td data-th="Nama">{{val.nama}}</td>
+                                        <td data-th="Kategori">{{val.kategori}}</td>
+                                        <td data-th="tanggal">{{val.tanggal}}</td>
+                                        <td class="row-action">
+                                            <ul class="list-inline mb-0">
+                                                <li class="list-inline-item">
+                                                    <a href="javascript: void(0);" (click)="edit(val)"
+                                                        class="mr-2 mb-primary" placement="top" ngbTooltip="Edit">
+                                                        <i class="fa fa-edit font-size-14 align-middle"></i>
+                                                    </a>
+                                                </li>
+                                                <li class="list-inline-item">
+                                                    <a href="javascript: void(0);" (click)="delete(val)"
+                                                        class="mb-danger" placement="left" ngbTooltip="Hapus">
+                                                        <i class="fa fa-trash font-size-14 align-middle"></i>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid" *ngIf="showForm">
+    <app-page-title [title]="pageTitle" [breadcrumbItems]="breadCrumbItems"></app-page-title>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form action="" disabled="isView">
+                        <fieldset [disabled]="isView">
+                            <div class="row">
+                                <div class="col-md-12" style="padding-bottom: 10px;">
+                                    <span style="font-style: italic;font-size: 11px;font-weight: bold;">Tanda
+                                        <span style="font-size: 13px;color: red;">*</span>Wajib Diisi </span>
+                                    <br>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <label for="" class="col-md-4 col-form-label col-form-label-sm">Nama</label>
+                                        <div class="col-md-8">
+                                            <input type="text" class="form-control form-control-sm" name="nama"
+                                                [(ngModel)]="model.nama" placeholder="nama">
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="" class="col-md-4 col-form-label col-form-label-sm">Kategori</label>
+                                        <div class="col-md-8">
+                                            <ng-select [(ngModel)]="model.m_kategori_id" [items]="listkategori"
+                                                bindLabel="nama" bindValue=id [disabled]="isView" name="kategori"
+                                                placeholder="Pilih kategori" appendTo="body">
+                                            </ng-select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <label for=""
+                                            class="col-md-4 col-form-label col-form-label-sm">Keterangan</label>
+                                        <div class="col-md-8">
+                                            <textarea name="keterangan" class="form-control form-control-sm  h-105"
+                                                type="text" [(ngModel)]="model.keterangan"
+                                                placeholder="Keterangan Barang"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for=""
+                                            class="col-md-4 col-form-label col-form-label-sm">Deskripsi</label>
+                                        <div class="col-md-8">
+                                            <ckeditor [(ngModel)]="model.deskripsi" name="deskripsi"></ckeditor>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <label class=" col-md-4 col-form-label col-form-label-sm required">
+                                            Tanggal </label>
+                                        <div class="col-md-8">
+                                            <div class="input-group input-group-sm clockpicker">
+                                                <input ngbDatepicker class="form-control form-control-sm"
+                                                    [(ngModel)]="model.tanggal" name="tanggal" placeholder="dd/mm/yyyy"
+                                                    #tanggal="ngbDatepicker" [minDate]="{year: 1920, month: 1, day: 1}"
+                                                    (click)="tanggal.toggle()" />
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">
+                                                        <i class="fa fa-calendar"></i>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+
+                <div class="card-footer">
+                    <div class="float-right">
+                        <button class="btn btn-light btn-sm mr-2" (click)="index()">
+                            <i class="fa fa-chevron-left font-size-14 align-middle mr-2"></i>
+                            Kembali
+                        </button>
+                        <button class="btn btn-primary btn-sm " (click)="save()">
+                            <i class="fa fa-save font-size-14 align-middle mr-2"></i>
+                            Simpan
+                        </button>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+</div>

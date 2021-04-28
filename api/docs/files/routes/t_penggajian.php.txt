@@ -1,0 +1,346 @@
+<?php
+
+use Model\Formula;
+use Model\Penggajian;
+use Service\Firebase;
+use Service\Landa;
+
+// Ambil semua penggajian
+$app->get('/t_penggajian/index', function ($request, $response) {
+    $params = $request->getParams();
+    $penggajian = new Penggajian();
+    $getDatapenggajian = $penggajian->getIndex($params);
+
+    return successResponse($response, [
+        'list' => $getDatapenggajian['data'],
+        'totalItems' => $getDatapenggajian['totalItem'],
+    ]);
+});
+// Ambil semua Tunjangan & Potongan
+$app->get('/t_penggajian/getall', function ($request, $response) {
+    $params = $request->getParams();
+    $penggajian = new Penggajian();
+    $getDataPenggajian = $penggajian->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDataPenggajian['data'],
+        'listPendapatan' => $getDataPenggajian['komponenP'],
+        'listPotongan' => $getDataPenggajian['komponenPt'],
+        // 'listBpjs' => $getDataPenggajian['komponenBpjs'],
+    ]);
+});
+// Ambil semua KaryawanNewDetail
+$app->post('/t_penggajian/getlistKaryawannew', function ($request, $response) {
+    $params = $request->getParams();
+    $penggajian = new Penggajian();
+    $getDataPenggajian = $penggajian->getAllKaryawanNew($params);
+
+    return successResponse($response, [
+        'list' => $getDataPenggajian['data'],
+    ]);
+});
+// Ambil semua Tunjangan & Potongan
+$app->get('/t_penggajian/getallid', function ($request, $response) {
+    $params = $request->getParams();
+    $penggajian = new Penggajian();
+    $getDataPenggajian = $penggajian->getAllid($params);
+
+    // print_r($getDataPenggajian);die;
+    return successResponse($response, [
+        'list' => $getDataPenggajian['data'],
+        'listPendapatan' => $getDataPenggajian['komponenP'],
+        'listPotongan' => $getDataPenggajian['komponenPt'],
+    ]);
+});
+// Ambil semua Tunjangan & Potongan bagian slip di karyawan
+$app->get('/t_penggajian/getkarid/{id}', function ($request, $response) {
+    $params = $request->getParams();
+    $params['idkaryawan'] = $request->getAttribute('id');
+    $penggajian = new Penggajian();
+    $getDataPenggajian = $penggajian->getKarid($params);
+
+    return successResponse($response, [
+        'list' => $getDataPenggajian['data'],
+    ]);
+});
+
+// Ambil semua Preview
+$app->post('/t_penggajian/preview', function ($request, $response) {
+    $params = $request->getParams();
+    $penggajian = new Penggajian();
+    $getDataPenggajian = $penggajian->getPreview($params);
+
+    return successResponse($response, [
+        'list' => $getDataPenggajian['data'],
+    ]);
+});
+
+// Save Penggajian
+$app->post('/t_penggajian/save', function ($request, $response) {
+    $data = $request->getParams();
+    $landa = new Landa();
+    $payroll = new Penggajian();
+    $validasi = $payroll->validasi($data['form']);
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $payroll->save($data);
+        if ($save['status']) {
+            // if($data['model']['is_formula'] == 1){
+            //     $params['m_komponen_gaji_id'] = $save['data']->id;
+            //     $params['formula'] = $data['formula'];
+            //     $saveformula = $formula->saveformula($params);
+            //     if ($saveformula['status']) {
+            // $firebase = new Firebase();
+            $type = 'company';
+            $nama = 'Slip Penggajian';
+            $judul = $save['data']->kode;
+            // $kirimnotif = $firebase->sendNotif($type, $nama, $judul);
+
+            return successResponse($response, $data);
+            //     }
+            // }else {
+            //     return successResponse($response, $save);
+            // }
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Delete Penggajian
+$app->post('/t_penggajian/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $landa = new Landa();
+    $payroll = new Penggajian();
+    $delete = $payroll->delete($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Delete Penggajian Detail Karyawan
+$app->post('/t_penggajian/deletedetail', function ($request, $response) {
+    $data = $request->getParams();
+    $landa = new Landa();
+    $payroll = new Penggajian();
+    $delete = $payroll->deletedetail($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Ambil semua Slip Gaji
+$app->get('/t_penggajian/slipGaji', function ($request, $response) {
+    $params = $request->getParams();
+    // print_r($para);die;
+    if (isset($params['model']['idpayroll']) && !empty($params['model']['idpayroll'])) {
+        $params['model']['id'] = ($params['model']['idpayroll']);
+    } elseif (isset($params['idpayroll']) && !empty($params['idpayroll'])) {
+        $params['model']['id'] = $params['idpayroll'];
+    }
+    // print_r($params);die;
+    $penggajian = new Penggajian();
+    $getDataPenggajian = $penggajian->getSlipgaji($params);
+    // print_r($getDataPenggajian);die;
+    if ($getDataPenggajian) {
+        $view = twigView();
+        $fontSize = 8;
+        $content = $view->fetch('laporan/email-penggajian.html', [
+            'data' => $getDataPenggajian['data'],
+            'fontSize' => $fontSize,
+        ]);
+        // echo $content; die;
+        //DOMPDF
+        /** set options */
+        $options = new Dompdf\Options();
+        $options->setIsRemoteEnabled(true);
+
+        $contxt = stream_context_create([
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true,
+            ],
+        ]);
+
+        $filename = 'slip-gaji.pdf';
+
+        /** set dompdf */
+        $dompdf = new Dompdf\Dompdf();
+        $dompdf->setOptions($options);
+        $dompdf->setHttpContext($contxt);
+        $dompdf->loadHtml($content);
+        $dompdf->setPaper('A4', 'potrait');
+        $dompdf->render();
+        $dompdf->stream($filename, ['Attachment' => false]);
+
+        exit;
+
+        return $dompdf;
+    }
+});
+
+// Change Status Penggajian
+$app->post('/t_penggajian/changestatus', function ($request, $response) {
+    $data = $request->getParams();
+    // print_r($data);die;
+    $landa = new Landa();
+    $payroll = new Penggajian();
+    $change = $payroll->changestatus($data);
+    if ($change['status']) {
+        if (3 == $data['status']) {
+            // print_r($data);die;
+            if (isset($data['model']['idpayroll']) && !empty($data['model']['idpayroll'])) {
+                $data['model']['id'] = ($data['model']['idpayroll']);
+            }
+            $penggajian = new Penggajian();
+            $getDataPenggajian = $penggajian->getSlipgajiemail($data);
+
+            // print_r($getDataPenggajian);die;
+            $emaildata = [];
+            foreach ($getDataPenggajian['data'] as $key => $value) {
+                $emaildata['model'] = $data['model'];
+                $emaildata['karyawan_id'] = $value['karyawan_id'];
+
+                $getDataPenggajianemail = $penggajian->getSlipgaji($emaildata);
+                // print_r($getDataPenggajianemail);die;
+                $view = twigView();
+                $fontSize = 8;
+                $content = $view->fetch('laporan/email-penggajian.html', [
+                    'data' => $getDataPenggajianemail['data'],
+                    'fontSize' => $fontSize,
+                ]);
+
+                /** Kirim Email */
+                $namaemailnya = isset($getDataPenggajian['data'][0]['perusahaan_nama']) ? $getDataPenggajian['data'][0]['perusahaan_nama'] : '';
+                $subjek = 'SLIP GAJI '.$namaemailnya;
+                $nama_penerima = $getDataPenggajianemail['data'][0]['karyawan_nama'];
+                $email_penerima = $getDataPenggajianemail['data'][0]['karyawan_email'];
+
+                // $nama_penerima  = 'Ferrbii';
+                // $email_penerima = 'febrifahturrohman12@gmail.com';
+
+                $send = sendMailreg("{$subjek}", "{$nama_penerima}", "{$email_penerima}", $content);
+                // print_r($send);die;
+                  // echo config('TAGIHAN'); die();
+               // echo json_encode($nama_penerima);die();
+                // if(isset($email_penerima) && $email_penerima != null && $email_penerima != ""){
+
+                //     // print_r($send);die;
+                    // if($send){
+                    //     return successResponse($response,"Data Berhasi Dikirim");
+                    // }
+                    // else {
+                    //     return unprocessResponse($response, "Terjadi Kesalahan Pada Server");
+                    // }
+
+                // }
+                // else{
+                //     return unprocessResponse($response, "Alamat Email Belum diisi");
+                // }
+            }
+            // if ($getDataPenggajian) {
+
+            //     $view = twigView();
+            //     $content = $view->fetch('laporan/print-penggajian.html', [
+            //         'data' => $content,
+            //     ]);
+            //     print_r($getDataPenggajian['data']);die;
+            //     /** Kirim Email */
+            //       $subjek         = "SLIP GAJI FROM HUMANIS APP";
+            //       $nama_penerima  = $getDataPenggajian['data']['karyawan_nama'];
+            //       $email_penerima = $getDataPenggajian['data']['karyawan_email'];
+            //       // echo config('TAGIHAN'); die();
+            //    // echo json_encode($content);die();
+            //     if(isset($email_penerima) && $email_penerima != null && $email_penerima != ""){
+            //         $send =  sendMailreg("$subjek", "$nama_penerima", "$email_penerima",$content);
+            //         print_r($send);die;
+            //         if($send){
+            //             return successResponse($response,"Data Berhasi Dikirim");
+            //         }
+            //         else {
+            //             return unprocessResponse($response, "Terjadi Kesalahan Pada Server");
+            //         }
+
+            //     }
+            //     else{
+            //         return unprocessResponse($response, "Alamat Email Belum diisi");
+            //     }
+            // }
+        }
+
+        return successResponse($response, [$change['data']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Kirim Email Per Karyawan
+$app->post('/t_penggajian/emailkaryawan', function ($request, $response) {
+    $params = $request->getParams();
+    if (isset($params['model']['idpayroll']) && !empty($params['model']['idpayroll'])) {
+        $params['model']['id'] = ($params['model']['idpayroll']);
+    }
+    // print_r($params);die;
+    $penggajian = new Penggajian();
+    $getDataPenggajian = $penggajian->getSlipgaji($params);
+
+    if ($getDataPenggajian) {
+        $view = twigView();
+        $fontSize = 8;
+        $content = $view->fetch('laporan/email-penggajian.html', [
+            'data' => $getDataPenggajian['data'],
+            'fontSize' => $fontSize,
+        ]);
+        // echo $content; die;
+        /** Kirim Email */
+        $namaemailnya = isset($getDataPenggajian['data'][0]['perusahaan_nama']) ? $getDataPenggajian['data'][0]['perusahaan_nama'] : '';
+        $subjek = 'SLIP GAJI '.$namaemailnya;
+        $nama_penerima = $getDataPenggajian['data'][0]['karyawan_nama'];
+        $email_penerima = $getDataPenggajian['data'][0]['karyawan_email'];
+
+        // $nama_penerima  = 'Ferrbii';
+        // $email_penerima = 'febrifahturrohman12@gmail.com';
+
+        $send = sendMailreg("{$subjek}", "{$nama_penerima}", "{$email_penerima}", $content);
+        if ($send) {
+            return successResponse($response, ['Email Terkirim']);
+        }
+
+        return unprocessResponse($response, $send['error']);
+    }
+});
+
+// Slip Preview Gaji
+// Change Status Penggajian
+$app->post('/t_penggajian/slippreview', function ($request, $response) {
+    $data = $request->getParams();
+    // print_r($data);die;
+    $landa = new Landa();
+    $payroll = new Penggajian();
+    $getDataPenggajian = $payroll->getSlipgaji($data);
+
+    if (isset($data['parampreview']) && !empty($data['parampreview'])) {
+        $fontSize = 10;
+    } else {
+        $fontSize = 8;
+    }
+
+    if ($getDataPenggajian) {
+        $view = twigView();
+        $content = $view->fetch('laporan/email-penggajian.html', [
+            'data' => $getDataPenggajian['data'],
+            'fontSize' => $fontSize,
+        ]);
+
+        echo $content;
+    }
+});
+

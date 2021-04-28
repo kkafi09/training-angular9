@@ -1,0 +1,32 @@
+<?php
+
+use Model\Ptkp;
+use Service\Landa;
+
+/**
+ * Validasi.
+ *
+ * @param array $data
+ * @param array $custom
+ *
+ * @return array
+ */
+function validasi($data, $custom = [])
+{
+    $validasi = [
+        'nama' => 'required',
+        'kode' => 'required',
+    ];
+
+    return validate($data, $validasi, $custom);
+}
+// Ambil semua perusahaan
+$app->get('/appptkp/getData', function ($request, $response) {
+    $params = $request->getParams();
+    $ptkp = new Ptkp();
+    $landa = new Landa();
+    $models = $ptkp->getData('m_ptkp', '1');
+
+    return successResponse($response, ['list' => $models['data'], 'totalItems' => $models['totalItem']]);
+});
+

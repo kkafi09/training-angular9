@@ -1,0 +1,232 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+
+class PelatihanRiwayat
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'k_pelatihan';
+    }
+
+    /**
+     * Ambil semua data perusahaan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('k_pelatihan.id as id,
+					    	k_pelatihan.jenis as jenis,
+					    	k_pelatihan.lokasi as lokasi,
+					    	k_pelatihan.keterangan as keterangan,
+					    	k_pelatihan.tgl_mulai as tgl_mulai,
+					    	k_pelatihan.tgl_selesai as tgl_selesai,
+					    	k_pelatihan.total_jam as total_jam,
+					    	karyawan_data.id as karyawan_id,
+					    	karyawan_data.nama as karyawan_nama,
+					    	m_pelatihan.id as pelatihan_id,
+					    	m_pelatihan.nama as pelatihan_nama')
+            -&gt;from($this-&gt;table)
+            -&gt;leftJoin('karyawan_data', 'k_pelatihan.karyawan_id = karyawan_data.id')
+            -&gt;leftJoin('m_pelatihan', 'k_pelatihan.m_pelatihan_id = m_pelatihan.id')
+            -&gt;where('k_pelatihan.is_deleted', '=', 0)
+            -&gt;andWhere('karyawan_id', '=', $params['id'])
+         ;
+
+        // Filter
+//        if (isset($params['filter'])) {
+//            $filter = (array) json_decode($params['filter']);
+//            if (isset($filter['tanggal']) &amp;&amp; '' != $filter['tanggal']) {
+//                $filter['tanggal'] = $filter['tanggal']-&gt;year.'-'.$filter['tanggal']-&gt;month.'-'.$filter['tanggal']-&gt;day;
+//                $this-&gt;db-&gt;where('k_pelatihan.tgl_mulai', '&lt;=', $filter['tanggal']);
+//                $this-&gt;db-&gt;andWhere('k_pelatihan.tgl_selesai', '&gt;=', $filter['tanggal']);
+//            }
+//            unset($filter['tanggal']);
+//            if (isset($filter['m_pelatihan_id'])) {
+//                $this-&gt;db-&gt;where('k_pelatihan.m_pelatihan_id', '=', $filter['m_pelatihan_id']);
+//                unset($filter['m_pelatihan_id']);
+//            }
+//            foreach ($filter as $key =&gt; $val) {
+//                $this-&gt;db-&gt;where($key, 'like', $val);
+//            }
+//        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function getPerusahaan()
+    {
+        $this-&gt;db-&gt;select('id, nama')-&gt;from('m_perusahaan');
+        $models = $this-&gt;db-&gt;findAll();
+
+        return ['data' =&gt; $models];
+    }
+
+    public function getKaryawan()
+    {
+        $this-&gt;db-&gt;select('id, nama')-&gt;from('karyawan');
+        $models = $this-&gt;db-&gt;findAll();
+
+        return ['data' =&gt; $models];
+    }
+
+    public function getMPelatihan()
+    {
+        $this-&gt;db-&gt;select('id, kode, nama')
+            -&gt;from('m_pelatihan')
+            -&gt;where('m_pelatihan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+        $models = $this-&gt;db-&gt;findAll();
+
+        return ['data' =&gt; $models];
+    }
+
+    /**
+     * Method untuk menyimpan data perusahaan.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $params
+     */
+    public function save($params)
+    {
+        try {
+            if (isset($params['id']) &amp;&amp; !empty($params['id'])) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $params, ['id' =&gt; $params['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $params);
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; 1], ['id' =&gt; $params['id']]);
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'karyawan_id' =&gt; 'required',
+            'jenis' =&gt; 'required',
+            'm_pelatihan_id' =&gt; 'required',
+            'lokasi' =&gt; 'required',
+            'tgl_mulai' =&gt; 'required',
+            'tgl_selesai' =&gt; 'required',
+            'total_jam' =&gt; 'required',
+        ];
+
+        \GUMP::set_field_name('karyawan_id', 'Karyawan');
+
+        \GUMP::set_field_name('m_pelatihan_id', 'Jenis Pelatihan');
+
+        return validate($data, $validasi, $custom);
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

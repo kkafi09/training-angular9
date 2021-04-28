@@ -1,0 +1,172 @@
+<?php
+
+use Model\Jabatan;
+use Service\Landa;
+
+// Ambil semua jabatan
+$app->get('/appjabatan/index', function ($request, $response) {
+    $params = $request->getParams();
+    $jabatan = new Jabatan();
+    $getDataJabatan = $jabatan->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDataJabatan['data'],
+        'totalItems' => $getDataJabatan['totalItem'],
+    ]);
+});
+
+// Ambil struktur jabatan
+$app->get('/appjabatan/dataStruktur', function ($request, $response) {
+    $params = $request->getParams();
+    $jabatan = new Jabatan();
+    $landa = new Landa();
+    $data = $jabatan->getAll();
+
+    $models = $data['data'];
+    $arrChild = [];
+
+    foreach ($models as $key => $value) {
+        $arrChild[] = [
+            'id' => $value->id,
+            'type' => '',
+            'name' => $value->nama,
+            'parent_id' => $value->parent_id,
+        ];
+    }
+
+    if (!empty($arrChild)) {
+        $tree = $landa->buildTree($arrChild);
+    } else {
+        $tree = [];
+    }
+
+    return successResponse($response, ['list' => isset($tree[0]) ? $tree[0] : []]);
+});
+
+// Ambil jabatan
+$app->get('/appjabatan/getall', function ($request, $response) {
+    $params = $request->getParams();
+    $jabatan = new Jabatan();
+    $getJabatan = $jabatan->getJabatan($params);
+
+    return successResponse($response, [
+        'list' => $getJabatan['data'],
+        'totalItems' => $getJabatan['totalItem'],
+    ]);
+});
+
+// Ambil tugas
+$app->get('/appjabatan/getTugas', function ($request, $response) {
+    $params = $request->getParams();
+    $jabatan = new Jabatan();
+    $getTugas = $jabatan->getTugas($params);
+
+    return successResponse($response, [
+        'list' => $getTugas['data'],
+    ]);
+});
+
+// Ambil standar
+$app->get('/appjabatan/getStandar', function ($request, $response) {
+    $params = $request->getParams();
+    $jabatan = new Jabatan();
+    $getStandar = $jabatan->getStandar($params);
+
+    return successResponse($response, [
+        'list' => $getStandar['data'],
+    ]);
+});
+
+// Save jabatan
+$app->post('/appjabatan/save', function ($request, $response) {
+    $data = $request->getParams();
+    $jabatan = new Jabatan();
+    if (isset($data['id']) && !empty($data['id']) && empty($data['parent_id'])) {
+        $validasi = $jabatan->validasi($data['jabatan'], [], $data['id']);
+    } else {
+        $validasi = $jabatan->validasi($data['jabatan']);
+    }
+    $validasiKode = $jabatan->validasiKode($data['jabatan']);
+
+    if (true === $validasi) {
+        if (true === $validasiKode) {
+            // simpan jabatan ke database
+            $save = $jabatan->save($data);
+
+            // Return sukses
+            if ($save['status']) {
+                return successResponse($response, $save);
+            }
+
+            return unprocessResponse($response, [$save['error']]);
+        }
+
+        return unprocessResponse($response, 'Kode sudah digunakan');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus jabatan
+$app->post('/appjabatan/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $jabatan = new Jabatan();
+    $model = $jabatan->save(['is_deleted' => 1, 'id' => $data['id']]);
+
+    // Return sukses
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Hapus jabatan
+$app->post('/appjabatan/delete-all', function ($request, $response) {
+    $data = $request->getParams();
+    $jabatan = new Jabatan();
+    $model = $jabatan->deleteAll(['is_deleted' => 1]);
+
+    if ($model['status']) {
+        return successResponse($response, $model['data']);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Import excel jabatan
+$app->post('/appjabatan/import', function ($request, $response) {
+    $data = $request->getParams();
+    $jabatan = new Jabatan();
+    $landa = new Landa();
+
+    $save = $landa->base64ToFile($data);
+    $excel = $save['data'];
+
+    $insert_excel = $jabatan->import($excel);
+    $getDataJabatan = $jabatan->getAll($data);
+
+    return successResponse($response, [
+        'list' => $getDataJabatan['data'],
+        'totalItems' => $getDataJabatan['totalItem'],
+    ]);
+});
+
+// Download format excel
+$app->get('/appjabatan/downloadFormatExcel', function ($request, $response) {
+    $jabatan = new Jabatan();
+    $file = 'assets/formatExcel/Jabatan.xlsx';
+    $save = $jabatan->download($file);
+
+    return successResponse($response, $save);
+});
+
+// Generate kode sertifikat
+$app->get('/appjabatan/generatekode', function ($request, $response) {
+    $jabatan = new Jabatan();
+
+    $kode = $jabatan->generateKode();
+
+    return successResponse($response, $kode['data']);
+});
+

@@ -1,0 +1,95 @@
+<?php
+
+use Model\KFile;
+use Service\Landa;
+
+// Ambil semua KFile
+$app->get('/k_file/index/{id}', function ($request, $response) {
+    $params = $request->getParams();
+    $params['idkaryawan'] = $request->getAttribute('id');
+    $kfile = new KFile();
+    $getDatafile = $kfile->getAll($params);
+
+    return successResponse($response, [
+        'list' => $getDatafile['data'],
+        'totalItems' => $getDatafile['totalItem'],
+    ]);
+});
+// Ambil Master Kategori File
+$app->get('/k_file/filelist', function ($request, $response) {
+    $params = $request->getParams();
+    $kfile = new KFile();
+    $getDatafile = $kfile->getKfile($params);
+
+    return successResponse($response, [
+        'list' => $getDatafile['data'],
+    ]);
+});
+// Save KFile
+$app->post('/k_file/save', function ($request, $response) {
+    $data = $request->getParams();
+    $landa = new Landa();
+    $kfile = new KFile();
+    $validasi = $kfile->validasi($data);
+    if (true === $validasi) {
+        $input = [];
+        if (isset($data['fileUpload']) && !empty($data['fileUpload'])) {
+            $path = 'assets/filekaryawan/';
+            $kode = $kfile->generate_kode();
+            $batas = strpos($data['fileUpload'], 'base64,');
+            $batas_potong = $batas + 7;
+            $file['filename'] = $data['file'];
+            $file['base64'] = substr($data['fileUpload'], $batas_potong);
+            $uploadFile = $landa->base64ToFilePath($file, $path, $kode['data']);
+            $customnamafile = $uploadFile['data']['fileName'];
+            if ($uploadFile['status']) {
+                $input['file'] = $customnamafile;
+            } else {
+                return unprocessResponse($response, [$uploadFile['error']]);
+            }
+        }
+        if (isset($data['id']) && !empty($data['id'])) {
+            $input['id'] = $data['id'];
+        }
+
+        $input['karyawan_id'] = $data['karyawan_id'];
+        $input['m_kategori_file'] = $data['m_kategori_file'];
+        $input['keterangan'] = $data['keterangan'];
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $kfile->save($input);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Hapus KFile
+$app->post('/k_file/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $kfile = new KFile();
+    $model = $kfile->save(['is_deleted' => 1, 'id' => $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+// Download format PDF
+$app->get('/k_file/downloadPDF/{namfile}', function ($request, $response) {
+    $nam = $request->getAttribute('namfile');
+    $kfile = new KFile();
+
+    $file = 'assets/filekaryawan/'.$nam;
+    print_r($file);
+
+    exit;
+    $save = $kfile->download($file);
+
+    return successResponse($response, $save);
+});
+

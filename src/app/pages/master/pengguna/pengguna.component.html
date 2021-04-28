@@ -1,0 +1,172 @@
+<div class="container-fluid" *ngIf="!showForm">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="page-title-box d-flex align-items-center justify-content-between">
+                <h4 class="mb-0 font-size-18">{{ pageTitle }}</h4>
+                <div class="page-title-right  d-lg-block">
+                    <button type="button" class="btn btn-primary btn-sm" (click)="create()">
+                        <i class="fa fa-plus font-size-14 align-middle"></i>
+                        Tambah Data Pengguna
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row mb-15">
+                        <div class="col-md-12">
+                            <div class="form-group row">
+                                <div class="col-md-3 mb-3">
+                                    <input class="form-control form-control-sm" [(ngModel)]="modelParam.nama"
+                                        name="paramnama" type="text" placeholder="Cari berdasarkan Nama"
+                                        (keyup)="reloadDataTable()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table datatable [dtOptions]="dtOptions" class="table table-hover mobile-optimised mb-0"
+                            data-page-length='20'>
+                            <thead class="thead-light">
+                                <tr class="text-center">
+
+                                    <th>No</th>
+                                    <th>Nama</th>
+                                    <th>Username</th>
+
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let val of listData;index as i" class="text-center" (dblclick)="view(val)">
+                                    <td data-th="No">{{i +1 }}</td>
+                                    <td data-th="Nama">{{ val.nama }}</td>
+                                    <td data-th="Username">{{ val.username }}</td>
+
+
+                                    <td class="row-action">
+                                        <ul class="list-inline mb-0">
+                                            <li class="list-inline-item">
+                                                <a href="javascript: void(0);" (click)="edit(val)"
+                                                    class="mr-2 mb-primary" placement="top" ngbTooltip="Edit">
+                                                    <i class="fa fa-edit font-size-14 align-middle"></i>
+                                                </a>
+                                            </li>
+                                            <li class="list-inline-item">
+                                                <a href="javascript: void(0);" (click)="delete(val)" class="mb-danger"
+                                                    placement="left" ngbTooltip="Hapus">
+                                                    <i class="fa fa-trash font-size-14 align-middle"></i>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container-fluid" *ngIf="showForm">
+    <app-page-title [title]="pageTitle" [breadcrumbItems]="breadCrumbItems"></app-page-title>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form disabled="isView">
+                        <fieldset [disabled]="isView">
+                            <div class="row">
+                                <div class="col-md-12" style="padding-bottom: 10px;">
+                                    <span style="font-style: italic;font-size: 11px; font-weight: bold;"> Tanda <span
+                                            style="font-size: 13px;color: red">*</span> wajib diisi </span>
+                                    <br>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group row">
+                                        <label class="col-md-4 col-form-label col-form-label-sm required">Nama</label>
+                                        <div class="col-md-8">
+                                            <input class="form-control form-control-sm" type="text" name="nama"
+                                                [(ngModel)]="model.nama" placeholder="Nama" />
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label
+                                            class="col-md-4 col-form-label col-form-label-sm required">Password</label>
+                                        <div class="col-md-8">
+                                            <input class="form-control form-control-sm" type="password" name="password"
+                                                [(ngModel)]="model.password" placeholder="password" />
+                                            <p *ngIf="isEdit" class="col-form-label col-form-label-sm">kosongi
+                                                apabila tidak ingin dirubah</p>
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label
+                                            class="col-md-4 col-form-label col-form-label-sm required">Username</label>
+                                        <div class="col-md-8">
+                                            <input class="form-control form-control-sm" type="text" name="username"
+                                                [(ngModel)]="model.username" name="username" placeholder="Username" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mt-5">
+                                <div class="col-md-4">
+                                    <div class="panel panels panel-primary bg-primary rounded">
+                                        <div class="panel-heading text-center">
+                                            <label class="i-checks text-white">Data Master</label>
+                                            <input [(ngModel)]="modelCheck.DataMaster" class="mt-2 ml-2"
+                                                name="model_check_master"
+                                                class="custom-control-input-nanti-saja check-all" (change)="checkAllKolom(modelCheck.DataMaster,['barang',
+                                                'pengguna'])" type="checkbox">
+                                        </div>
+                                        <div class="list-group bg-white">
+                                            <div class="list-group-item">
+                                                <label class="i-checks col-4">
+                                                    <input type="checkbox" [(ngModel)]="model.akses.pengguna"
+                                                        name="pengguna" />
+                                                    <i></i>
+                                                    Pengguna
+                                                </label>
+                                                <label class="i-checks col-4">
+                                                    <input type="checkbox" [(ngModel)]="model.akses.barang"
+                                                        name="barang" />
+                                                    <i></i>
+                                                    Barang
+                                                </label>
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+                                </div>
+
+
+
+                            </div>
+
+
+                        </fieldset>
+                    </form>
+                </div>
+                <div class="card-footer">
+                    <div class="float-right">
+                        <button class="btn btn-light btn-sm mr-2" (click)="index()">
+                            <i class="fa fa-chevron-left font-size-14 align-middle mr-2"></i>
+                            Kembali
+                        </button>
+                        <!--  -->
+                        <button class="btn btn-primary btn-sm" [disabled]="model.nama == '' " *ngIf="!isView"
+                            (click)="save()">
+                            <i class="fa fa-save font-size-14 align-middle mr-2"></i>
+                            Simpan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

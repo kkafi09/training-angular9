@@ -1,0 +1,74 @@
+<header id="page-topbar">
+    <div class="navbar-header">
+        <div class="d-flex">
+            <!-- LOGO -->
+            <div class="navbar-brand-box">
+                <a href="/" class="logo logo-dark">
+                    <span class="logo-sm">
+                        <img src="assets/images/logo.png" alt="" class="logo-img" height="22" />
+                    </span>
+                    <span class="logo-lg">
+                        <img src="assets/images/logo.png" alt="" class="logo-img" height="30" />
+                    </span>
+                </a>
+                <a href="/" class="logo logo-light">
+                    <span class="logo-sm">
+                        <img src="assets/images/logo.png" alt="" class="logo-img" height="22" />
+                    </span>
+                    <span class="logo-lg">
+                        <img src="assets/images/logo.png" alt="" class="logo-img" height="30" />
+                    </span>
+                </a>
+            </div>
+            <button type="button" class="btn btn-sm px-3 font-size-16 header-item" id="vertical-menu-btn" (click)="toggleMobileMenu($event)">
+                <i class="fa fa-fw fa-bars"></i>
+            </button>
+        </div>
+        <div class="d-flex">
+            <div class="dropdown d-inline-block" ngbDropdown>
+                <button type="button" class="btn header-item noti-icon" id="page-header-notifications-dropdown" ngbDropdownToggle>
+                    <i class="bx bx-bell bx-tada"></i>
+                    <span class="badge badge-danger badge-pill">0</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right p-0" aria-labelledby="page-header-notifications-dropdown" ngbDropdownMenu>
+                    <div class="p-3">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h6 class="m-0"> Notifications </h6>
+                            </div>
+                            <div class="col-auto">
+                                <a href="javascript: void(0);" class="small"> View All</a>
+                            </div>
+                        </div>
+                    </div>
+                    <perfect-scrollbar style="position: relative; height: 230px;" [config]="configData">
+                        
+                    </perfect-scrollbar>
+                    <div class="p-2 border-top">
+                        <a class="btn btn-sm btn-light btn-block text-center" href="javascript:void(0)">
+                            <i class="mdi mdi-arrow-down-circle mr-1"></i> Tidak Ada Notifikasi
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="dropdown d-inline-block" ngbDropdown>
+                <button type="button" class="btn header-item" ngbDropdownToggle id="page-header-user-dropdown">
+                    <i class="fa fa-user user-avatar"></i>
+                    <span class="d-none d-xl-inline-block ml-1">{{user.nama}}</span>
+                    <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right" ngbDropdownMenu>
+                     <a class="dropdown-item d-block" href="javascript: void(0);">
+                        <i class="bx bx-wrench font-size-16 align-middle mr-1"></i>
+                        Ganti Password
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item text-danger" href="javascript: void(0);" (click)="logout()">
+                        <i class=" bx bx-power-off font-size-16 align-middle mr-1 text-danger"></i>
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>

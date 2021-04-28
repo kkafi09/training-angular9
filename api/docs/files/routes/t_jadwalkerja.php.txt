@@ -1,0 +1,60 @@
+<?php
+
+use Model\JadwalKerjaKaryawan;
+
+// Ambil semua jadwal kerja
+$app->get('/t_jadwalkerja/index', function ($request, $response) {
+    $params = $request->getParams();
+    $jadwalKerja = new JadwalKerjaKaryawan();
+
+    $getDataJadwalKerja = $jadwalKerja->getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' => $getDataJadwalKerja['data'],
+        'totalItems' => $getDataJadwalKerja['totalItem'],
+    ]);
+});
+
+// Ambil detail jadwal kerja
+$app->get('/t_jadwalkerja/getDetail', function ($request, $response) {
+    $data = $request->getParams();
+    $jadwalKerja = new JadwalKerjaKaryawan();
+    $getDetail = $jadwalKerja->getDetail($data);
+
+    return successResponse($response, [
+        'list' => array_values($getDetail['data']),
+    ]);
+});
+
+// Save jadwal kerja
+$app->post('/t_jadwalkerja/save', function ($request, $response) {
+    $data = $request->getParams();
+    $jadwalKerja = new JadwalKerjaKaryawan();
+    $validasi = $jadwalKerja->validasi($data['data']);
+
+    if (true === $validasi) {
+        // Proses simpan ke dalam database
+        $save = $jadwalKerja->save($data);
+
+        if ($save['status']) {
+            return successResponse($response, $save);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus jadwal kerja
+$app->post('/t_jadwalkerja/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $jadwalKerja = new JadwalKerjaKaryawan();
+    $model = $jadwalKerja->save($data);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+

@@ -1,0 +1,188 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+
+class PelatihanRiwayat
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_pelatihan';
+    }
+
+    /**
+     * Ambil semua data perusahaan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('k_pelatihan.id as id,
+					    	k_pelatihan.jenis as jenis,
+					    	k_pelatihan.lokasi as lokasi,
+					    	k_pelatihan.keterangan as keterangan,
+					    	k_pelatihan.tgl_mulai as tgl_mulai,
+					    	k_pelatihan.tgl_selesai as tgl_selesai,
+					    	k_pelatihan.total_jam as total_jam,
+					    	karyawan_data.id as karyawan_id,
+					    	karyawan_data.nama as karyawan_nama,
+					    	m_pelatihan.id as pelatihan_id,
+					    	m_pelatihan.nama as pelatihan_nama')
+            ->from($this->table)
+            ->leftJoin('karyawan_data', 'k_pelatihan.karyawan_id = karyawan_data.id')
+            ->leftJoin('m_pelatihan', 'k_pelatihan.m_pelatihan_id = m_pelatihan.id')
+            ->where('k_pelatihan.is_deleted', '=', 0)
+            ->andWhere('karyawan_id', '=', $params['id'])
+         ;
+
+        // Filter
+//        if (isset($params['filter'])) {
+//            $filter = (array) json_decode($params['filter']);
+//            if (isset($filter['tanggal']) && '' != $filter['tanggal']) {
+//                $filter['tanggal'] = $filter['tanggal']->year.'-'.$filter['tanggal']->month.'-'.$filter['tanggal']->day;
+//                $this->db->where('k_pelatihan.tgl_mulai', '<=', $filter['tanggal']);
+//                $this->db->andWhere('k_pelatihan.tgl_selesai', '>=', $filter['tanggal']);
+//            }
+//            unset($filter['tanggal']);
+//            if (isset($filter['m_pelatihan_id'])) {
+//                $this->db->where('k_pelatihan.m_pelatihan_id', '=', $filter['m_pelatihan_id']);
+//                unset($filter['m_pelatihan_id']);
+//            }
+//            foreach ($filter as $key => $val) {
+//                $this->db->where($key, 'like', $val);
+//            }
+//        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    public function getPerusahaan()
+    {
+        $this->db->select('id, nama')->from('m_perusahaan');
+        $models = $this->db->findAll();
+
+        return ['data' => $models];
+    }
+
+    public function getKaryawan()
+    {
+        $this->db->select('id, nama')->from('karyawan');
+        $models = $this->db->findAll();
+
+        return ['data' => $models];
+    }
+
+    public function getMPelatihan()
+    {
+        $this->db->select('id, kode, nama')
+            ->from('m_pelatihan')
+            ->where('m_pelatihan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+        $models = $this->db->findAll();
+
+        return ['data' => $models];
+    }
+
+    /**
+     * Method untuk menyimpan data perusahaan.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $params
+     */
+    public function save($params)
+    {
+        try {
+            if (isset($params['id']) && !empty($params['id'])) {
+                $model = $this->db->update($this->table, $params, ['id' => $params['id']]);
+            } else {
+                $model = $this->db->insert($this->table, $params);
+            }
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            $model = $this->db->update($this->table, ['is_deleted' => 1], ['id' => $params['id']]);
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'karyawan_id' => 'required',
+            'jenis' => 'required',
+            'm_pelatihan_id' => 'required',
+            'lokasi' => 'required',
+            'tgl_mulai' => 'required',
+            'tgl_selesai' => 'required',
+            'total_jam' => 'required',
+        ];
+
+        \GUMP::set_field_name('karyawan_id', 'Karyawan');
+
+        \GUMP::set_field_name('m_pelatihan_id', 'Jenis Pelatihan');
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

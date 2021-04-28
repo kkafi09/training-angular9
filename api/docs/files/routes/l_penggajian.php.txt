@@ -1,0 +1,36 @@
+<?php
+
+use Model\LaporanPenggajian;
+
+// Ambil semua penggajian
+$app->get('/l_penggajian/getAll', function ($request, $response) {
+    $params = $request->getParams();
+    $laporan_penggajian = new LaporanPenggajian();
+    $getDataPenggajian = $laporan_penggajian->getAll($params);
+
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/penggajian.html', [
+            'data' => $getDataPenggajian['data'],
+            'periode' => $getDataPenggajian['periode'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        if (null !== $getDataPenggajian['periode']) {
+            header('Content-Disposition: attachment;Filename="Laporan Penggajian ('.$getDataPenggajian['periode'].').xls"');
+        } else {
+            header('Content-Disposition: attachment;Filename="Laporan Penggajian (Semua Periode).xls"');
+        }
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/penggajian.html', [
+            'data' => $getDataPenggajian['data'],
+            'periode' => $getDataPenggajian['periode'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, ['list' => $getDataPenggajian['data'], 'periode' => $getDataPenggajian['periode']]);
+    }
+});
+

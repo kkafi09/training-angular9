@@ -1,0 +1,126 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+function arr_date_to_string($date)
+{
+    $combine_date = $date['day'].'-'.$date['month'].'-'.$date['year'];
+
+    return date('Y-m-d', strtotime($combine_date));
+}
+
+function twigView()
+{
+    return new \Slim\Views\Twig('src/views');
+}
+function generate_kodegaji($tahun, $bulan)
+{
+    $config = config('DB');
+    $db = new Cahkampung\Landadb($config['db']);
+    $cekKode = $db-&gt;select('kode')
+        -&gt;from('t_payroll')
+        -&gt;orderBy('kode DESC')
+        -&gt;find()
+    ;
+    if ($cekKode) {
+        $kode_terakhir = $cekKode-&gt;kode;
+    } else {
+        $kode_terakhir = 0;
+    }
+
+    $tipe = 'PYR';
+    $kode_item = (substr($kode_terakhir, -4) + 1);
+    $kode = substr('0000'.$kode_item, strlen($kode_item));
+
+    return $tipe.$tahun.$bulan.$kode;
+}
+function sendMailreg($subjek, $nama_penerima, $email_penerima, $template)
+{
+    $body = $template;
+    // $db   = new Cahkampung\Landadb(Db());
+    $config = config('DB');
+    $db = new Cahkampung\Landadb($config['db']);
+    $mail = new PHPMailer\PHPMailer\PHPMailer();
+    $mail-&gt;isSMTP();
+    $mail-&gt;SMTPDebug = 0;
+    $mail-&gt;SMTPOptions = [
+        'ssl' =&gt; [
+            'verify_peer' =&gt; false,
+            'verify_peer_name' =&gt; false,
+            'allow_self_signed' =&gt; true,
+        ],
+    ];
+    $mail-&gt;Host = 'smtp.gmail.com';
+    $mail-&gt;SMTPAuth = true;
+//    $mail-&gt;Username = &quot;erliomedia@gmail.com&quot;;
+    // $mail-&gt;Password = &quot;bismillah17&quot;;
+    // $mail-&gt;Username = &quot;noreplyinfosystems@gmail.com&quot;;
+    // $mail-&gt;Password = &quot;bismillah2018&quot;;
+    $mail-&gt;Username = 'giromarutori@gmail.com';
+    $mail-&gt;Password = 'bvojyztqsdpvzpie';
+//        $mail-&gt;Username = $getEmail-&gt;email_smtp;
+    //        $mail-&gt;Password = $getEmail-&gt;password_smtp;
+    $mail-&gt;SMTPSecure = 'tls';
+    $mail-&gt;Port = 587;
+    $mail-&gt;setFrom('noreplyinfosystems@gmail.com', 'HUMANIS APP');
+    $mail-&gt;addAddress($email_penerima, &quot;{$nama_penerima}&quot;);
+    $mail-&gt;isHTML(true);
+    $mail-&gt;Subject = $subjek;
+    $mail-&gt;Body = $body;
+    // if ($file != false) {
+    //     $mail-&gt;AddAttachment($file, &quot;laporan-data-nup.pdf&quot;);
+    // }
+    if (!$mail-&gt;send()) {
+        return [
+            'status' =&gt; false,
+            'error' =&gt; $mail-&gt;ErrorInfo,
+        ];
+    }
+
+    return [
+        'status' =&gt; true,
+    ];
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

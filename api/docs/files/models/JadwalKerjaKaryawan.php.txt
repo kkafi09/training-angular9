@@ -1,0 +1,210 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class JadwalKerjaKaryawan extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 't_jadwal';
+    }
+
+    /**
+     * Ambil semua data jadwal kerja.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this->db->select('*')
+            ->from($this->table)
+        ;
+
+        // Filter
+        if (isset($params) && !is_array($params)) {
+            // jika parameter dalam bentuk json
+            $filter = (isset($params)) ? (array) json_decode($params) : [];
+        } elseif (isset($params) && is_array($params)) {
+            $filter = $params;
+        }
+
+        // set parameter
+        if (isset($params) && !empty($params)) {
+            foreach ($filter as $key => $val) {
+                if (!empty($val)) {
+                    if ('nama' == $key) {
+                        $this->db->where('m_jadwal.nama', 'like', $val);
+                    } elseif ('kode' == $key) {
+                        $this->db->where('m_jadwal.kode', 'like', $val);
+                    }
+                }
+            }
+        }
+
+        // Set limit
+        if (isset($limit) && !empty($limit)) {
+            $this->db->limit($limit);
+        }
+
+        // Set offset
+        if (isset($offset) && !empty($offset)) {
+            $this->db->offset($offset);
+        }
+
+        // ambil data berdasarkan perusahaan
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this->db->andWhere($this->table.'.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+
+        $models = $this->db->orderBy('id DESC')->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Ambil detail jadwal kerja.
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    public function getDetail($data)
+    {
+        try {
+            $detJadwal = $this->db->select('t_jadwal_det.*, m_jamker.nama')
+                ->from('t_jadwal_det')
+                ->join('left join', 'm_jamker', 'm_jamker.id = t_jadwal_det.m_jamker_id')
+                ->where('t_jadwal_det.t_jadwal_id', '=', $data['id'])
+                ->findAll()
+            ;
+
+            $arr = [];
+            foreach ($detJadwal as $key => $val) {
+                $arr[$val->karyawan_id]['m_karyawan_id'] = $val->karyawan_id;
+                $arr[$val->karyawan_id]['detail'][] = $val;
+            }
+
+            return [
+                'data' => $arr,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Method untuk menyimpan data jadwal kerja.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        try {
+            if (isset($data['data'])) {
+                $jadwal = $data['data'];
+
+                if (!isset($jadwal['id'])) {
+                    $jadwal['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : null;
+
+                    $this->db->startTransaction();
+
+                    $model = $this->db->insert($this->table, $jadwal);
+
+                    foreach ($data['listDetail'] as $key => $value) {
+                        foreach ($value['detail'] as $ky => $val) {
+                            $val['t_jadwal_id'] = $model->id;
+                            $val['karyawan_id'] = $value['m_karyawan_id'];
+
+                            if (isset($val['nama'])) {
+                                $detail = $this->db->insert('t_jadwal_det', $val);
+                            }
+                        }
+                    }
+
+                    $this->db->endTransaction();
+                } elseif (empty($customParams)) {
+                    $jadwal = $data['data'];
+
+                    $this->db->startTransaction();
+
+                    $model = $this->db->update($this->table, $jadwal, ['id' => $jadwal['id']]);
+                    $delete = $this->db->delete('t_jadwal_det', ['t_jadwal_id' => $jadwal['id']]);
+
+                    foreach ($data['listDetail'] as $key => $value) {
+                        foreach ($value['detail'] as $ky => $val) {
+                            $val['t_jadwal_id'] = $model->id;
+                            $val['karyawan_id'] = $value['m_karyawan_id'];
+
+                            if (isset($val['nama'])) {
+                                $detail = $this->db->insert('t_jadwal_det', $val);
+                            }
+                        }
+                    }
+
+                    $this->db->endTransaction();
+                } else {
+                    $model = $this->db->update($this->table, $data, $customParams);
+                }
+            } else {
+                $model = $this->db->delete($this->table, ['id' => $data['id']]);
+                $detail = $this->db->delete('t_jadwal_det', ['t_jadwal_id' => $data['id']]);
+            }
+
+            // Return data pelatihan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     * @param mixed $tipe
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'bulan' => 'required',
+            'tahun' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

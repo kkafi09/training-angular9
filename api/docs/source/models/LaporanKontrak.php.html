@@ -1,0 +1,133 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class LaporanKontrak
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'k_status';
+    }
+
+    /**
+     * Ambil semua data Pengajuan Reimbursement.
+     *
+     * @param array $params
+     */
+    public function getAll($params = [])
+    {
+        if ('null' != $params['periode_mulai'] &amp;&amp; 'null' != $params['periode_selesai']) {
+            $tanggal_awal = date('Y-m-d', strtotime($params['periode_mulai']));
+            $tanggal_akhir = date('Y-m-d', strtotime($params['periode_selesai']));
+        } else {
+            $tanggal_awal = null;
+            $tanggal_akhir = null;
+        }
+        //echo json_encode($params);die();
+        $this-&gt;db-&gt;select($this-&gt;table.'.*,karyawan_data.nama as namaKaryawan, t_kontrak.kode as kode_kontrak, t_kontrak.tgl as tgl_kontrak, t_kontrak.tipe as tipe_kontrak')
+            -&gt;from($this-&gt;table)
+            -&gt;leftJoin('t_kontrak', 't_kontrak.id = k_status.t_kontrak_id')
+            -&gt;leftJoin('karyawan', 'karyawan.id = k_status.karyawan_id')
+            -&gt;leftJoin('karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            -&gt;where($this-&gt;table.'.is_deleted', '=', 0)
+            -&gt;where($this-&gt;table.'.k_status_lama_id', '&gt;', 0)
+            -&gt;orderBy($this-&gt;table.'.id DESC')
+            -&gt;where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+        ;
+
+        if (null != $tanggal_awal &amp;&amp; null != $tanggal_akhir) {
+            $this-&gt;db-&gt;andWhere('t_kontrak.tgl', '&gt;=', $tanggal_awal)
+                -&gt;andWhere('t_kontrak.tgl', '&lt;=', $tanggal_akhir)
+            ;
+        }
+
+        if ('null' != $params['karyawan_id'] &amp;&amp; '' != $params['karyawan_id']) {
+            $this-&gt;db-&gt;andWhere($this-&gt;table.'.karyawan_id', '=', $params['karyawan_id']);
+        }
+
+        if ('null' != $params['tipe'] &amp;&amp; '' != $params['tipe']) {
+            $this-&gt;db-&gt;andWhere('t_kontrak.tipe', '=', $params['tipe']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        $this-&gt;db-&gt;select('k_status.*')
+            -&gt;from($this-&gt;table)
+        ;
+        $kontrakAll = $this-&gt;db-&gt;findAll();
+
+        foreach ($models as $key =&gt; $val) {
+            foreach ($kontrakAll as $keys =&gt; $vals) {
+                if (isset($val-&gt;k_status_lama_id) &amp;&amp; $val-&gt;k_status_lama_id == $vals-&gt;id) {
+                    $val-&gt;tgl_mulai_lama = $vals-&gt;tgl_mulai;
+                    $val-&gt;tgl_selesai_lama = $vals-&gt;tgl_selesai;
+                }
+            }
+        }
+
+        return [
+            'status' =&gt; true,
+            'list' =&gt; array_values($models),
+            'periode' =&gt; null != $tanggal_awal &amp;&amp; null != $tanggal_akhir ? date('d/m/Y', strtotime($tanggal_awal)).' s/d '.date('d/m/Y', strtotime($tanggal_akhir)) : null,
+        ];
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,102 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\KPendidikan;
+use Service\Landa;
+
+// Ambil semua KPendidikan
+$app-&gt;get('/k_pendidikan/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kpendidikan = new KPendidikan();
+    $getDatakpendidikan = $kpendidikan-&gt;getAll($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDatakpendidikan['data'],
+        'totalItems' =&gt; $getDatakpendidikan['totalItem'],
+    ]);
+});
+// Ambil Master Tingkat Pendidikan
+$app-&gt;get('/k_pendidikan/pendidikan', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $kpendidikan = new KPendidikan();
+    $getDatatpendidikan = $kpendidikan-&gt;getTpendidikan($params);
+
+    return successResponse($response, [
+        'list' =&gt; $getDatatpendidikan['data'],
+    ]);
+});
+// Save KPendidikan
+$app-&gt;post('/k_pendidikan/save', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $landa = new Landa();
+    $kpendidikan = new KPendidikan();
+    $validasi = $kpendidikan-&gt;validasi($data);
+    if (true === $validasi) {
+        /**
+         * Proses simpan ke dalam database.
+         */
+        $save = $kpendidikan-&gt;save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+// Hapus KPendidikan
+$app-&gt;post('/k_pendidikan/delete', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $kpendidikan = new KPendidikan();
+    $model = $kpendidikan-&gt;save(['is_deleted' =&gt; 1, 'id' =&gt; $data['id']]);
+    if ($model['status']) {
+        return successResponse($response, $model);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

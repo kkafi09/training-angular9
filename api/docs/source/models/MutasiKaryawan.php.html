@@ -1,0 +1,698 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+
+class MutasiKaryawan
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'k_jabatan';
+    }
+
+    /**
+     * Ambil semua data riwayat jabatan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('k_jabatan.*,karyawan_data.nama as nama_karyawan,karyawan.m_perusahaan_id, m_organisasi.nama as organisasi, m_jabatan_level.nama as levelJabatan, m_jabatan.nama as jabatan')
+            -&gt;from('k_jabatan')
+            -&gt;leftJoin('karyawan', 'karyawan.id = k_jabatan.karyawan_id')
+            -&gt;leftJoin('karyawan_data', 'karyawan_data.id = karyawan.karyawan_data_id')
+            -&gt;leftJoin('m_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+            -&gt;leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;leftJoin('m_jabatan_level', 'm_jabatan_level.id = m_jabatan.m_jabatan_level_id')
+            -&gt;where('k_jabatan.is_deleted', '=', 0)
+            -&gt;where('k_jabatan.k_jabatan_lama_id', '&gt;', 0)
+            -&gt;orderBy('k_jabatan.id DESC')
+            -&gt;where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key =&gt; $val) {
+                if (isset($filter['karyawan_id']) &amp;&amp; '' != $filter['karyawan_id']) {
+                    $this-&gt;db-&gt;where($this-&gt;table.'.karyawan_id', '=', $filter['karyawan_id']);
+                    unset($filter['karyawan_id']);
+                }
+                if (isset($filter['m_organisasi_id']) &amp;&amp; '' != $filter['m_organisasi_id']) {
+                    $this-&gt;db-&gt;where($this-&gt;table.'.m_organisasi_id', '=', $filter['m_organisasi_id']);
+                    unset($filter['m_organisasi_id']);
+                }
+                if (isset($filter['m_jabatan_id']) &amp;&amp; '' != $filter['m_jabatan_id']) {
+                    $this-&gt;db-&gt;where($this-&gt;table.'.m_jabatan_id', '=', $filter['m_jabatan_id']);
+                    unset($filter['m_jabatan_id']);
+                }
+                $this-&gt;db-&gt;where($this-&gt;table.'.'.$key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        foreach ($models as $key =&gt; $value) {
+            $value-&gt;txtStatus = 1 == $value-&gt;aktif ? 'Aktif' : 'Tidak Aktif';
+            foreach ($models as $keys =&gt; $vals) {
+                if (isset($value-&gt;k_jabatan_lama_id) &amp;&amp; $value-&gt;k_jabatan_lama_id == $vals-&gt;id) {
+                    $value-&gt;jabatan_lama = $vals-&gt;jabatan;
+                    $value-&gt;organisasi_lama = $vals-&gt;organisasi;
+                }
+            }
+        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data riwayat jabatan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        $landa = new Landa();
+
+        try {
+            $is_habis = 0;
+            $data['tgl_mulai'] = isset($data['tgl_mulai']) ? ($landa-&gt;arrayToDate($data['tgl_mulai'])) : null;
+            $data['is_deleted'] = 0;
+            $data['dijabat'] = 1;
+            if (!isset($data['id']) || '' == $data['id']) {
+                if ($_SESSION['user']['m_perusahaan']['id'] != $data['m_perusahaan_id']) {
+                    if (1 == $data['aktif']) {
+                        $model = $this-&gt;mutasiBedaPerusahaanAktif($data);
+                        $data['aktif'] = $model['aktif'];
+                        $data['karyawan_id'] = $model['karyawan_id'];
+                        $is_habis = $model['is_habis'];
+                    } else {
+                        $model = $this-&gt;mutasiBedaPerusahaanNonAktif($data);
+                        $data['aktif'] = $model['aktif'];
+                        $data['karyawan_id'] = $model['karyawan_id'];
+                    }
+                } else {
+                    if (1 == $data['aktif']) {
+                        $model = $this-&gt;mutasiSatuPerusahaanAktif($data);
+                        $data['aktif'] = 1;
+                    } else {
+                        $model = $this-&gt;mutasiSatuPerusahaanNonAktif($data);
+                    }
+                }
+//                $mutasi = $this-&gt;checkMutasi($data);
+                $data['k_jabatan_lama_id'] = isset($data['id_lama']) ? $data['id_lama'] : 0;
+//                $karyawan = $this-&gt;checkKaryawan($data);
+//                $data['karyawan_id'] = isset($karyawan-&gt;id) ? $karyawan-&gt;id : $data['karyawan_id'];
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, ['id' =&gt; $data['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, $customParams);
+            }
+            // Return data riwayat jabatan
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+                'is_habis' =&gt; $is_habis,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function mutasiSatuPerusahaanNonAktif($data)
+    {
+        if (isset($data['id_lama']) &amp;&amp; null != $data['id_lama']) {
+            return $this-&gt;db-&gt;update($this-&gt;table, ['dijabat' =&gt; 2, 'tgl_selesai' =&gt; $data['tgl_mulai']], ['id' =&gt; $data['id_lama']]);
+        }
+    }
+
+    public function mutasiSatuPerusahaanAktif($data)
+    {
+        if (isset($data['id_lama']) &amp;&amp; null != $data['id_lama']) {
+            return $this-&gt;db-&gt;update($this-&gt;table, ['aktif' =&gt; 0, 'dijabat' =&gt; 2, 'tgl_selesai' =&gt; $data['tgl_mulai']], ['id' =&gt; $data['id_lama']]);
+        }
+    }
+
+    public function mutasiBedaPerusahaanNonAktif($data)
+    {
+        $this-&gt;db-&gt;startTransaction();
+        if (isset($data['id_lama']) &amp;&amp; null != $data['id_lama']) {
+            $value = [];
+            $model = $this-&gt;db-&gt;update($this-&gt;table, ['dijabat' =&gt; 2, 'tgl_selesai' =&gt; $data['tgl_mulai']], ['id' =&gt; $data['id_lama']]);
+            $this-&gt;db-&gt;select('karyawan.*')
+                -&gt;from('karyawan')
+                -&gt;where('karyawan.is_deleted', '=', 0)
+                -&gt;where('karyawan.karyawan_data_id', '=', $data['karyawan_data_id'])
+                -&gt;andWhere('karyawan.m_perusahaan_id', '=', $data['m_perusahaan_id'])
+            ;
+            $karyawanPerusahaan = $this-&gt;db-&gt;find();
+
+            $this-&gt;db-&gt;select('karyawan.*')
+                -&gt;from('karyawan')
+                -&gt;where('karyawan.id', '=', $data['karyawan_id'])
+            ;
+            $karyawanSebelumnya = $this-&gt;db-&gt;find();
+
+            //Check Karyawan di Perusahaan
+            // Jika Karyawan sudah pernah masuk kedalam perusahaan sebelumnya, maka update, jika belum masukan ke karyawan baru
+            if (isset($karyawanPerusahaan) &amp;&amp; null != $karyawanPerusahaan) {
+                // Jika terdapat karyawan tapi statusnya tidak aktif, maka aktifkan karyawan tersebut
+                if (2 == $karyawanPerusahaan-&gt;status) {
+                    $karyawanPerusahaanBaru = $this-&gt;db-&gt;update('karyawan', ['status' =&gt; 1], ['id' =&gt; $karyawanPerusahaan-&gt;id]);
+                } else {
+                    $karyawanPerusahaanBaru = $karyawanPerusahaan;
+                }
+                //Check apakah ada jabatan yang aktif di perusahaan yang baru
+                $this-&gt;db-&gt;select('k_jabatan.*')
+                    -&gt;from('k_jabatan')
+                    -&gt;where('k_jabatan.karyawan_id', '=', $karyawanPerusahaan-&gt;id)
+                    -&gt;where('k_jabatan.aktif', '=', 1)
+                    -&gt;where('k_jabatan.is_deleted', '=', 0)
+                    -&gt;where('k_jabatan.dijabat', '=', 1)
+
+                        ;
+                $checkJabatan = $this-&gt;db-&gt;find();
+                if (isset($checkJabatan-&gt;id) &amp;&amp; false !== $checkJabatan-&gt;id) {
+                    $value['aktif'] = 0;
+                } else {
+                    $value['aktif'] = 1;
+                }
+            } else {
+                //Jika Karyawan di perusahaan baru belum ada, buat karyawan baru dengan data karyawan yang lama,tetapi dengan perusahaan yang baru
+                if (isset($karyawanSebelumnya) &amp;&amp; null != $karyawanSebelumnya) {
+                    $karyawanSebelumnya-&gt;m_perusahaan_id = $data['m_perusahaan_id'];
+                    foreach ($karyawanSebelumnya as $key =&gt; $val) {
+                        $karyawan[$key] = $val;
+                    }
+                    unset($karyawan['id']);
+                    $karyawanPerusahaanBaru = $this-&gt;db-&gt;insert('karyawan', $karyawan);
+                }
+                $value['aktif'] = 1;
+            }
+            $this-&gt;db-&gt;endTransaction();
+            $value['karyawan_id'] = $karyawanPerusahaanBaru-&gt;id;
+
+            return $value;
+        }
+    }
+
+    public function mutasiBedaPerusahaanAktif($data)
+    {
+        $this-&gt;db-&gt;startTransaction();
+        if (isset($data['id_lama']) &amp;&amp; null != $data['id_lama']) {
+            $value = [];
+            $value['is_habis'] = 0;
+            $this-&gt;db-&gt;select('k_jabatan.*')
+                -&gt;from('k_jabatan')
+                -&gt;where('k_jabatan.karyawan_id', '=', $data['karyawan_id'])
+                -&gt;where('k_jabatan.aktif', '!=', 1)
+                -&gt;where('k_jabatan.is_deleted', '=', 0)
+                -&gt;where('k_jabatan.dijabat', '=', 1)
+                -&gt;orderBy('k_jabatan.id DESC')
+
+            ;
+            $checkJabatanLamaNonAktif = $this-&gt;db-&gt;find();
+            if (isset($checkJabatanLamaNonAktif) &amp;&amp; false !== $checkJabatanLamaNonAktif) {
+                $this-&gt;db-&gt;update($this-&gt;table, ['aktif' =&gt; 1], ['id' =&gt; $checkJabatanLamaNonAktif-&gt;id]);
+            } else {
+                $value['is_habis'] = 1;
+                $this-&gt;db-&gt;update('karyawan', ['status' =&gt; 2], ['id' =&gt; $data['karyawan_id']]);
+            }
+
+            $model = $this-&gt;db-&gt;update($this-&gt;table, ['aktif' =&gt; 0, 'dijabat' =&gt; 2, 'tgl_selesai' =&gt; $data['tgl_mulai']], ['id' =&gt; $data['id_lama']]);
+            $this-&gt;db-&gt;select('karyawan.*')
+                -&gt;from('karyawan')
+                -&gt;where('karyawan.is_deleted', '=', 0)
+                -&gt;where('karyawan.karyawan_data_id', '=', $data['karyawan_data_id'])
+                -&gt;andWhere('karyawan.m_perusahaan_id', '=', $data['m_perusahaan_id'])
+            ;
+            $karyawanPerusahaan = $this-&gt;db-&gt;find();
+
+            $this-&gt;db-&gt;select('karyawan.*')
+                -&gt;from('karyawan')
+                -&gt;where('karyawan.id', '=', $data['karyawan_id'])
+            ;
+            $karyawanSebelumnya = $this-&gt;db-&gt;find();
+
+            //Check Karyawan di Perusahaan
+            // Jika Karyawan sudah pernah masuk kedalam perusahaan sebelumnya, maka update, jika belum masukan ke karyawan baru
+            if (isset($karyawanPerusahaan) &amp;&amp; null != $karyawanPerusahaan) {
+                // Jika terdapat karyawan tapi statusnya tidak aktif, maka aktifkan karyawan tersebut
+                if (2 == $karyawanPerusahaan-&gt;status) {
+                    $karyawanPerusahaanBaru = $this-&gt;db-&gt;update('karyawan', ['status' =&gt; 1], ['id' =&gt; $karyawanPerusahaan-&gt;id]);
+                } else {
+                    $karyawanPerusahaanBaru = $karyawanPerusahaan;
+                }
+                //Check apakah ada jabatan yang aktif di perusahaan yang baru
+                $this-&gt;db-&gt;select('k_jabatan.*')
+                    -&gt;from('k_jabatan')
+                    -&gt;where('k_jabatan.karyawan_id', '=', $karyawanPerusahaan-&gt;id)
+                    -&gt;where('k_jabatan.aktif', '=', 1)
+                    -&gt;where('k_jabatan.is_deleted', '=', 0)
+                    -&gt;where('k_jabatan.dijabat', '=', 1)
+
+                ;
+                $checkJabatan = $this-&gt;db-&gt;find();
+                if (isset($checkJabatan-&gt;id) &amp;&amp; false !== $checkJabatan-&gt;id) {
+                    $this-&gt;db-&gt;update($this-&gt;table, ['aktif' =&gt; 0], ['id' =&gt; $checkJabatan-&gt;id]);
+                }
+                $value['aktif'] = 1;
+            } else {
+                //Jika Karyawan di perusahaan baru belum ada, buat karyawan baru dengan data karyawan yang lama,tetapi dengan perusahaan yang baru
+                if (isset($karyawanSebelumnya) &amp;&amp; null != $karyawanSebelumnya) {
+                    $karyawanSebelumnya-&gt;m_perusahaan_id = $data['m_perusahaan_id'];
+                    foreach ($karyawanSebelumnya as $key =&gt; $val) {
+                        $karyawan[$key] = $val;
+                    }
+                    unset($karyawan['id']);
+                    $karyawan['status'] = 1;
+                    $karyawanPerusahaanBaru = $this-&gt;db-&gt;insert('karyawan', $karyawan);
+                }
+                $value['aktif'] = 1;
+            }
+            $this-&gt;db-&gt;endTransaction();
+            $value['karyawan_id'] = $karyawanPerusahaanBaru-&gt;id;
+
+            return $value;
+        }
+    }
+
+    public function tambahMutasi($data, $customParams = '')
+    {
+        $landa = new Landa();
+
+        try {
+            $data['tgl_mulai'] = isset($data['tgl_mulai']) ? ($landa-&gt;arrayToDate($data['tgl_mulai'])) : null;
+            $data['tgl_selesai'] = isset($data['tgl_selesai']) ? ($landa-&gt;arrayToDate($data['tgl_selesai'])) : null;
+            if (!isset($data['id']) || '' == $data['id']) {
+                $data['is_deleted'] = 0;
+                $check = $this-&gt;checkTambahMutasi($data);
+                $data['aktif'] = $check;
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $data);
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $data, ['id' =&gt; $data['id']]);
+            }
+            // Return data riwayat jabatan
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function checkTambahMutasi($data)
+    {
+        $this-&gt;db-&gt;select('k_jabatan.*')
+            -&gt;from('k_jabatan')
+            -&gt;where('k_jabatan.karyawan_id', '=', $data['karyawan_id'])
+            -&gt;where('k_jabatan.aktif', '=', 1)
+            -&gt;where('k_jabatan.is_deleted', '=', 0)
+            -&gt;where('k_jabatan.dijabat', '=', 1)
+        ;
+        $check = $this-&gt;db-&gt;findAll();
+        if (isset($check) &amp;&amp; [] != $check) {
+            return  0;
+        }
+
+        return  1;
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'm_perusahaan_id' =&gt; 'required',
+            'karyawan_id' =&gt; 'required',
+            'tgl_mulai' =&gt; 'required',
+            'm_organisasi_id' =&gt; 'required',
+            'm_jabatan_id' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function checkMutasi($data)
+    {
+        $this-&gt;db-&gt;select('k_jabatan.*,  m_organisasi.nama as organisasi, m_jabatan_level.nama as levelJabatan, m_jabatan.nama as jabatan')
+            -&gt;from('k_jabatan')
+            -&gt;leftJoin('karyawan', 'karyawan.id = k_jabatan.karyawan_id')
+            -&gt;leftJoin('m_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+            -&gt;leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;leftJoin('m_jabatan_level', 'm_jabatan_level.id = m_jabatan.m_jabatan_level_id')
+            -&gt;where('k_jabatan.is_deleted', '=', 0)
+            -&gt;where('k_jabatan.aktif', '=', 1)
+            -&gt;where('karyawan.karyawan_data_id', '=', $data['karyawan_data_id'])
+            -&gt;orderBy('k_jabatan.tgl_mulai DESC')
+        ;
+        $model = $this-&gt;db-&gt;find();
+        if (isset($model) &amp;&amp; null != $model) {
+            $this-&gt;db-&gt;update($this-&gt;table, ['aktif' =&gt; 0, 'tgl_selesai' =&gt; $data['tgl_mulai']], ['id' =&gt; $model-&gt;id]);
+
+            return $model;
+        }
+
+        return 0;
+    }
+
+    public function checkKaryawan($data)
+    {
+        $this-&gt;db-&gt;select('karyawan.*')
+            -&gt;from('karyawan')
+            -&gt;where('karyawan.status', '=', 1)
+            -&gt;andWhere('karyawan.karyawan_data_id', '=', $data['karyawan_data_id'])
+        ;
+        $karyawanAll = $this-&gt;db-&gt;find();
+
+        $this-&gt;db-&gt;select('karyawan.*')
+            -&gt;from('karyawan')
+            -&gt;where('karyawan.karyawan_data_id', '=', $data['karyawan_data_id'])
+            -&gt;andWhere('karyawan.m_perusahaan_id', '=', $data['m_perusahaan_id'])
+        ;
+        $karyawanPerusahaan = $this-&gt;db-&gt;find();
+
+        //Check Karyawan di Perusahaan
+        if (isset($karyawanAll) &amp;&amp; null != $karyawanAll) {
+            $this-&gt;db-&gt;startTransaction();
+            // Jika karyawan yang aktif, perusahaannya yang lama tidak sama dengan perusahaan yang dipilih maka update karyawan
+            if ($karyawanAll-&gt;m_perusahaan_id != $data['m_perusahaan_id']) {
+                $this-&gt;db-&gt;update('karyawan', ['status' =&gt; 2], ['id' =&gt; $karyawanAll-&gt;id]);
+                // Jika Karyawan sudah pernah masuk kedalam perusahaan sebelumnya, maka update, jika belum masukan ke karyawan baru
+                if (isset($karyawanPerusahaan) &amp;&amp; null != $karyawanPerusahaan) {
+                    $karyawanPerusahaanBaru = $this-&gt;db-&gt;update('karyawan', ['status' =&gt; 1], ['id' =&gt; $karyawanPerusahaan-&gt;id]);
+                } else {
+                    $karyawanAll-&gt;m_perusahaan_id = $data['m_perusahaan_id'];
+                    foreach ($karyawanAll as $key =&gt; $val) {
+                        $karyawan[$key] = $val;
+                    }
+                    unset($karyawan['id']);
+                    $karyawanPerusahaanBaru = $this-&gt;db-&gt;insert('karyawan', $karyawan);
+                }
+            }
+
+            $this-&gt;db-&gt;endTransaction();
+            if (isset($karyawanPerusahaanBaru) &amp;&amp; null != $karyawanPerusahaanBaru) {
+                return $karyawanPerusahaanBaru;
+            }
+        }
+
+        return 0;
+    }
+
+    public function getKaryawan()
+    {
+        $this-&gt;db-&gt;select('karyawan.*, karyawan_data.nama,m_jabatan.nama as nama_jabatan_lama, m_organisasi.nama as nama_organisasi_lama')
+            -&gt;from('karyawan_data')
+            -&gt;join('left join', 'karyawan', 'karyawan_data.id = karyawan.karyawan_data_id')
+            -&gt;leftJoin('k_jabatan', 'k_jabatan.karyawan_id = karyawan.id and k_jabatan.aktif = 1 and k_jabatan.is_deleted = 0')
+            -&gt;leftJoin('m_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+            -&gt;leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;where('karyawan.is_deleted', '=', 0)
+            -&gt;where('karyawan.status', '=', 1)
+            -&gt;where('karyawan.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            -&gt;groupBy('karyawan.id')
+
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+
+        return [
+            'list' =&gt; $models,
+        ];
+    }
+
+    public function getOrganisasi($perusahaan_id)
+    {
+        $this-&gt;db-&gt;select(
+            'm_organisasi.*'
+        )
+            -&gt;from('m_organisasi')
+            -&gt;where('m_organisasi.is_deleted', '=', 0)
+            -&gt;where('m_organisasi.m_perusahaan_id', '=', $perusahaan_id)
+        ;
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'list' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function getJabatan($perusahaan_id)
+    {
+        $this-&gt;db-&gt;select('m_jabatan.*, m_jabatan_level.nama as nama_jabatan, m_jabatan2.nama as nama_induk')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'm_jabatan as m_jabatan2', 'm_jabatan2.id = m_jabatan.parent_id')
+            -&gt;join('left join', 'm_jabatan_level', 'm_jabatan_level.id = m_jabatan.m_jabatan_level_id')
+            -&gt;from('m_jabatan')
+            -&gt;where('m_jabatan.is_deleted', '=', 0)
+            -&gt;where('m_jabatan_level.m_perusahaan_id', '=', $perusahaan_id)
+        ;
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'list' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function getJabatanKaryawan($data)
+    {
+        $this-&gt;db-&gt;select('k_jabatan.*,  m_organisasi.nama as organisasi, m_jabatan_level.nama as levelJabatan, m_jabatan.nama as jabatan')
+            -&gt;from('k_jabatan')
+            -&gt;leftJoin('karyawan', 'karyawan.id = k_jabatan.karyawan_id')
+            -&gt;leftJoin('m_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+            -&gt;leftJoin('m_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            -&gt;leftJoin('m_jabatan_level', 'm_jabatan_level.id = m_jabatan.m_jabatan_level_id')
+            -&gt;where('k_jabatan.is_deleted', '=', 0)
+            -&gt;where('k_jabatan.dijabat', '=', 1)
+            -&gt;where('k_jabatan.karyawan_id', '=', $data['karyawan_id'])
+            -&gt;orderBy('k_jabatan.aktif DESC')
+        ;
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'list' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function delete($data)
+    {
+        try {
+            if (1 == $data['aktif']) {
+                $this-&gt;db-&gt;select('k_jabatan.*')
+                    -&gt;from('k_jabatan')
+                    -&gt;where('k_jabatan.karyawan_id', '=', $data['karyawan_id'])
+                    -&gt;where('k_jabatan.aktif', '!=', 1)
+                    -&gt;where('k_jabatan.is_deleted', '=', 0)
+                    -&gt;where('k_jabatan.dijabat', '=', 1)
+                    -&gt;orderBy('k_jabatan.id DESC')
+
+                ;
+                $checkJabatanLamaNonAktif = $this-&gt;db-&gt;find();
+                if (isset($checkJabatanLamaNonAktif) &amp;&amp; false !== $checkJabatanLamaNonAktif) {
+                    $this-&gt;db-&gt;update($this-&gt;table, ['aktif' =&gt; 1], ['id' =&gt; $checkJabatanLamaNonAktif-&gt;id]);
+                }
+            }
+            $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; 1], ['id' =&gt; $data['id']]);
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Delete',
+            ];
+        }
+    }
+
+    public function nonaktif($data)
+    {
+        try {
+            if (1 == $data['aktif']) {
+                $this-&gt;db-&gt;select('k_jabatan.*')
+                    -&gt;from('k_jabatan')
+                    -&gt;where('k_jabatan.karyawan_id', '=', $data['karyawan_id'])
+                    -&gt;where('k_jabatan.aktif', '!=', 1)
+                    -&gt;where('k_jabatan.is_deleted', '=', 0)
+                    -&gt;where('k_jabatan.dijabat', '=', 1)
+                    -&gt;orderBy('k_jabatan.id DESC')
+
+                ;
+                $checkJabatanLamaNonAktif = $this-&gt;db-&gt;find();
+                if (isset($checkJabatanLamaNonAktif) &amp;&amp; false !== $checkJabatanLamaNonAktif) {
+                    $this-&gt;db-&gt;update($this-&gt;table, ['aktif' =&gt; 1], ['id' =&gt; $checkJabatanLamaNonAktif-&gt;id]);
+                }
+            }
+            $model = $this-&gt;db-&gt;update($this-&gt;table, ['dijabat' =&gt; 2], ['id' =&gt; $data['id']]);
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Delete',
+            ];
+        }
+    }
+
+    public function ubahJabatan($data)
+    {
+        try {
+            $this-&gt;db-&gt;select('k_jabatan.*')
+                -&gt;from('k_jabatan')
+                -&gt;where('k_jabatan.karyawan_id', '=', $data['karyawan_id'])
+                -&gt;where('k_jabatan.aktif', '=', 1)
+                -&gt;where('k_jabatan.is_deleted', '=', 0)
+                -&gt;where('k_jabatan.dijabat', '=', 1)
+                ;
+
+            $checkJabatanLamaAktif = $this-&gt;db-&gt;find();
+            if (isset($checkJabatanLamaAktif) &amp;&amp; false !== $checkJabatanLamaAktif) {
+                $this-&gt;db-&gt;update($this-&gt;table, ['aktif' =&gt; 0], ['id' =&gt; $checkJabatanLamaAktif-&gt;id]);
+            }
+            $model = $this-&gt;db-&gt;update($this-&gt;table, ['aktif' =&gt; 1], ['id' =&gt; $data['id']]);
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Diubah',
+            ];
+        }
+    }
+
+    public function generate_kode()
+    {
+        $this-&gt;dbModel = Db::db();
+        $cekKode = $this-&gt;db-&gt;select('id')
+            -&gt;from($this-&gt;table)
+            -&gt;orderBy('id DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $tahun = date('y');
+            $bulan = date('m');
+            $tipe = 'TRK';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$tahun.$bulan.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

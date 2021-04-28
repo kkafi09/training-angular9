@@ -1,0 +1,277 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+
+class OnBoard extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 't_onboard';
+    }
+
+    /**
+     * Ambil semua data kategori file.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select($this-&gt;table.'.*,
+			        m_perusahaan.id as perusahaan_id, 
+			        m_perusahaan.nama as perusahaan_nama')
+            -&gt;from($this-&gt;table)
+            -&gt;leftJoin('m_perusahaan', $this-&gt;table.'.m_perusahaan_id = m_perusahaan.id')
+            -&gt;where($this-&gt;table.'.is_deleted', '=', 0)
+            -&gt;orderBy($this-&gt;table.'.id DESC')
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key =&gt; $val) {
+                $this-&gt;db-&gt;where($this-&gt;table.'.'.$key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($limit) &amp;&amp; !empty($limit)) {
+            $this-&gt;db-&gt;limit($limit);
+        }
+        // Set offset
+        if (isset($offset) &amp;&amp; !empty($offset)) {
+            $this-&gt;db-&gt;offset($offset);
+        }
+        // ambil data berdasarkan perusahaan
+
+        $models = $this-&gt;db-&gt;findAll();
+        $ObId = [];
+        $arr = [];
+        $karyawan = [];
+        $totalItem = $this-&gt;db-&gt;count();
+        if (count($models) &gt; 0) {
+            foreach ($models as $key =&gt; $val) {
+                $ObId[] = $val-&gt;id;
+            }
+            $this-&gt;db-&gt;select('t_onboard_karyawan.*')
+                -&gt;from('t_onboard_karyawan')
+                -&gt;customWhere('t_onboard_karyawan.t_onboard_id IN('.implode(', ', $ObId).')', 'AND')
+            ;
+            $karyawanAll = $this-&gt;db-&gt;findAll();
+            foreach ($models as $key =&gt; $val) {
+                foreach ($karyawanAll as $keys =&gt; $vals) {
+                    if ($val-&gt;id == $vals-&gt;t_onboard_id) {
+                        $val-&gt;karyawan[] = $vals-&gt;karyawan_id;
+                    }
+                }
+            }
+        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data perusahaan.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $params
+     */
+    public function save($params)
+    {
+        $landa = new Landa();
+        $arr = [];
+
+        try {
+            $params['tgl_mulai'] = isset($params['tgl_mulai']) ? ($landa-&gt;arrayToDate($params['tgl_mulai'])) : null;
+            $params['tgl_selesai'] = isset($params['tgl_selesai']) ? ($landa-&gt;arrayToDate($params['tgl_selesai'])) : null;
+
+            if (isset($params['id']) &amp;&amp; !empty($params['id'])) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $params, ['id' =&gt; $params['id']]);
+                $this-&gt;db-&gt;delete('t_onboard_karyawan', ['t_onboard_id' =&gt; $params['id']]);
+                foreach ($params['karyawan'] as $key =&gt; $value) {
+                    $arr['karyawan_id'] = $value;
+                    $arr['t_onboard_id'] = $model-&gt;id;
+                    $karyawan = $this-&gt;db-&gt;insert('t_onboard_karyawan', $arr);
+                }
+            } else {
+                $params['is_deleted'] = 0;
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $params);
+                foreach ($params['karyawan'] as $key =&gt; $value) {
+                    $arr['karyawan_id'] = $value;
+                    $arr['t_onboard_id'] = $model-&gt;id;
+                    $karyawan = $this-&gt;db-&gt;insert('t_onboard_karyawan', $arr);
+                }
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            if (empty($params)) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; 1], ['m_perusahaan_id' =&gt; $_SESSION['user']['m_perusahaan']['id']]);
+            } else {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, ['is_deleted' =&gt; 1], ['id' =&gt; $params['id']]);
+            }
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        if (1 == $data['tipe']) {
+            $validasi = [
+                'nama' =&gt; 'required',
+                'm_perusahaan_id' =&gt; 'required',
+                'm_organisasi_id' =&gt; 'required',
+                'alamat' =&gt; 'required',
+                'tipe' =&gt; 'required',
+            ];
+        } elseif (2 == $data['tipe']) {
+            $validasi = [
+                'nama' =&gt; 'required',
+                'alamat' =&gt; 'required',
+                'radius' =&gt; 'required',
+                'tipe' =&gt; 'required',
+                'tgl_mulai' =&gt; 'required',
+                'tgl_selesai' =&gt; 'required',
+                'karyawan' =&gt; 'required',
+            ];
+        } else {
+            $validasi = [
+                'tipe' =&gt; 'required',
+            ];
+        }
+
+        return validate($data, $validasi, $custom);
+    }
+
+    /**
+     * Generate kode.
+     *
+     * @return string kode default
+     */
+    public function generateKode()
+    {
+        $cekKode = $this-&gt;db-&gt;select($this-&gt;table.'.id')
+            -&gt;from($this-&gt;table)
+            -&gt;where('m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id'])
+            -&gt;orderBy('kode DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $kode_perusahaan = isset($_SESSION['user']['m_perusahaan']['kode']) ? $_SESSION['user']['m_perusahaan']['kode'] : '';
+            $tipe = 'OB';
+            $kode_item = (substr($kode_terakhir, -4) + 1);
+            $kode = substr('0000'.$kode_item, strlen($kode_item));
+            $kode = $kode_perusahaan.$tipe.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

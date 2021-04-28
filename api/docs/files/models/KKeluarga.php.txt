@@ -1,0 +1,227 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class KKeluarga
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_keluarga';
+    }
+
+    /**
+     * Ambil semua data KKeluarga.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $karyawanData = $this->db->select('karyawan_data_id')
+            ->from('karyawan')
+            ->where('id', '=', $params['idkaryawan'])
+            ->find()
+        ;
+        $karyawanDataId = isset($karyawanData->karyawan_data_id) ? $karyawanData->karyawan_data_id : 0;
+        $this->db->select('k_keluarga.*')
+            ->from($this->table)
+            ->leftJoin('karyawan', 'karyawan.id = k_keluarga.karyawan_id')
+            ->where($this->table.'.is_deleted', '=', 0)
+            ->andWhere('karyawan_data_id', '=', $karyawanDataId)
+        ;
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = $params['filter'];
+            foreach ($filter as $key => $val) {
+                if ('id_karyawan' == $key) {
+                    $this->db->where($key, '=', $val);
+                } else {
+                    $this->db->where($key, 'like', $val);
+                }
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        $models = $this->db->findAll();
+        foreach ($models as $key => $value) {
+            $value->tgl_lahirr = date('d/m/Y', strtotime($value->tgl_lahir));
+        }
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data kpendidikan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        if (isset($data['tgl_lahir'])) {
+            $data['tgl_lahir'] = implode('-', $data['tgl_lahir']);
+        }
+        $data['w_provinsi_id'] = isset($data['w_provinsi_id']) ? $data['w_provinsi_id'] : '';
+        $data['w_kota_id'] = isset($data['w_kota_id']) ? $data['w_kota_id'] : '';
+        $data['w_kecamatan_id'] = isset($data['w_kecamatan_id']) ? $data['w_kecamatan_id'] : '';
+        $data['w_desa_id'] = isset($data['w_desa_id']) ? $data['w_desa_id'] : '';
+
+        try {
+            if (!isset($data['id'])) {
+                $data['is_deleted'] = 0;
+                $model = $this->db->insert($this->table, $data);
+            } elseif (empty($customParams)) {
+                $model = $this->db->update($this->table, $data, ['id' => $data['id']]);
+            } else {
+                $model = $this->db->update($this->table, $data, $customParams);
+            }
+            // Return data kpendidikan
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' => 'required',
+            'hubungan' => 'required',
+            // 'jenis_identitas' => 'required',
+            // 'no_identitas' => 'required',
+            'jenkel' => 'required',
+        ];
+
+        \GUMP::set_field_name('jenkel', 'Jenis Kelamin');
+        \GUMP::set_field_name('jenis_identitas', 'Jenis Identitas');
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function getProvinsi($params = [])
+    {
+        $this->db->select('*')
+            ->from('w_provinsi')
+            ->where('is_deleted', '=', 0)
+        ;
+
+        $models = $this->db->findAll();
+
+        return [
+            'data' => $models,
+        ];
+    }
+
+    public function getKota($params = [])
+    {
+        $this->db->select('*')
+            ->from('w_kota')
+            ->where('is_deleted', '=', '0')
+        ;
+        $id = $params;
+        if ('0' != $id) {
+            $this->db->andWhere('provinsi_id', '=', $id);
+        }
+        $models = $this->db->findAll();
+
+        return [
+            'data' => $models,
+        ];
+    }
+
+    public function getKecamatan($params = [])
+    {
+        $this->db->select('*')
+            ->from('w_kecamatan')
+            ->where('is_deleted', '=', '0')
+        ;
+        $id = $params;
+        if ('0' != $id) {
+            $this->db->andWhere('kota_id', '=', $id);
+        }
+        $models = $this->db->findAll();
+
+        return [
+            'data' => $models,
+        ];
+    }
+
+    public function getDesa($params = [])
+    {
+        $this->db->select('*')
+            ->from('w_desa')
+            ->where('is_deleted', '=', '0')
+        ;
+        $id = $params;
+        if ('0' != $id) {
+            $this->db->andWhere('kecamatan_id', '=', $id);
+        }
+        $models = $this->db->findAll();
+
+        return [
+            'data' => $models,
+        ];
+    }
+
+    public function getDataByID($table_name, $field, $id = null)
+    {
+        $this->db->select('*')->from("{$table_name}");
+        if (null != $id) {
+            $this->db->where('id', '=', $id);
+        }
+        $models = $this->db->findAll();
+
+        if (empty($models)) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($models as $key => $value) {
+            $data = (array) $value;
+            $result[$data[$field]] = $data;
+        }
+
+        return $result;
+    }
+}
+

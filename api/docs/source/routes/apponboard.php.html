@@ -1,0 +1,133 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+use Model\OnBoard;
+
+// Ambil semua data kategori
+$app-&gt;get('/apponboard/index', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $OnBoard = new OnBoard();
+
+    $params['filter'] = isset($params['filter']) ? $params['filter'] : [];
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : '';
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : '';
+
+    $getDataKategoriFile = $OnBoard-&gt;getAll($params, $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' =&gt; $getDataKategoriFile['data'],
+        'totalItems' =&gt; $getDataKategoriFile['totalItem'],
+    ]);
+});
+
+// Simpan kategori file
+$app-&gt;post('/apponboard/save', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $OnBoard = new OnBoard();
+    $validasi = $OnBoard-&gt;validasi($params);
+
+    if (true === $validasi) {
+//        if (true == $validasiKode) {
+        $save = $OnBoard-&gt;save($params);
+
+        // return status sukses
+        if ($save['status']) {
+            return successResponse($response, [$save['data']]);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+//        }
+
+//        return unprocessResponse($response, 'Kode Telah Tersedia');
+    }
+
+    return unprocessResponse($response, $validasi);
+});
+
+// Hapus kategori file
+$app-&gt;post('/apponboard/delete', function ($request, $response) {
+    $params = $request-&gt;getParams();
+    $OnBoard = new OnBoard();
+    $delete = $OnBoard-&gt;delete($params);
+
+    // return status sukses
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+
+// Generate default kode organisasi
+$app-&gt;get('/apponboard/generate_kode', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $kategoriFile = new OnBoard();
+    $model = $kategoriFile-&gt;generateKode();
+
+    if ($model['status']) {
+        return successResponse($response, $model['data']);
+    }
+
+    return unprocessResponse($response, [$model['error']]);
+});
+
+// Generate default kode organisasi
+$app-&gt;get('/apponboard/getPencarian', function ($request, $response) {
+    $data = $request-&gt;getParams();
+    $content = file_get_contents('https://api.mapbox.com/geocoding/v5/mapbox.places/'.$data['nama'].'.json?access_token=pk.eyJ1Ijoid2FoeXVhZ3VuZzI2IiwiYSI6ImNrYjkweGVnNzAzZ2EydG53anZ3MzE2ODYifQ.IbVRbIkhgAcPrRqRyc4uEg');
+    $lokasi = json_decode($content);
+    $arr = [];
+    foreach ($lokasi-&gt;features as $key =&gt; $val) {
+        $arr[$key]['nama'] = $val-&gt;place_name;
+        $arr[$key]['lat'] = $val-&gt;geometry-&gt;coordinates[1];
+        $arr[$key]['lang'] = $val-&gt;geometry-&gt;coordinates[0];
+    }
+
+    return successResponse($response, $arr);
+
+    return unprocessResponse($response, [$arr['error']]);
+});
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

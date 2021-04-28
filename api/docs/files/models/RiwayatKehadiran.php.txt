@@ -1,0 +1,182 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Firebase;
+
+class RiwayatKehadiran
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'm_pelatihan';
+    }
+
+    /**
+     * Ambil semua data kehadiran.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $firebase = new Firebase();
+        $idclient = $_SESSION['user']['client'];
+        $models = $firebase->getAllPresensi($idclient);
+        // print_r($models['data']);die;
+        $arr_model = [];
+        foreach ($models['data'] as $key => $value) {
+            $arr_model[$key] = $value;
+            $ambilkaryawan = $this->db->select('karyawan.id as idkaryawan, karyawan.nik, karyawan_data.nama')
+                ->from('karyawan')
+                ->join('left join', 'karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+                ->where('karyawan.id', '=', $value['id_karyawan'])
+                ->find()
+            ;
+            $arr_model[$key]['nama_karyawan'] = $ambilkaryawan->nama;
+            // <<<<<<< HEAD
+            $arr_model[$key]['nik'] = $ambilkaryawan->nik;
+
+            $arr_model[$key]['jam_checklock']['hour'] = (int) substr($value['jam'], 11, 2);
+            $arr_model[$key]['jam_checklock']['minute'] = (int) substr($value['jam'], 14, 2);
+            $arr_model[$key]['jam_checklock']['second'] = (int) substr($value['jam'], 18, 2);
+
+            $arr_model[$key]['waktu'] = substr($value['jam'], 11, 5);
+            // =======
+            $arr_model[$key]['nik'] = $ambilkaryawan->nik;
+            // >>>>>>> 72f649953244f5bcee07786d7ae6c0556a941c74
+            // $arr_model[$key]['tgl_checklock'] = date("d-M-Y", strtotime($value->tgl_checklock));
+            // $arr_model[$key]['jam_checklock'] = date("H:i", strtotime($value->jam_checklock));
+        }
+        // print_r($arr_model);die;
+        return [
+            'data' => $arr_model,
+            // 'totalItem' => $totalItem,
+        ];
+    }
+
+    public function getKaryawanOrg($params = [])
+    {
+        $this->db->select('m_organisasi.nama as nm_organisasi, m_jabatan.nama as nm_jabatan')
+            ->from('karyawan')
+            ->join('left join', 'k_jabatan', 'k_jabatan.karyawan_id = karyawan.id')
+            ->join('left join', 'm_organisasi', 'm_organisasi.id = k_jabatan.m_organisasi_id')
+            ->join('left join', 'm_jabatan', 'm_jabatan.id = k_jabatan.m_jabatan_id')
+            ->where('karyawan.id', '=', $params['id'])
+        ;
+
+        $models = $this->db->find();
+
+        return [
+            'data' => $models,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data kehadiran.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        $firebase = new Firebase();
+        // print_r($data);die;
+        // ISI DATA
+        $params = [];
+        $params['foto'] = '';
+        $params['id_client'] = $_SESSION['user']['client'];
+        $params['id_karyawan'] = $data['id_karyawan'];
+        $params['latitude'] = isset($data['latitude']) ? $data['latitude'] : '';
+        $params['longitude'] = isset($data['longitude']) ? $data['longitude'] : '';
+        $params['time'] = '';
+        if (isset($data['tgl_checklock']) && !empty($data['tgl_checklock'])) {
+            $tgl_checkclock = implode('-', $data['tgl_checklock']);
+            $tglnya = strtotime($tgl_checkclock);
+            $params['tgl_checklock'] = date('d-m-Y', $tglnya);
+        }
+        if (isset($data['jam_checklock']) && !empty($data['jam_checklock'])) {
+            $jamnya = $params['tgl_checklock'].' '.$data['jam_checklock']['hour'].':'.$data['jam_checklock']['minute'].':'.$data['jam_checklock']['second'];
+            $jam_checkclock = strtotime($jamnya);
+
+            $params['jam_checklock'] = date('Y-m-d H:i:s', $jam_checkclock);
+        }
+        // <<<<<<< HEAD
+        // =======
+
+        // >>>>>>> 72f649953244f5bcee07786d7ae6c0556a941c74
+        try {
+            if (isset($data['uid']) && !empty($data['uid'])) {
+                $save = $firebase->updateDocument('presensi', $data['uid'], $params);
+            } else {
+                $data['uid'] = date('ymdhis');
+                $params['uid'] = $data['uid'];
+                $save = $firebase->newDocument('presensi', $data['uid'], $params);
+            }
+
+            // Return data kehadiran
+            return [
+                'status' => true,
+                'data' => $save,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function delete($data, $customParams = '')
+    {
+        $firebase = new Firebase();
+
+        try {
+            $delete = $firebase->dropDocumentPresensi($data['uid']);
+
+            // Return data kehadiran
+            return [
+                'status' => true,
+                'data' => $save,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'id_karyawan' => 'required',
+        ];
+        \GUMP::set_field_name('id_karyawan', 'Karyawan');
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

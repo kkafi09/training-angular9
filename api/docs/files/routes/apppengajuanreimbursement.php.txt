@@ -1,0 +1,140 @@
+<?php
+
+use Model\PengajuanReimbursement;
+
+// Ambil semua pelatihan
+$app->get('/apppengajuanreimbursement/index', function ($request, $response) {
+    $params = $request->getParams();
+    $reimbursement = new PengajuanReimbursement();
+
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : 20;
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : 0;
+    $params['params'] = isset($params['params']) ? $params['params'] : [];
+    $params['approvedByMe'] = isset($params['approvedByMe']) ? $params['approvedByMe'] : false;
+
+    $getDataPengajuanReimbursement = $reimbursement->getAll($params['params'], $params['limit'], $params['offset'], $params['approvedByMe']);
+
+    return successResponse($response, [
+        'list' => $getDataPengajuanReimbursement['data'],
+        'totalItems' => $getDataPengajuanReimbursement['totalItem'],
+    ]);
+});
+
+// Save pelatihan
+$app->post('/apppengajuanreimbursement/save', function ($request, $response) {
+    $data = $request->getParams();
+    $pengajuanReimbursement = new PengajuanReimbursement();
+    $validasi = $pengajuanReimbursement->validasi($data['model']);
+    $validasiDetail = $pengajuanReimbursement->validasiDetail($data);
+    $validasiAll = array_merge(true !== $validasi ? $validasi : [], true !== $validasiDetail ? $validasiDetail : []);
+    if (true === $validasi && true === $validasiDetail) {
+        if (!isset($data['model']['is_approve']) || 0 == $data['model']['is_approve']) {
+            $cekTanggal = $pengajuanReimbursement->checkTanggalSaldo($data['model']['karyawan_id'], $data['model']['m_reimbursement_id'], $data['model']['tgl']);
+            if (!$cekTanggal['status']) {
+                return unprocessResponse($response, $cekTanggal['error']);
+            }
+            $cekPengajuan = $pengajuanReimbursement->checkBatasFormula($data['list_pengajuan_rem_det'], $data['model']['karyawan_id'], $data['model']['m_reimbursement_id'], $data['model']['tgl']);
+            if (!$cekPengajuan['status']) {
+                return unprocessResponse($response, $cekPengajuan['error']);
+            }
+        }
+        $save = $pengajuanReimbursement->save($data);
+        if ($save['status']) {
+            return successResponse($response, $data);
+        }
+
+        return unprocessResponse($response, [$save['error']]);
+    }
+
+    return unprocessResponse($response, $validasiAll);
+});
+
+// Hapus pelatihan
+$app->post('/apppengajuanreimbursement/delete', function ($request, $response) {
+    $data = $request->getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $delete = $reimbursement->delete($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+$app->post('/apppengajuanreimbursement/deleteFile', function ($request, $response) {
+    $data = $request->getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $delete = $reimbursement->deleteFile($data);
+    if ($delete['status']) {
+        return successResponse($response, [$delete['data']]);
+    }
+
+    return unprocessResponse($response, [$delete['error']]);
+});
+$app->get('/apppengajuanreimbursement/getDetail/{id}', function ($request, $response) {
+    $params = $request->getParams();
+    $id = $request->getAttribute('id');
+    $reimbursement = new PengajuanReimbursement();
+    $get = $reimbursement->getDetail($id);
+//    echo json_encode($get['data']);die();
+
+    if ($get['totalItem'] > 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app->get('/apppengajuanreimbursement/getFile', function ($request, $response) {
+    $params = $request->getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $get = $reimbursement->getFile($params['reff_table'], $params['reff_type'], $params['id'], $params['folder']);
+
+//    echo json_encode($get['data']);die();
+
+    if ($get['totalItem'] > 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app->get('/apppengajuanreimbursement/getDataRembursement', function ($request, $response) {
+    $params = $request->getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $get = $reimbursement->getAll();
+
+    if ($get['totalItem'] > 0) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+$app->get('/apppengajuanreimbursement/getKode', function ($request, $response) {
+    $params = $request->getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $get = $reimbursement->generate_kode();
+
+    if (isset($get)) {
+        return successResponse($response, $get['data']);
+    }
+
+    return successResponse($response, []);
+
+    return unprocessResponse($response, ['terjadi kesalahan']);
+});
+// Ambil semua pelatihan
+$app->get('/apppengajuanreimbursement/getReimbursementPenggajian', function ($request, $response) {
+    $params = $request->getParams();
+    $reimbursement = new PengajuanReimbursement();
+    $getDataPengajuanReimbursement = $reimbursement->getReimbursementPenggajian($params);
+
+    return successResponse($response, [
+        'list' => $getDataPengajuanReimbursement['data'],
+        'totalItems' => $getDataPengajuanReimbursement['totalItem'],
+    ]);
+});
+

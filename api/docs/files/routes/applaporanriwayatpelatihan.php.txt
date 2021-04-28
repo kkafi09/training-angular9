@@ -1,0 +1,33 @@
+<?php
+
+use Model\LaporanRiwayatPelatihan;
+
+$app->get('/applaporanriwayatpelatihan/getAll', function ($request, $response) {
+    $params = $request->getParams();
+
+    $laporanPelatihan = new LaporanRiwayatPelatihan();
+    $getDataLaporanPelatihan = $laporanPelatihan->getAll($params);
+
+    if (isset($params['is_export']) && 1 == $params['is_export']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/pelatihan.html', [
+            'data' => $getDataLaporanPelatihan['data'],
+            'status' => $params['status'],
+        ]);
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;Filename="Laporan Pelatihan.xls"');
+
+        echo $content;
+    } elseif (isset($params['is_print']) && 1 == $params['is_print']) {
+        $view = twigView();
+        $content = $view->fetch('laporan/pelatihan.html', [
+            'data' => $getDataLaporanPelatihan['data'],
+            'status' => $params['status'],
+        ]);
+        echo $content;
+        echo '<script type="text/javascript">window.print();setTimeout(function () { window.close(); }, 500);</script>';
+    } else {
+        return successResponse($response, ['list' => $getDataLaporanPelatihan['data']]);
+    }
+});
+

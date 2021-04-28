@@ -1,0 +1,151 @@
+<?php
+
+namespace Model;
+
+use Service\Db;
+
+class Lisensi
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this->db = Db::db();
+        $this->table = 'k_sertifikat';
+    }
+
+    /**
+     * Ambil semua data inventaris.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $karyawanData = $this->db->select('karyawan_data_id')
+            ->from('karyawan')
+            ->where('id', '=', $params['id'])
+            ->find()
+        ;
+        $karyawanDataId = isset($karyawanData->karyawan_data_id) ? $karyawanData->karyawan_data_id : 0;
+        $this->db->select($this->table.'.*, karyawan_data.nama as karyawan_nama, m_sertifikat.nama as sertifikat_nama')
+            ->from($this->table)
+            ->leftJoin('m_sertifikat', 'k_sertifikat.m_sertifikat_id = m_sertifikat.id')
+            ->leftJoin('karyawan', 'karyawan.id = k_sertifikat.karyawan_id')
+            ->leftJoin('karyawan_data', 'karyawan.karyawan_data_id = karyawan_data.id')
+            ->where($this->table.'.is_deleted', '=', 0)
+            ->andWhere('karyawan.karyawan_data_id', '=', $karyawanDataId)
+        ;
+        // Filter
+//        if (isset($params['filter'])) {
+//            $filter = (array) json_decode($params['filter']);
+//            if (isset($filter['m_sertifikat_id'])) {
+//                $this->db->where('k_sertifikat.m_sertifikat_id', '=', $filter['m_sertifikat_id']);
+//                unset($filter['m_sertifikat_id']);
+//            }
+        ////            foreach ($filter as $key => $val) {
+        ////                $this->db->where($key, 'like', $val);
+        ////            }
+//        }
+        // Set limit
+        if (isset($params['limit']) && !empty($params['limit'])) {
+            $this->db->limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) && !empty($params['offset'])) {
+            $this->db->offset($params['offset']);
+        }
+        $models = $this->db->findAll();
+        $totalItem = $this->db->count();
+
+        return [
+            'data' => $models,
+            'totalItem' => $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data inventaris.
+     *
+     * @param array $data
+     * @param array $customParams
+     * @param mixed $params
+     */
+    public function save($params, $customParams = '')
+    {
+        try {
+            $params['karyawan_id'] = (int) $params['karyawan_id'];
+            $params['m_sertifikat_id'] = (int) $params['m_sertifikat_id'];
+            if (isset($params['id']) && !empty($params['id'])) {
+                $model = $this->db->update($this->table, $params, ['id' => $params['id']]);
+            } else {
+                $model = $this->db->insert($this->table, $params);
+            }
+            // Return data inventaris
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * hapus inventaris.
+     *
+     * @param [type] $params [description]
+     *
+     * @return [type] [description]
+     */
+    public function delete($params)
+    {
+        try {
+            $model = $this->db->update($this->table, ['is_deleted' => 1], ['id' => $params['id']]);
+
+            return [
+                'status' => true,
+                'data' => $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'karyawan_id' => 'required',
+            'm_sertifikat_id' => 'required',
+            // 'keterangan' => 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+

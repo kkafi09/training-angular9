@@ -1,0 +1,210 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+
+class Pesangon extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'm_pesangon';
+    }
+
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('m_status_terminasi')
+        ;
+
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key =&gt; $val) {
+                $this-&gt;db-&gt;where($key, 'like', $val);
+            }
+        }
+
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function getDetail($data = [])
+    {
+        $pesangon = $this-&gt;db-&gt;select('id, nama as nama_kompensasi, m_status_terminasi_id, m_perusahaan_id')
+            -&gt;from($this-&gt;table)
+            -&gt;where('m_status_terminasi_id', '=', $data['id'])
+            -&gt;findAll()
+        ;
+
+        $detail = $this-&gt;db-&gt;select('*')
+            -&gt;from('m_pesangon_det')
+            -&gt;orderBy('min_masa_kerja ASC')
+            -&gt;findAll()
+        ;
+
+        $arrDetail = [];
+        foreach ($detail as $key =&gt; $val) {
+            $arrDetail[$val-&gt;m_pesangon_id][] = $val;
+        }
+
+        foreach ($pesangon as $key =&gt; $val) {
+            $val-&gt;children = $arrDetail[$val-&gt;id];
+        }
+
+        return [
+            'data' =&gt; $pesangon,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data pelatihan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data = [])
+    {
+        try {
+            $status_terminasi = $data['pesangon'];
+            $detail = $data['detail'];
+
+            $this-&gt;db-&gt;startTransaction();
+
+            foreach ($detail as $key =&gt; $val) {
+                if (!isset($val['id'])) {
+                    $val['m_perusahaan_id'] = isset($_SESSION['user']['m_perusahaan']['id']) ? $_SESSION['user']['m_perusahaan']['id'] : null;
+                    $val['m_status_terminasi_id'] = $status_terminasi['id'];
+                    $val['nama'] = $val['nama_kompensasi'];
+
+                    $model = $this-&gt;db-&gt;insert($this-&gt;table, $val);
+
+                    foreach ($val['children'] as $keys =&gt; $vals) {
+                        $vals['m_pesangon_id'] = $model-&gt;id;
+                        $detail = $this-&gt;db-&gt;insert('m_pesangon_det', $vals);
+                    }
+                } else {
+                    foreach ($val['children'] as $keys =&gt; $vals) {
+                        $delete_pesangon = $this-&gt;db-&gt;delete($this-&gt;table, ['id' =&gt; $val['id']]);
+                        $delete_det_pesangon = $this-&gt;db-&gt;delete('m_pesangon_det', ['id' =&gt; $vals['id']]);
+
+                        $val['nama'] = $val['nama_kompensasi'];
+
+                        $model = $this-&gt;db-&gt;insert($this-&gt;table, $val);
+
+                        if (1 == $vals['tipe']) {
+                            unset($vals['nominal']);
+                        } else {
+                            unset($vals['gaji']);
+                        }
+
+                        $vals['m_pesangon_id'] = $model-&gt;id;
+                        $detail = $this-&gt;db-&gt;insert('m_pesangon_det', $vals);
+                    }
+                }
+            }
+
+            $this-&gt;db-&gt;endTransaction();
+
+            // Return data pelatihan
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'nama' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

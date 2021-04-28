@@ -1,0 +1,87 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+    return [
+        'validate_required' =&gt; 'Het veld {field} is verplicht',
+        'validate_valid_email' =&gt; 'Het veld {field} moet een geldige e-mail zijn',
+        'validate_max_len' =&gt; 'Het veld {field} moet een aantal tekens van {param} of minder hebben',
+        'validate_min_len' =&gt; 'Het veld {field} moet een tekennummer van {param} of meer hebben',
+        'validate_exact_len' =&gt; 'Het veld {field} moet een tekennummer van {param} hebben',
+        'validate_alpha' =&gt; 'Het veld {field} mag alleen alfa (a-z) tekens bevatten',
+        'validate_alpha_numeric' =&gt; 'Het veld {field} mag alleen alfanumerieke tekens bevatten (a-z)',
+        'validate_alpha_dash' =&gt; 'Het veld {field} mag alleen alfa (a-z) en streepjes tekens bevatten',
+        'validate_alpha_space' =&gt; 'Het veld {field} mag alleen alfa (a-z) tekens en spatie bevatten',
+        'validate_numeric' =&gt; 'Het veld {field} mag alleen numerieke tekens bevatten',
+        'validate_integer' =&gt; 'Het veld {field} moet een numerieke waarde zijn',
+        'validate_boolean' =&gt; 'Het veld {field} moet waar of onwaar zijn',
+        'validate_float' =&gt; 'Het veld {field} moet een decimale waarde zijn',
+        'validate_valid_url' =&gt; 'Het veld {field} moet een geldige URL zijn',
+        'validate_url_exists' =&gt; 'De {field} URL bestaat niet',
+        'validate_valid_ip' =&gt; 'Het veld {field} moet een geldig IP-adres bevatten',
+        'validate_valid_ipv4' =&gt; 'Het veld {field} moet een geldig IPv4-adres bevatten',
+        'validate_valid_ipv6' =&gt; 'Het veld {field} moet een geldig IPv6-adres bevatten',
+        'validate_guidv4' =&gt; 'Het veld {field} moet een geldige GUID bevatten',
+        'validate_valid_cc' =&gt; 'Het veld {field} moet een geldig creditcardnummer bevatten',
+        'validate_valid_name' =&gt; 'Het veld {field} moet een geldige naam bevatten',
+        'validate_contains' =&gt; 'Het veld {field} moet een van deze waarden bevatten: {param}',
+        'validate_contains_list' =&gt; 'Het veld {field} moet een waarde uit het vervolgkeuzemenu bevatten',
+        'validate_doesnt_contain_list' =&gt; 'Het veld {field} bevat een waarde die niet acceptabel is',
+        'validate_street_address' =&gt; 'Het veld {field} moet een geldig postadres zijn',
+        'validate_date' =&gt; 'Het veld {field} moet een geldige datum zijn',
+        'validate_min_numeric' =&gt; 'Het veld {field} moet een numerieke waarde gelijk aan of groter zijn dan {param}',
+        'validate_max_numeric' =&gt; 'Het veld {field} moet een numerieke waarde gelijk aan of kleiner zijn dan {param}',
+        'validate_min_age' =&gt; 'Het veld {field} moet gelijk zijn aan of groter zijn dan {param}',
+        'validate_invalid' =&gt; 'Het veld {field} is ongeldig',
+        'validate_starts' =&gt; 'Het veld {field} moet beginnen met {param}',
+        'validate_extension' =&gt; 'Het veld {field} moet de volgende extensies hebben {parameter}',
+        'validate_required_file' =&gt; 'Het veld {field} is verplicht',
+        'validate_equalsfield' =&gt; 'Het veld {field} is niet gelijk aan het veld {param}',
+        'validate_iban' =&gt; 'Het veld {field} moet een geldige IBAN bevatten',
+        'validate_phone_number' =&gt; 'Het veld {field} moet een geldig telefoonnummer bevatten',
+        'validate_regex' =&gt; 'Het veld {field} moet een geldige waarde bevatten',
+        'validate_valid_json_string' =&gt; 'Het veld {field} moet een JSON-indeling hebben',
+    ];
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,432 @@
+<html>
+    <head>
+        <script
+            type="text/javascript"
+            src="../../js/jquery-1.4.2.min.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shCore.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushJScript.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushPhp.js">
+        </script>
+        <script
+            type="text/javascript"
+            src="../../syntax_highlighter/scripts/shBrushXml.js">
+        </script>
+        <link
+            href="../../syntax_highlighter/styles/shCore.css" rel="stylesheet"
+            type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shCoreEclipse.css"
+            rel="stylesheet" type="text/css"
+        />
+        <link
+            href="../../syntax_highlighter/styles/shThemeWordpress.css"
+            rel="stylesheet" type="text/css"
+        />
+    </head>
+    <body>
+        <pre class="brush: php">&lt;?php
+
+namespace Model;
+
+use Service\Db;
+use Service\Landa;
+
+class SaldoReimbursement extends ModelCore
+{
+    /**
+     * simpan class Landa DB ke variabel #db.
+     */
+    private $db;
+
+    /**
+     * variabel untuk menyimpan nama tabel.
+     */
+    private $table;
+
+    /**
+     * konstruktor memanggil library landa Db.
+     */
+    public function __construct()
+    {
+        $this-&gt;db = Db::db();
+        $this-&gt;table = 'asg_reimbursement';
+    }
+
+    /**
+     * Ambil semua data pelatihan.
+     *
+     * @param array  $params
+     * @param int    $limit
+     * @param int    $offset
+     * @param string $order
+     */
+    public function getAll($params = [], $limit = 0, $offset = 0, $order = '')
+    {
+        $this-&gt;db-&gt;select($this-&gt;table.'.*,m_reimbursement.nama as namaReimbursement,m_reimbursement.tgl_expired,m_reimbursement.bulan_expired, m_reimbursement.is_expired')
+            -&gt;from($this-&gt;table)
+            -&gt;join('left join', 'm_reimbursement', $this-&gt;table.'.m_reimbursement_id = m_reimbursement.id')
+        ;
+        if (isset($_SESSION['user']['m_perusahaan']['id'])) {
+            $this-&gt;db-&gt;andWhere('m_reimbursement.m_perusahaan_id', '=', $_SESSION['user']['m_perusahaan']['id']);
+        }
+        // Filter
+        if (isset($params['filter'])) {
+            $filter = (array) json_decode($params['filter']);
+            foreach ($filter as $key =&gt; $val) {
+                if (isset($filter['m_reimbursement_id']) &amp;&amp; '' != $filter['m_reimbursement_id']) {
+                    $this-&gt;db-&gt;where($this-&gt;table.'.m_reimbursement_id', '=', $filter['m_reimbursement_id']);
+                    unset($filter['m_reimbursement_id']);
+                }
+                $this-&gt;db-&gt;where($this-&gt;table.'.'.$key, 'like', $val);
+            }
+        }
+        // Set limit
+        if (isset($params['limit']) &amp;&amp; !empty($params['limit'])) {
+            $this-&gt;db-&gt;limit($params['limit']);
+        }
+        // Set offset
+        if (isset($params['offset']) &amp;&amp; !empty($params['offset'])) {
+            $this-&gt;db-&gt;offset($params['offset']);
+        }
+        $this-&gt;db-&gt;orderBy('created_at DESC');
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+        foreach ($models as $key =&gt; $val) {
+            $models[$key]-&gt;tipe_expired = isset($val-&gt;tgl_expired) ? '2' : '1';
+            if (isset($val-&gt;bulan_expired)) {
+                $monthName = date('F', mktime(0, 0, 0, $val-&gt;bulan_expired, 10)); // March
+                $models[$key]-&gt;expired_in = isset($val-&gt;tgl_expired) ? $val-&gt;tgl_expired.' '.$monthName : $val-&gt;bulan_expired.' Bulan';
+            }
+            if (isset($val-&gt;tipe)) {
+                if (1 == $val-&gt;tipe) {
+                    $models[$key]-&gt;tipe_saldo = 'Assign';
+                } elseif (2 == $val-&gt;tipe) {
+                    $models[$key]-&gt;tipe_saldo = 'Update';
+                } else {
+                    $models[$key]-&gt;tipe_saldo = 'Expired';
+                }
+            }
+        }
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    /**
+     * Method untuk menyimpan data pelatihan.
+     *
+     * @param array $data
+     * @param array $customParams
+     */
+    public function save($data, $customParams = '')
+    {
+        $landa = new Landa();
+        $dataModel = $data['model'];
+        $listSaldoReimbursementDet = $data['list_saldo_det'];
+
+        try {
+            $this-&gt;db-&gt;startTransaction();
+
+            if (isset($dataModel['id']) &amp;&amp; !empty($dataModel['id']) &amp;&amp; '' != $dataModel['id']) {
+                $model = $this-&gt;db-&gt;update($this-&gt;table, $dataModel, ['id' =&gt; $dataModel['id']]);
+            } else {
+                $kode = $this-&gt;generate_kode();
+                $dataModel['kode'] = $kode['data'];
+                $model = $this-&gt;db-&gt;insert($this-&gt;table, $dataModel);
+            }
+            if (!empty($model) &amp;&amp; isset($data['list_saldo_det']) &amp;&amp; '' != $data['list_saldo_det'] &amp;&amp; [] != $data['list_saldo_det']) {
+                if (isset($dataModel['id']) &amp;&amp; !empty($dataModel['id']) &amp;&amp; '' != $dataModel['id']) {
+                    $this-&gt;db-&gt;delete('asg_reimbursement_det', ['asg_reimbursement_id' =&gt; $dataModel['id']]);
+                }
+                $asg_reimbursement_id = $model-&gt;id;
+                foreach ($listSaldoReimbursementDet as $k_Rdet =&gt; $v_RDet) {
+                    $v_RDet['asg_reimbursement_id'] = $asg_reimbursement_id;
+                    $v_RDet['tgl_mulai'] = isset($v_RDet['tgl_mulai']) ? ($landa-&gt;arrayToDate($v_RDet['tgl_mulai'])) : null;
+                    $v_RDet['tgl_selesai'] = isset($v_RDet['tgl_selesai']) ? ($landa-&gt;arrayToDate($v_RDet['tgl_selesai'])) : null;
+                    $modelRDet = $this-&gt;db-&gt;insert('asg_reimbursement_det', $v_RDet);
+                }
+            }
+            $this-&gt;db-&gt;endTransaction();
+
+            return [
+                'status' =&gt; true,
+                //                'data' =&gt; $model,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    public function delete($params)
+    {
+        try {
+            $this-&gt;db-&gt;startTransaction();
+            $this-&gt;db-&gt;delete($this-&gt;table, ['id' =&gt; $params['id']]);
+            $this-&gt;db-&gt;delete('asg_reimbursement_det', ['asg_reimbursement_id' =&gt; $params['id']]);
+            $this-&gt;db-&gt;endTransaction();
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $this-&gt;table,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Validasi data yang dikirim.
+     *
+     * @param array $data
+     * @param array $custom
+     */
+    public function validasi($data, $custom = [])
+    {
+        $validasi = [
+            'tipe' =&gt; 'required',
+            'm_reimbursement_id' =&gt; 'required',
+        ];
+
+        return validate($data, $validasi, $custom);
+    }
+
+    public function validasiKode($data)
+    {
+        return parent::validasiKodeCore($data, $this-&gt;table);
+    }
+
+    public function getDetail($id)
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('asg_reimbursement_det')
+            -&gt;where('asg_reimbursement_id', '=', $id)
+        ;
+
+        $models = $this-&gt;db-&gt;findAll();
+        $totalItem = $this-&gt;db-&gt;count();
+
+        return [
+            'data' =&gt; $models,
+            'totalItem' =&gt; $totalItem,
+        ];
+    }
+
+    public function getTanggalSelesai($params)
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('m_reimbursement')
+            -&gt;where('id', '=', $params['m_reimbursement_id'])
+        ;
+        $models = $this-&gt;db-&gt;find();
+        $tgl_selesai = null;
+        $tahun_mulai = strtok($params['tgl_mulai'], '-');
+        if (1 == $models-&gt;is_expired) {
+            if (isset($models-&gt;tgl_expired) &amp;&amp; null != $models-&gt;tgl_expired) {
+                $tgl_selesai = $tahun_mulai.'-'.$models-&gt;bulan_expired.'-'.$models-&gt;tgl_expired;
+            } else {
+                $tgl_selesai = date('Y-m-d', strtotime('+'.$models-&gt;bulan_expired.' months', strtotime($params['tgl_mulai'])));
+            }
+        }
+
+        return [
+            'data' =&gt; $tgl_selesai,
+        ];
+    }
+
+    public function cekInputSaldo($params)
+    {
+        $reim = $this-&gt;getReimbursementDet($params['m_reimbursement_id']);
+        $this-&gt;db-&gt;select('*,asg_reimbursement_det.*')
+            -&gt;from('asg_reimbursement')
+            -&gt;join('left join', 'asg_reimbursement_det', 'asg_reimbursement.id = asg_reimbursement_det.asg_reimbursement_id')
+            -&gt;where('m_reimbursement_id', '=', $params['m_reimbursement_id'])
+            -&gt;andWhere('tipe', '=', $params['tipe'])
+            -&gt;andWhere('asg_reimbursement_det.karyawan_id', '=', $params['karyawan_id'])
+        ;
+        if (1 == $reim-&gt;is_expired) {
+            $this-&gt;db-&gt;andWhere('asg_reimbursement_det.tgl_selesai', '&gt;=', $params['tgl_mulai']);
+        }
+        if (isset($params['id_saldo']) &amp;&amp; null != $params['id_saldo'] &amp;&amp; '' != $params['id_saldo']) {
+            $this-&gt;db-&gt;andWhere('asg_reimbursement.id', '!=', $params['id_saldo']);
+        }
+        $saldo = $this-&gt;db-&gt;findAll();
+        if ([] != $saldo || !isset($saldo)) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Saldo Karyawan masih terdapat dalam periode sebelumnya!',
+            ];
+        }
+
+        return [
+            'status' =&gt; true,
+        ];
+    }
+
+    public function getReimbursementDet($id)
+    {
+        $this-&gt;db-&gt;select('*')
+            -&gt;from('m_reimbursement')
+            -&gt;where('id', '=', $id)
+    ;
+
+        return $this-&gt;db-&gt;find();
+    }
+
+    public function generate_kode()
+    {
+        $this-&gt;dbModel = Db::db();
+        $cekKode = $this-&gt;db-&gt;select('id')
+            -&gt;from($this-&gt;table)
+            -&gt;orderBy('id DESC')
+            -&gt;find()
+        ;
+
+        try {
+            if ($cekKode) {
+                $kode_terakhir = $cekKode-&gt;id;
+            } else {
+                $kode_terakhir = 0;
+            }
+            $tahun = date('y');
+            $bulan = date('m');
+            $tipe = 'SRM';
+            $kode_item = (substr($kode_terakhir, -5) + 1);
+            $kode = substr('00000'.$kode_item, strlen($kode_item));
+            $kode = $tipe.$tahun.$bulan.$kode;
+
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $kode,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; 'Gagal Generate Kode',
+            ];
+        }
+    }
+
+    /**
+     * Import excel.
+     *
+     * @param array $data
+     * @param mixed $dataJabatanLevel
+     * @param mixed $dataJabatan
+     * @param mixed $dataKategoriFile
+     */
+    public function import($data, $dataKategoriFile)
+    {
+        try {
+            try {
+                $inputFileType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($data['filePath']);
+                $objReader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
+                $objPhpSpreadsheet = $objReader-&gt;load($data['filePath']);
+            } catch (Exception $e) {
+                exit('Error loading file : &quot;'.pathinfo($data['filePath'], PATHINFO_BASENAME).'&quot;: '.$e-&gt;getMessage());
+            }
+
+            $sheet = $objPhpSpreadsheet-&gt;getSheet(0);
+            $highestRow = $sheet-&gt;getHighestRow();
+            $highestColumn = $sheet-&gt;getHighestColumn();
+
+            $SaldoReimbursementCustom = [];
+            $index = 0;
+            for ($row = 2; $row &lt;= $highestRow; ++$row) {
+                $SaldoReimbursementCustom[$index]['karyawan_id'] = intval($sheet-&gt;getCell('A'.$row)-&gt;getFormattedValue());
+                $SaldoReimbursementCustom[$index]['nilai'] = $sheet-&gt;getCell('C'.$row)-&gt;getFormattedValue();
+
+                ++$index;
+            }
+
+//            foreach ($dataKategoriFile['data'] as $key =&gt; $val) {
+//                $dataKategoriFile[$val-&gt;kode] = $val-&gt;id;
+//            }
+//            echo json_encode($SaldoReimbursementCustom);die();
+
+//            foreach ($SaldoReimbursementCustom as $key =&gt; $val) {
+//                $val['m_perusahaan_id'] = isset($_SESSION) ? $_SESSION['user']['m_perusahaan']['id'] : 0;
+//                $model = $this-&gt;db-&gt;insert($this-&gt;table, $val);
+//            }
+
+            // Return data
+            return [
+                'status' =&gt; true,
+                'data' =&gt; $SaldoReimbursementCustom,
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' =&gt; false,
+                'error' =&gt; $e-&gt;getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Download format excel untuk import data karyawan.
+     *
+     * @param array $file
+     * @param array $org
+     * @param array $jbtn
+     * @param array $bank
+     * @param array $ptkp
+     * @param mixed $karyawan
+     *
+     * @return array
+     */
+    public function download($file, $karyawan)
+    {
+        $xls = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
+
+        $sheet_org = $xls-&gt;getSheet(0);
+
+        $index_org = 2;
+
+        foreach ($karyawan['data'] as $key =&gt; $val) {
+            $val = (array) $val;
+
+            $sheet_org-&gt;getCell('A'.$index_org)-&gt;setValue($val['id']);
+            $sheet_org-&gt;getCell('B'.$index_org)-&gt;setValue($val['nama']);
+
+            ++$index_org;
+        }
+
+        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($xls, 'Xlsx');
+        ob_end_clean();
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; Filename=&quot;CustomSaldoReimbursement.xlsx&quot;');
+        $writer-&gt;save('php://output');
+
+        exit;
+//        parent::downloadFile($file);
+
+//        return true;
+    }
+}
+</pre>
+        <script type="text/javascript">
+             SyntaxHighlighter.all();
+             jQuery('.gutter div').each(function(key, data){
+                jQuery(data).prepend('<a name="L'+jQuery(data).text()+'"/>');
+             });
+        </script>
+    </body>
+</html>

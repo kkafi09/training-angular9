@@ -1,0 +1,54 @@
+<?php
+
+use Model\ApprovalLine;
+
+// Ambil semua approval line
+$app->get('/approvalline/index', function ($request, $response) {
+    $params = $request->getParams();
+    $approvalLine = new ApprovalLine();
+
+    $params['params'] = isset($params['params']) ? $params['params'] : [];
+    $params['limit'] = isset($params['limit']) ? $params['limit'] : '';
+    $params['offset'] = isset($params['offset']) ? $params['offset'] : '';
+
+    $getDataApprovalLine = $approvalLine->getAll($params['params'], $params['limit'], $params['offset']);
+
+    return successResponse($response, [
+        'list' => $getDataApprovalLine['data'],
+        'totalItems' => $getDataApprovalLine['totalItem'],
+    ]);
+});
+
+// Simpan approval line, detail & rule
+$app->post('/approvalline/save', function ($request, $response) {
+    $params = $request->getParams();
+    $approvalLine = new ApprovalLine();
+    $save = $approvalLine->saveApproval($params);
+
+    if ($save['status']) {
+        return successResponse($response, [$save['data']]);
+    }
+
+    return unprocessResponse($response, [$save['error']]);
+});
+
+// Simpan approval line, approve pengajuan
+$app->post('/approvalline/approvePengajuan', function ($request, $response) {
+    $params = $request->getParams();
+
+    $params['reff_type'] = isset($params['reff_type']) ? $params['reff_type'] : '';
+    $params['reff_id'] = isset($params['reff_id']) ? $params['reff_id'] : '';
+    $params['status'] = isset($params['status']) ? $params['status'] : 2;
+    // print_r($params['reff_type']);
+    // exit;
+    // if(!empty($params['reff_type']) && !empty($params['reff_id']) && !empty($params['status'])){
+    $approvalLine = new ApprovalLine();
+    $save = $approvalLine->approvePengajuan($params['status'], $params['reff_type'], $params['reff_id']);
+    // }
+    if($save){
+        return successResponse($response, ['Pengajuan telah diproses']);        
+    }else{
+        return unprocessResponse($response, ['Mohon maaf data pengajuan tidak ditemukan']);
+    }
+});
+
