@@ -3,6 +3,7 @@ import { Routes, RouterModule } from '@angular/router';
 
 import { PenggunaComponent } from "./pengguna/pengguna.component";
 import { MBarangComponent } from "./m-barang/m-barang.component";
+import {DashboardTestComponent} from "./dashboard-test/dashboard-test.component";
 
 const routes: Routes = [
   {
@@ -13,8 +14,11 @@ const routes: Routes = [
   {
     path: 'barang',
     component: MBarangComponent
+  },
+  {
+    path: 'dashboard-test',
+    component : DashboardTestComponent
   }
-
 ];
 
 @NgModule({

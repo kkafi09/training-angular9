@@ -30,6 +30,7 @@ import { MasterRoutingModule } from './master-routing.module';
 import { PenggunaComponent } from './pengguna/pengguna.component';
 import { MBarangComponent } from './m-barang/m-barang.component';
 import { KategoriComponent } from './kategori/kategori.component';
+import { DashboardTestComponent } from './dashboard-test/dashboard-test.component';
 
 
 export const options: Partial<IConfig> = {
@@ -38,7 +39,7 @@ export const options: Partial<IConfig> = {
 
 
 @NgModule({
-  declarations: [PenggunaComponent, MBarangComponent, KategoriComponent],
+  declarations: [PenggunaComponent, MBarangComponent, KategoriComponent, DashboardTestComponent],
   imports: [
     CommonModule,
     MasterRoutingModule,

@@ -34,7 +34,7 @@ CREATE TABLE `m_user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=COMPACT;
 
 INSERT INTO `m_user` (`id`, `kode`, `nama`, `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir`, `email`, `alamat`, `telepon`, `username`, `password`, `provinsi_id`, `kabupaten_id`, `kecamatan_id`, `desa_id`, `akses`, `akses_wilayah`, `m_jabatan_id`, `is_deleted`, `created_at`, `created_by`, `modified_at`, `modified_by`) VALUES
-(34,	'u2',	'admin',	NULL,	NULL,	NULL,	'zepri@gmail.com',	'malang',	'0858503',	'admin',	'd033e22ae348aeb5660fc2140aec35850c4da997',	NULL,	NULL,	NULL,	NULL,	'{\"pengguna\":true}',	'3515',	1,	0,	1601984938,	0,	1617109461,	34),
+(34,	'u2',	'admin',	NULL,	NULL,	NULL,	'zepri@gmail.com',	'malang',	'0858503',	'admin',	'd033e22ae348aeb5660fc2140aec35850c4da997',	NULL,	NULL,	NULL,	NULL,	'{\"pengguna\":true}',	'3515',	1,	0,	1601984938,	0,	1617109461,	34)
 ;
 
 -- 2021-04-04 13:54:50

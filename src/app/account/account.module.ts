@@ -10,9 +10,10 @@ import { AngularFireMessagingModule } from "@angular/fire/messaging";
 import { AngularFireModule } from "@angular/fire";
 import { MessagingService } from "./../core/services/messaging.service";
 import { environment } from "../../environments/environment";
+import { RegisterComponent } from './register/register.component';
 
 @NgModule({
-	declarations: [],
+	declarations: [RegisterComponent],
 	imports: [
 		CommonModule,
 		AccountRoutingModule,

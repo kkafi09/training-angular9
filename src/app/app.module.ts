@@ -39,7 +39,7 @@ import { NgbDateCustomParserFormatter } from "./core/date-formatter";
 initFirebaseBackend(environment.firebaseConfig);
 @NgModule({
     declarations: [
-        AppComponent
+        AppComponent,
 
     ],
     imports: [
