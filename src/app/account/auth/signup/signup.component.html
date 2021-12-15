@@ -11,7 +11,7 @@
               <div class="col-7">
                 <div class="text-primary p-4">
                   <h5 class="text-primary">Free Register</h5>
-                  <p>Get your free Skote account now.</p>
+                  <p>Get your free account now.</p>
                 </div>
               </div>
               <div class="col-5 align-self-end">
@@ -20,7 +20,7 @@
             </div>
           </div>
           <div class="card-body pt-0">
-            <div>
+            <!-- <div>
               <a href="/">
                 <div class="avatar-md profile-user-wid mb-4">
                   <span class="avatar-title rounded-circle bg-light">
@@ -28,8 +28,8 @@
                   </span>
                 </div>
               </a>
-            </div>
-            <div class="p-2">
+            </div> -->
+            <div class="p-4">
 
               <form class="form-horizontal" name="signupForm" [formGroup]="signupForm" (ngSubmit)="onSubmit()"
                 novalidate>
@@ -73,6 +73,18 @@
                   </div>
                 </div>
 
+                <div class="form-group">
+                  <label for="password">Confirm Password</label>
+
+                  <input type="password" formControlName="confirmPassword" class="form-control"
+                    [ngClass]="{ 'is-invalid': submitted && f.confirmPassword.errors }" id="password" placeholder="Confirm Password" />
+
+                    <div *ngIf="submitted && f.confirmPassword.errors" class="invalid-feedback">
+                      <div *ngIf="f.confirmPassword.errors.required">Confirm Password is required</div>
+                      <div *ngIf="f.confirmPassword.errors.mustMatch">Password must be match</div>
+                    </div>
+                </div>
+
                 <div class="mt-4">
                   <button class="btn btn-primary btn-block" type="submit">Register</button>
                 </div>
@@ -90,7 +102,7 @@
         <div class="mt-5 text-center">
           <p>Already have an account ? <a routerLink="/account/login" class="font-weight-medium text-primary"> Login</a>
           </p>
-          <p>© {{year}} Skote. Crafted with <i class="mdi mdi-heart text-danger"></i> by Themesbrand</p>
+          <!-- <p>© {{year}} Skote. Crafted with <i class="mdi mdi-heart text-danger"></i> by Themesbrand</p> -->
         </div>
       </div> <!-- end col -->
     </div>

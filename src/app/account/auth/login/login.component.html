@@ -7,17 +7,17 @@
                         <div class="row">
                             <div class="col-7">
                                 <div class="text-primary p-4">
-                                    <h5 class="text-primary">Welcome To Angular 9 For Trainer!</h5>
+                                    <h5 class="text-primary">Welcome To Cashier.id</h5>
                                     <p>Sign in to continue</p>
                                 </div>
                             </div>
                             <div class="col-5 align-self-end">
-                                <img src="assets/images/profile-img.png" alt="" class="img-fluid">
+                                <img src="../../../assets/images/profile-img.png" alt="" class="img-fluid">
                             </div>
                         </div>
                     </div>
-                    <div class="card-body pt-0">
-                        <div>
+                    <div class="card-body pt-2">
+                        <!-- <div>
                             <a href="/">
                                 <div class="avatar-md profile-user-wid mb-4">
                                     <span class="avatar-title rounded-circle bg-light">
@@ -25,12 +25,12 @@
                                     </span>
                                 </div>
                             </a>
-                        </div>
-                        <div class="p-2">
+                        </div> -->
+                        <div class="p-4">
                             <form class="form-horizontal" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
                                 <ngb-alert type="danger" *ngIf="error" [dismissible]="false">{{ error }}</ngb-alert>
                                 <div class="form-group mb-3">
-                                    <label for="email">Email /Username</label>
+                                    <label for="email">Email / Username</label>
                                     <input type="email" formControlName="email" class="form-control" id="email"
                                         placeholder="Email / Username" />
 
@@ -44,13 +44,19 @@
                                         <div *ngIf="f.password.errors.required">Password is required</div>
                                     </div>
                                 </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="exampleCheck1">
+                                    <label class="form-check-label" for="exampleCheck1">Remember me</label>
+                                    
+                                </div>
                                 <!-- <div class="custom-control custom-checkbox">
                                     <input type="checkbox" class="custom-control-input" id="customControlInline">
                                     <label class="custom-control-label" for="customControlInline">Remember me</label>
                                 </div> -->
                                 <div class="mt-3">
                                     <button class="btn btn-primary btn-block" type="submit">Log In</button>
-                                </div>
+                                </div>                
+                                <a routerLink="/account/reset-password" class="d-flex justify-content-center text-decoration-none pt-4 pb-0">Forgot Password</a>
                                 <!-- <div class="text-center mt-2 mb-2" style="color: #a0a2a8;">
                                     or
                                 </div>
@@ -63,11 +69,12 @@
                         </div>
                     </div>
                 </div>
-                <div class="mt-5 text-center">
+                <span class="d-flex justify-content-center py-3">Don't have an account?<a routerLink="/account/signup" class="text-decoration-none">Sign up</a></span>
+                <!-- <div class="mt-5 text-center">
                     <p style="margin-bottom: 3px;">Developed with <i class="fas fa-heart text-danger"></i> by Venturo
                         Camp</p>
                     <p style="color: #a0a2a8;">© {{year}} Landa System.id v.1.0</p>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>

@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { AuthenticationService } from '../../../core/services/auth.service';
+import { MustMatch } from './_helpers/must-match_validator';
 
 @Component({
   selector: 'app-signup',
@@ -28,6 +29,9 @@ export class SignupComponent implements OnInit, AfterViewInit {
       name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required],
+      confirmPassword : ['', Validators.required]
+    }, {
+      validator: MustMatch('password', 'confirmPassword')
     });
   }
 
