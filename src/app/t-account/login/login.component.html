@@ -1,0 +1,72 @@
+<div class="account-pages mt-5 mb-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 col-xl-5">
+                <div class="card overflow-hidden">
+                    <div class="bg-soft-primary">
+                        <div class="row">
+                            <div class="col-7">
+                                <div class="text-primary p-4">
+                                    <h5 class="text-primary">Welcome To Cashier.id</h5>
+                                    <p>Sign in to continue</p>
+                                </div>
+                            </div>
+                            <div class="col-5 align-self-end">
+                                <img src="../../../assets/images/profile-img.png" alt="" class="img-fluid">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body pt-2">
+                        <!-- <div>
+                            <a href="/">
+                                <div class="avatar-md profile-user-wid mb-4">
+                                    <span class="avatar-title rounded-circle bg-light">
+                                        <img [src]="listGambar.logo_login" alt="" class="rounded-circle" height="34">
+                                    </span>
+                                </div>
+                            </a>
+                        </div> -->
+                        <div class="p-4">
+                            <form class="form-horizontal" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+                                <div class="form-floating mb-3">
+                                    <label for="id">Email</label>
+                                    <input name="id" type="email" class="form-control" formControlName="email" id="id" placeholder="Masukkan Email"
+                                           [ngClass]="{ 'is-invalid': submitted && f.email.errors }">
+                                    <div *ngIf="submitted && f.email.errors" class="invalid-feedback">
+                                        <div *ngIf="f.email.errors.required">Email is required</div>
+                                        <div *ngIf="f.email.errors.email">Email must be a valid email address</div>
+                                    </div>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <label for="password">Password</label>
+                                    <input name="password" type="password" class="form-control" formControlName="password" id="password"
+                                           placeholder="Masukkan Password" minlength="6" [ngClass]="{ 'is-invalid': submitted && f.password.errors }">
+                                    <div *ngIf="submitted && f.password.errors" class="invalid-feedback">
+                                        <div *ngIf="f.password.errors.required">password is required</div>
+                                        <div *ngIf="f.password.errors.minlength">password must be at least 6 characters</div>
+                                    </div>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="exampleCheck1">
+                                    <label class="form-check-label" for="exampleCheck1">Remember me</label>
+
+                                </div>
+                                <a class="w-100 btn btn-lg btn-primary shadow-sm text-light" (click)="onSubmit()">Login</a>
+                                <div class="mt-4 text-center">
+                                    <a href="/#/forgot" class="text-primary text-decoration-none"><i class="fas fa-lock"></i> Forgot
+                                        your password?</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <span class="d-flex justify-content-center py-3">Don't have an account?<a href="/#/register" class="text-decoration-none">Sign up</a></span>
+                <!-- <div class="mt-5 text-center">
+                    <p style="margin-bottom: 3px;">Developed with <i class="fas fa-heart text-danger"></i> by Venturo
+                        Camp</p>
+                    <p style="color: #a0a2a8;">© {{year}} Landa System.id v.1.0</p>
+                </div> -->
+            </div>
+        </div>
+    </div>
+</div>

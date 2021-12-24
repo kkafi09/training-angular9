@@ -1,17 +1,15 @@
-import { NgModule } from '@angular/core';
-import { Component, OnInit, ViewChild } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { DataTableDirective } from "angular-datatables";
-import { LandaService } from "../../core/services/landa.service";
-import { ChartDataSets, ChartOptions } from 'chart.js';
-import { MultiDataSet, Color, Label } from 'ng2-charts';
-import { ChartType } from 'chart.js';
+import {Component, OnInit, ViewChild} from '@angular/core';
+import {environment} from '../../../environments/environment';
+import {DataTableDirective} from 'angular-datatables';
+import {LandaService} from '../../core/services/landa.service';
+import {ChartType} from 'chart.js';
+import {Color, Label, MultiDataSet} from 'ng2-charts';
 
 
 @Component({
-    selector: "app-dashboard",
-    templateUrl: "./dashboard.component.html",
-    styleUrls: ["./dashboard.component.scss"],
+    selector: 'app-dashboard',
+    templateUrl: './dashboard.component.html',
+    styleUrls: ['./dashboard.component.scss'],
 
 })
 
@@ -28,7 +26,7 @@ export class DashboardComponent implements OnInit {
     diagram: {
         jumlahPetani,
         TambakMasuk
-    }
+    };
 
     dgvalue: any;
     dataDiagram: any = [];
@@ -58,15 +56,13 @@ export class DashboardComponent implements OnInit {
     ngOnInit() {
 
 
-        this.pageTitle = "Dashboard";
+        this.pageTitle = 'Dashboard';
         this.breadCrumbItems = [
             {
-                label: "Welcome To Atina",
+                label: 'Welcome To Atina',
                 active: true,
             },
         ];
-
-
 
 
     }

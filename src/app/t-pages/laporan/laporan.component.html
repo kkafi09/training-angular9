@@ -1,0 +1,162 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/#/dashboard">Tokoku</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
+                aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-auto">
+                <li class="nav-item d-flex align-items-center mx-3">
+                    <img src="../../../assets/img/home-solid.svg" alt="" style="width: 20px">
+                    <a href="/#/dashboard" class="nav-link active">Dashboard</a>
+                </li>
+                <li class="nav-item d-flex align-items-center mx-3">
+                    <img src="../../../assets/img/box-solid.svg" alt="" style="width: 15px">
+                    <a href="/#/product" class="nav-link active">Produk</a>
+                </li>
+                <li class="nav-item d-flex align-items-center mx-3">
+                    <img src="../../../assets/img/wallet-solid.svg" alt="" style="width: 15px">
+                    <a href="/#/kasir" class="nav-link active">Kasir</a>
+                </li>
+                <li class="nav-item d-flex align-items-center mx-3">
+                    <img src="../../../assets/img/file-alt-solid.svg" alt="" style="width: 12px">
+                    <a href="/#/transaksi" class="nav-link active">Transaksi</a>
+                </li>
+            </ul>
+            <a href="/#/dashboard" class="d-flex align-items-center mx-2">
+                <img src="../../../assets/img/user-solid.svg" style="width: 20px;" class="text-light" alt="">
+            </a>
+            <a href="/#/login" class="d-flex align-items-center mx-3">
+                <img src="../../../assets/img/sign-out-alt-solid.svg" style="width: 20px; " class="text-light" alt="">
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xl-2 my-4">
+            <ul class="list-group">
+                <!-- produk -->
+                <li class="list-group-item list-group-item-primary">Produk</li>
+                <li class="list-group-item">Kelola Produk</li>
+                <li class="list-group-item">Diskon</li>
+                <li class="list-group-item">Kategory Produk</li>
+                <!-- Toko -->
+                <li class="list-group-item list-group-item-primary">Kelola Toko</li>
+                <li class="list-group-item">Pembayaran</li>
+                <li class="list-group-item">Outlet</li>
+                <li class="list-group-item">Inventory</li>
+                <!-- Transaksi -->
+                <li class="list-group-item list-group-item-primary">Transaksi</li>
+                <li class="list-group-item">Penjualan</li>
+                <li class="list-group-item">Pembelian</li>
+                <!-- Pengaturan -->
+                <li class="list-group-item list-group-item-primary">Laporan</li>
+                <li class="list-group-item"><a href="/#/laporan" class="text-decoration-none text-muted">Penjualan</a></li>
+            </ul>
+        </div>
+        <div class="col-xl-10 my-4">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="my-2 d-flex">
+                        <label for="period" class="col-sm-2 col-form-label">Periode</label>
+                        <div class="col-sm-5">
+                            <input type="date" class="form-control" id="period">
+                        </div>
+                        <div class="col-sm-5">
+                            <input type="date" class="form-control" id="period1">
+                        </div>
+                    </div>
+                    <div class="my-2 d-flex">
+                        <label for="kasir" class="col-sm-2 col-form-label">Kasir</label>
+                        <div class="col-sm-10">
+                            <select class="form-select" id="kasir">
+                                <option>Semua Kasir</option>
+                                <option>Budi Nugroho</option>
+                                <option>Joko</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="my-2 d-flex">
+                        <label for="jenispembayaran" class="col-sm-2 col-form-label">Bayar</label>
+                        <div class="col-sm-10">
+                            <select class="form-select " id="jenispembayaran">
+                                <option>Tunai</option>
+                                <option>Non-tunai</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="my-2 d-flex">
+                        <label for="customer" class="col-sm-2 col-form-label">Customer</label>
+                        <div class="col-sm-10">
+                            <select class="form-select" id="customer">
+                                <option>Member</option>
+                                <option>Non-Member</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-12 my-4 d-flex justify-content-center">
+                    <div class="">
+                        <a class="btn btn-info mx-4" href="/#/cetak-laporan">Tampilkan</a>
+                        <a class="btn btn-danger mx-4">PDF</a>
+                        <a class="btn btn-success mx-4">Excel</a>
+                    </div>
+                </div>
+                <div class="col my-4">
+                    <div class="containter-fluid ">
+                        <table class="table table-responsive table-bordered">
+                            <thead class="table-primary" style="background-color: #cfe2ff;">
+                            <tr>
+                                <th scope="col">No</th>
+                                <th scope="col">ID Transaksi</th>
+                                <th scope="col">Waktu</th>
+                                <th scope="col">Kasir</th>
+                                <th scope="col">Total Transaksi</th>
+                                <th scope="col">Jenis Pembayaran</th>
+                                <th scope="col">Customer</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <!-- <tr *ngFor="let kasir of tableKasir">
+                              <th scope="row">{{kasir.id}}</th>
+                              <td>{{kasir.name}}</td>
+                              <td>{{kasir.price}}</td>
+                              <td>{{kasir.qty}}</td>
+                              <td>{{kasir.discount}}</td>
+                              <td>{{kasir.total}}</td>
+                              <td>
+                                  <a href="" class="btn btn-warning me-2">Edit</a>  <a href="" class="btn btn-danger">Hapus</a>
+                              </td>
+                            </tr>                                   -->
+                            <tr>
+                                <th scope="row">1</th>
+                                <td>hdf62jhd9s</td>
+                                <td>6/12/09</td>
+                                <td>Budi nugroho</td>
+                                <td>100000</td>
+                                <td>Tunai</td>
+                                <td>Member</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">1</th>
+                                <td>hdf62jhd9s</td>
+                                <td>6/12/09</td>
+                                <td>Budi nugroho</td>
+                                <td>100000</td>
+                                <td>Non-Tunai</td>
+                                <td>Non-Member</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

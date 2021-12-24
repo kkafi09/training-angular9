@@ -77,7 +77,7 @@
                   <label for="password">Confirm Password</label>
 
                   <input type="password" formControlName="confirmPassword" class="form-control"
-                    [ngClass]="{ 'is-invalid': submitted && f.confirmPassword.errors }" id="password" placeholder="Confirm Password" />
+                    [ngClass]="{ 'is-invalid': submitted && f.confirmPassword.errors }" id="confirmPassword" placeholder="Confirm Password" />
 
                     <div *ngIf="submitted && f.confirmPassword.errors" class="invalid-feedback">
                       <div *ngIf="f.confirmPassword.errors.required">Confirm Password is required</div>
