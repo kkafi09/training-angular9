@@ -57,6 +57,7 @@
     "firebase": "^7.14.0",
     "install": "^0.13.0",
     "jquery": "^3.5.1",
+    "jspdf": "^2.5.0",
     "metismenujs": "^1.1.0",
     "moment": "^2.26.0",
     "ng-apexcharts": "^1.0.2",

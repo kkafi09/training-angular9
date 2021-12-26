@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary ">
     <div class="container-fluid">
         <a class="navbar-brand" href="/#/dashboard">Tokoku</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
@@ -6,7 +6,7 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-auto">
+            <ul class="navbar-nav mb-2 mb-lg-0 mx-auto">
                 <li class="nav-item d-flex align-items-center mx-3">
                     <img src="../../../assets/img/home-solid.svg" alt="" style="width: 20px">
                     <a href="/#/dashboard" class="nav-link active">Dashboard</a>
@@ -72,7 +72,7 @@
                     <div class="my-2 d-flex">
                         <label for="kasir" class="col-sm-2 col-form-label">Kasir</label>
                         <div class="col-sm-10">
-                            <select class="form-select" id="kasir">
+                            <select class="form-select form-control" id="kasir">
                                 <option>Semua Kasir</option>
                                 <option>Budi Nugroho</option>
                                 <option>Joko</option>
@@ -84,7 +84,7 @@
                     <div class="my-2 d-flex">
                         <label for="jenispembayaran" class="col-sm-2 col-form-label">Bayar</label>
                         <div class="col-sm-10">
-                            <select class="form-select " id="jenispembayaran">
+                            <select class="form-select form-control" id="jenispembayaran">
                                 <option>Tunai</option>
                                 <option>Non-tunai</option>
                             </select>
@@ -93,7 +93,7 @@
                     <div class="my-2 d-flex">
                         <label for="customer" class="col-sm-2 col-form-label">Customer</label>
                         <div class="col-sm-10">
-                            <select class="form-select" id="customer">
+                            <select class="form-select form-control" id="customer">
                                 <option>Member</option>
                                 <option>Non-Member</option>
                             </select>
@@ -103,14 +103,14 @@
                 <div class="col-xl-12 my-4 d-flex justify-content-center">
                     <div class="">
                         <a class="btn btn-info mx-4" href="/#/cetak-laporan">Tampilkan</a>
-                        <a class="btn btn-danger mx-4">PDF</a>
+                        <a class="btn btn-danger mx-4" (click)="download()">PDF</a>
                         <a class="btn btn-success mx-4">Excel</a>
                     </div>
                 </div>
                 <div class="col my-4">
                     <div class="containter-fluid ">
-                        <table class="table table-responsive table-bordered">
-                            <thead class="table-primary" style="background-color: #cfe2ff;">
+                        <table id="table" class="table table-bordered">
+                            <thead class="thead-dark" >
                             <tr>
                                 <th scope="col">No</th>
                                 <th scope="col">ID Transaksi</th>

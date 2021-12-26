@@ -7,6 +7,7 @@ import {DashboardComponent} from './t-pages/dashboard/dashboard.component';
 import {ProductComponent} from './t-pages/product/product.component';
 import {KasirComponent} from './t-pages/kasir/kasir.component';
 import {LaporanComponent} from './t-pages/laporan/laporan.component';
+import {TransaksiComponent} from './t-pages/transaksi/transaksi.component';
 
 
 const routes: Routes = [
@@ -19,7 +20,8 @@ const routes: Routes = [
     {path: 'dashboard', component: DashboardComponent},
     {path: 'product', component: ProductComponent},
     {path: 'kasir', component: KasirComponent},
-    {path: 'laporan', component: LaporanComponent}
+    {path: 'laporan', component: LaporanComponent},
+    {path: 'transaksi', component: TransaksiComponent}
 ];
 
 @NgModule({

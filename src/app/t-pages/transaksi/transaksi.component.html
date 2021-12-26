@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary ">
     <div class="container-fluid">
         <a class="navbar-brand" href="/#/dashboard">Tokoku</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
@@ -6,7 +6,7 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-auto">
+            <ul class="navbar-nav mb-2 mb-lg-0 mx-auto">
                 <li class="nav-item d-flex align-items-center mx-3">
                     <img src="../../../assets/img/home-solid.svg" alt="" style="width: 20px">
                     <a href="/#/dashboard" class="nav-link active">Dashboard</a>
@@ -30,7 +30,6 @@
             <a href="/#/login" class="d-flex align-items-center mx-3">
                 <img src="../../../assets/img/sign-out-alt-solid.svg" style="width: 20px; " class="text-light" alt="">
             </a>
-
         </div>
     </div>
 </nav>
@@ -55,23 +54,24 @@
                 <li class="list-group-item">Pembelian</li>
                 <!-- Pengaturan -->
                 <li class="list-group-item list-group-item-primary">Laporan</li>
-                <li class="list-group-item"><a href="/#/laporan" class="text-decoration-none text-muted">Penjualan</a></li>
+                <li class="list-group-item"><a href="/#/laporan" class="text-decoration-none text-muted">Penjualan</a>
+                </li>
             </ul>
         </div>
         <div class="col-xl-10 pt-4">
             <div class="my-3">
                 <form class="row g-3">
-                    <div class="col-auto">
-                        <label for="date1" class="visually-hidden">Tanggal awal</label>
+                    <div class="col-auto d-flex">
+                        <label for="date1" class="d-none">Tanggal awal</label>
                         <input type="date" class="form-control" id="date1">
                     </div>
-                    <div class="col-auto"><span>-</span></div>
-                    <div class="col-auto">
-                        <label for="date2" class="visually-hidden">Tanggal Akhir</label>
+                    <div class="col-auto"><span>_</span></div>
+                    <div class="col-auto d-flex">
+                        <label for="date2" class="d-none">Tanggal Akhir</label>
                         <input type="date" class="form-control" id="date2">
                     </div>
                     <div class="col-auto">
-                        <a class="btn btn-primary">Proses</a>
+                        <a class="btn btn-primary text-light">Proses</a>
                     </div>
                 </form>
             </div>
@@ -79,9 +79,9 @@
                 <div class="col-sm-4 rounded-2">
                     <div class="card shadow-sm">
                         <div class="card-body" style="background-color: #cfe2ff;">
-                            <div class="mb-3 row">
+                            <div class="mb-3">
                                 <span class="fs-3 text-center">Total Nominal Transaksi</span>
-                                <h1 style="font-size: 60px" class="text-center">100000</h1>
+                                <h1 style="font-size: 60px" class="text-center mt-2">100000</h1>
                             </div>
                         </div>
                     </div>
@@ -89,16 +89,16 @@
                 <div class="col-sm-4 rounded-2">
                     <div class="card shadow-sm">
                         <div class="card-body bg-success">
-                            <div class="mb-3 row">
+                            <div class="mb-3">
                                 <span class="fs-3 text-center ">Total Transaksi</span>
-                                <h1 style="font-size: 60px" class="text-center">10</h1>
+                                <h1 style="font-size: 60px" class="text-center mt-2">10</h1>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="col my-4">
+                <div class="col-sm-12 my-4">
                     <div class="containter-fluid ">
-                        <table class="table table-responsive table-bordered">
+                        <table class="table table-bordered">
                             <thead class="table-primary" style="background-color: #cfe2ff;">
                             <tr>
                                 <th scope="col">No</th>
@@ -128,10 +128,10 @@
                                 <td>Budi Nugroho</td>
                                 <td>100000</td>
                                 <td>
-                                    <a class="btn btn-warning me-2" (click)="open(editData)">
+                                    <a class="btn btn-warning mr-2" (click)="open(editData)">
                                         <img src="../../../assets/img/edit-solid.svg" alt="" width="18">
                                     </a>
-                                    <a href="" class="btn btn-danger align-items-center me-2">
+                                    <a href="" class="btn btn-danger align-items-center mr-2">
                                         <img src="../../../assets/img/trash-solid.svg" alt="" width="16">
                                     </a>
                                     <a class="btn btn-info align-items-center" (click)="open(detailData)">
@@ -162,7 +162,8 @@
             <div class="form-group">
                 <div class="mb-3">
                     <label for="editName" class="form-label">ID Transaksi</label>
-                    <input type="text" class="form-control" id="editName" disabled placeholder="Id Transaksi" value="2f6fdh43g4"
+                    <input type="text" class="form-control" id="editName" disabled placeholder="Id Transaksi"
+                           value="2f6fdh43g4"
                            formControlName="name">
                 </div>
                 <div class="mb-3">
@@ -196,12 +197,12 @@
         </button>
     </div>
     <div class="modal-body">
-        <div class="row">
-            <div class="d-flex my-2 flex-column">
+        <div class="">
+            <div class="d-flex my-3 flex-column" style="margin-left: 12px">
                 <span><strong>ID Transaksi</strong></span>
                 <span>hdf62jhd9s</span>
             </div>
-            <div class="d-flex my-2">
+            <div class="d-flex my-3">
                 <div class="col-sm-6 d-flex flex-column">
                     <span><strong>Pendapatan Kotor</strong></span>
                     <span>48.000</span>
@@ -211,7 +212,7 @@
                     <span>27/12/2021</span>
                 </div>
             </div>
-            <div class="d-flex my-2">
+            <div class="d-flex my-3">
                 <div class="col-sm-6 d-flex flex-column">
                     <span><strong>Jenis Pembayaran</strong></span>
                     <span>Tunai</span>
@@ -221,7 +222,7 @@
                     <span>8</span>
                 </div>
             </div>
-            <div class="d-flex my-2">
+            <div class="d-flex my-3">
                 <div class="col-sm-6 d-flex flex-column">
                     <span><strong>Customer</strong></span>
                     <span>Umum</span>
@@ -232,8 +233,8 @@
                 </div>
             </div>
             <div class="mt-4">
-                <table class="table table-responsive table-bordered">
-                    <thead class="">
+                <table class="table table-bordered">
+                    <thead>
                     <tr>
                         <th scope="col">No</th>
                         <th scope="col">Produk</th>
@@ -253,7 +254,7 @@
                     </tr>
                     <tr>
                         <th scope="row">1</th>
-                        <td>Ayam Geprek </td>
+                        <td>Ayam Geprek</td>
                         <td>2</td>
                     </tr>
                     </tbody>
