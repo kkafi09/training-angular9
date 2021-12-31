@@ -4,9 +4,6 @@ import {HttpClientModule} from '@angular/common/http';
 import {NgModule} from '@angular/core';
 import {initFirebaseBackend} from './authUtils';
 import {environment} from '../environments/environment';
-// import {
-//     LayoutsModule
-// } from './layouts/layouts.module';
 import {AppRoutingModule} from './app-routing.module';
 import {AppComponent} from './app.component';
 import {AsyncPipe, CommonModule, HashLocationStrategy, LocationStrategy} from '@angular/common';
@@ -19,7 +16,8 @@ import {MessagingService} from './core/services/messaging.service';
 import {NgbDateParserFormatter} from '@ng-bootstrap/ng-bootstrap';
 import {NgbDateCustomParserFormatter} from './core/date-formatter';
 import {ReactiveFormsModule} from '@angular/forms';
-import {TAccountModule} from './t-account/t-account.module';
+import { DashboardLayoutComponent } from './t-layouts/dashboard-layout/dashboard-layout.component';
+import { AuthLayoutComponent } from './t-layouts/auth-layout/auth-layout.component';
 
 
 initFirebaseBackend(environment.firebaseConfig);
@@ -27,6 +25,8 @@ initFirebaseBackend(environment.firebaseConfig);
 @NgModule({
     declarations: [
         AppComponent,
+        DashboardLayoutComponent,
+        AuthLayoutComponent,
     ],
     imports: [
         BrowserModule,
@@ -40,7 +40,6 @@ initFirebaseBackend(environment.firebaseConfig);
         AngularFireModule.initializeApp(environment.firebaseConfig),
         ReactiveFormsModule,
         CommonModule,
-        TAccountModule
     ],
     // providers: [AsyncPipe],
     providers: [MessagingService, AsyncPipe,

@@ -5,17 +5,21 @@ use Service\Db;
 // login auth
 $app->post('/kasir/log_in', function ($request, $response) {
     $db = Db::db();
-    $params = $request->getParams();
+    $params = $request->getParsedBody();
     $username = $params['username'];
     $password = sha1($params['password']);
     $data = $db->select('*')
         ->from('m_user')
-        ->where('username', '=', $username)
-        ->orwhere('email', '=', $username)
-        ->andwhere('password', '=', $password);
+        ->where('password', '=', $password)
+        ->customWhere("username = '{$username}' OR email = '{$username}'");
     $model = $data->findAll();
 
-    if ($model != null) {
+    $delete = $db->select('*')
+        ->from('m_user')
+        ->where('is_deleted', '=', 1);
+    $modelDelete = $delete->findAll();
+
+    if ($model != null && $modelDelete != $model) {
         return successResponse($response, [
             'data' => $model,
             'message' => "sukses login"
@@ -60,18 +64,27 @@ function passCheck($password): bool
     $db = Db::db();
     $data = $db->select('*')
         ->from('m_user')
-        ->where('password', '=', $password);
-    $model = $data->findAll();
+        ->where('password','=',$password);
+    $getPass = $data->findAll();
 
-    if ($model != null) {
+    if (count($getPass) == 0) {
         return true;
+    } else {
+        return false;
     }
-    return false;
 }
 
 function confPassCheck($pass, $confirmpass): bool
 {
     if ($pass != $confirmpass) {
+        return true;
+    }
+    return false;
+}
+
+function confirmPassUpdate($pass, $confirmpass): bool
+{
+    if ($pass == $confirmpass) {
         return true;
     }
     return false;
@@ -93,24 +106,26 @@ $app->post('/kasir/register', function ($request, $response) {
         "alamat" => $input["alamat"],
         "telepon" => $input["telepon"],
         "username" => $input["username"],
-        "password" => $input["password"],
+        "password" => sha1($input["password"]),
     ];
+
     if (userCheck($input['username'])) {
-        $pesanUser = "username sudah dipakai orang lain";
+        $pesanUser = "username sudah dipakai orang lain, ";
     }
     if (confPassCheck($input['password'], $input['confirmpassword'])) {
-        $pesanPass = "password tidak sama";
+        $pesanPass = "password dan confirm tidak sama, ";
     }
     if (emailCheck($input['email'])) {
-        $pesanEmail = "email sudah ada";
-    }
-    if ($pesanPass == null && $pesanEmail == null && $pesanUser == null) {
-        $pesanSukses = "berhasil mendaftar silahkan login";
-//        $db->insert('m_user', $value);
+        $pesanEmail = "email sudah ada, ";
     }
 
-    $pesan = "$pesanUser, $pesanEmail, $pesanPass, $pesanSukses";
-    $resStr = str_replace(", ,", ", ", substr($pesan, 0, -2));
+    if ($pesanPass == null && $pesanEmail == null && $pesanUser == null) {
+        $pesanSukses = "berhasil mendaftar silahkan login";
+        $db->insert('m_user', $value);
+    }
+
+    $pesan = "$pesanUser $pesanEmail $pesanPass $pesanSukses";
+    $resStr = str_replace(", , ", ", ", substr($pesan, 0, strlen($pesan)));
 
     return successResponse($response, [
         'message' => $resStr
@@ -127,16 +142,36 @@ $app->post('/kasir/update_profile', function ($request, $response) {
         "email" => $input["email"],
         "alamat" => $input["alamat"],
         "telepon" => $input["telepon"],
-        "password" => $input["password baru"],
+        "password" => sha1($input["passwordbaru"]),
     ];
 
-    if ($input["id"] == null){
+    $data = $db->select('*')
+        ->from('m_user')
+        ->where('id', '=', $value['id']);
+    $model = $data->findAll();
+
+    if ($model == null) {
         return successResponse($response, [
             'message' => "data user tidak ditemukan"
         ]);
     }
 
-    if($input['password lama'] == null || $input['password baru'] == null || $input['confirm pass'] == null){
+//    if (!passCheck($input['passwordlama'])) {
+//        return successResponse($response, [
+//            'data' => $model,
+//            'data pw' => sha1($input['passwordlama']),
+//            'data id' => $input['id'],
+//            'message' => "gagal mengupdate data, password lama tidak sesuai"
+//        ]);
+//    }
+
+    if (emailCheck($input['email'])) {
+        return successResponse($response, [
+            'message' => "gagal mengupdate data, email sudah ada"
+        ]);
+    }
+
+    if ($input['passwordlama'] == null || $input['passwordbaru'] == null && $input['confirmpass'] == null) {
         $value = [
             "id" => $input["id"],
             "nama" => $input["nama"],
@@ -144,18 +179,87 @@ $app->post('/kasir/update_profile', function ($request, $response) {
             "alamat" => $input["alamat"],
             "telepon" => $input["telepon"],
         ];
+//        $db->update('m_user', $value, ["id" => $input["id"]]);
         return successResponse($response, [
-            'message' => "data user tanpa password"
+            'message' => "data berhasil di update, tanpa ganti password"
         ]);
     }
 
-    return successResponse($response, [
-        'message' => "data masuk semua"
-    ]);
+    if (confirmPassUpdate($input['passwordbaru'], $input['confirmpass'] && passCheck($input['passwordlama']))) {
+//        $db->update('m_user', $value, ["id" => $input["id"]]);
+        return successResponse($response, [
+            'message' => "semua data, berhasil di update"
+        ]);
+    } else {
+        return successResponse($response, [
+            'message' => "password baru dan confirm password tidak sama"
+        ]);
+    }
+});
+
+// forgot
+$app->post('/kasir/forgot', function ($request, $response) {
+    $db = Db::db();
+    $input = $request->getParsedBody();
+
+    $forgot = $input['forgot'];
+    $data = $db->select('*')
+        ->from('m_user')
+        ->where('email', '=', $forgot)
+        ->orwhere('telepon', '=', $forgot);
+    $model = $data->findAll();
+
+    $username = $db->select('username')
+        ->from('m_user')
+        ->where('email', '=', $forgot)
+        ->orwhere('telepon', '=', $forgot);
+    $modelUsername = $username->find();
+
+    $newUsername = sha1($modelUsername->username);
+
+    if ($model != null) {
+        $db->update('m_user', ['password' => $newUsername], ["email" => $input['forgot']]);
+        $db->update('m_user', ['password' => $newUsername], ["telepon" => $input['forgot']]);
+        return successResponse($response, [
+            'data' => $modelUsername->username,
+            'message' => "sukses update password dengan username anda"
+        ]);
+    } else {
+        return successResponse($response, [
+            'data' => $model,
+            'message' => "data user tidak ditemukan"
+        ]);
+    }
+});
+
+
+$app->post('/kasir/delete', function ($request, $response) {
+    $db = Db::db();
+    $input = $request->getParsedBody();
+    $id = $input['id'];
+    $data = $db->select('*')
+        ->from('m_user')
+        ->where('id', '=', $id);
+    $model = $data->findAll();
+
+    $value = [
+        "is_deleted" => 1,
+    ];
+
+    if ($model != null) {
+        $db->update('m_user', $value, ["id" => $input["id"]]);
+        return successResponse($response, [
+            'message' => "data berhasil dihapus"
+        ]);
+    } else {
+        return successResponse($response, [
+            'message' => "data gagal dihapus"
+        ]);
+    }
 });
 
 // produk with relation
-$app->post('/kasir/produkRelasi', function ($request, $response) {
+$app->post('/kasir/produk', function ($request, $response) {
     $db = Db::db();
     $params = $request->getParams();
     $data = $db->select('m_produk.*, m_kategori.nama')

@@ -3,7 +3,7 @@ import {environment} from '../../../environments/environment';
 import {DataTableDirective} from 'angular-datatables';
 import {LandaService} from '../../core/services/landa.service';
 import {ChartType} from 'chart.js';
-import {Color, Label, MultiDataSet} from 'ng2-charts';
+// import {Color, Label, MultiDataSet} from 'ng2-charts';
 
 
 @Component({
@@ -35,13 +35,13 @@ export class DashboardComponent implements OnInit {
     dtInstance: Promise<DataTables.Api>;
     dtOptions: any;
     // CHARTS 1
-    barChartLabels: Label[] = [];
+    // barChartLabels: Label[] = [];
     ChartDataSets: any;
     chartBarOptions: any;
     chartBarLegend: any;
     barChartType: ChartType = 'bar';
-    barChartData: MultiDataSet[] = [];
-    barChartColor: Color[] = [];
+    // barChartData: MultiDataSet[] = [];
+    // barChartColor: Color[] = [];
     listTahun: any[];
     luas: number;
     dataGrafik: any;

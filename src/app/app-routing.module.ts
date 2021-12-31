@@ -1,27 +1,45 @@
 import {NgModule} from '@angular/core';
 import {RouterModule, Routes} from '@angular/router';
-import {LoginComponent} from './t-account/login/login.component';
-import {RegisterComponent} from './t-account/register/register.component';
-import {ForgotpasswordComponent} from './t-account/forgotpassword/forgotpassword.component';
-import {DashboardComponent} from './t-pages/dashboard/dashboard.component';
-import {ProductComponent} from './t-pages/product/product.component';
-import {KasirComponent} from './t-pages/kasir/kasir.component';
-import {LaporanComponent} from './t-pages/laporan/laporan.component';
-import {TransaksiComponent} from './t-pages/transaksi/transaksi.component';
+import {DashboardLayoutComponent} from './t-layouts/dashboard-layout/dashboard-layout.component';
+import {AuthLayoutComponent} from './t-layouts/auth-layout/auth-layout.component';
 
 
 const routes: Routes = [
     // { path: 'account', loadChildren: () => import('./account/account.module').then(m => m.AccountModule) },
     // { path: '', component: LayoutComponent, loadChildren: () => import('./pages/pages.module').then(m => m.PagesModule) },
-    {path: '', redirectTo: 'login', pathMatch: 'full'},
-    {path: 'login', component: LoginComponent},
-    {path: 'register', component: RegisterComponent},
-    {path: 'forgot', component: ForgotpasswordComponent},
-    {path: 'dashboard', component: DashboardComponent},
-    {path: 'product', component: ProductComponent},
-    {path: 'kasir', component: KasirComponent},
-    {path: 'laporan', component: LaporanComponent},
-    {path: 'transaksi', component: TransaksiComponent}
+    // Auth routes
+    {
+        path: '',
+        component: AuthLayoutComponent,
+        children: [
+            {
+                path: '',
+                redirectTo: 'auth',
+                pathMatch: 'full'
+            },
+            {
+                path: 'auth',
+                loadChildren: () => import('./t-account/t-account.module').then(m => m.TAccountModule)
+            }
+        ]
+    },
+    // App routes
+    {
+        path: '',
+        component: DashboardLayoutComponent,
+        children: [
+            {
+                path: '',
+                redirectTo: 'pages',
+                pathMatch: 'full'
+            },
+            {
+                path: 'pages',
+                loadChildren: () => import('./pages/pages.module').then(m => m.PagesModule)
+            }
+        ]
+    },
+    // {path: 'cetak-laporan', component: CetakLaporanComponent}
 ];
 
 @NgModule({
