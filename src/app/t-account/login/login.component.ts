@@ -1,5 +1,8 @@
 import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {LandaService} from '../../core/services/landa.service';
+import {AuthenticationService} from '../../core/services/auth.service';
+import {Router} from '@angular/router';
 
 @Component({
     selector: 'app-login',
@@ -10,8 +13,14 @@ export class LoginComponent implements OnInit {
 
     loginForm: FormGroup;
     submitted = false;
+    error = '';
 
-    constructor(private formBuilder: FormBuilder) {
+    constructor(
+        private formBuilder: FormBuilder,
+        public landaService: LandaService,
+        private authenticationService: AuthenticationService,
+        private router: Router,
+    ) {
     }
 
     ngOnInit() {
@@ -26,16 +35,34 @@ export class LoginComponent implements OnInit {
         return this.loginForm.controls;
     }
 
-    onSubmit() {
+    async onSubmit() {
         this.submitted = true;
 
-        // stop here if form is invalid
-        if (this.loginForm.invalid) {
-            return;
-        }
+        this.landaService.DataPost('/kasir/log_in', {
+            email: this.f.email.value,
+            password: this.f.password.value,
+            sumber: 1,
+        })
+            .subscribe((res: any) => {
+                /**
+                 * Simpan detail user ke session storage
+                 */
+                // tslint:disable-next-line:triple-equals
+                if (res.status_code == 200) {
+                    this.authenticationService
+                        .setDetailUser(res.data.user)
 
-        // display form values on success
-        console.log('sukses login');
-        window.location.href = '/#/dashboard';
+                        .then(() => {
+                            this.router.navigate(['/pages/dashboard']);
+                        })
+                        .catch((error) => {
+                            this.error =
+                                'Terjadi kesalahan pada server';
+                        });
+                } else {
+                    this.error = res.errors[0];
+                }
+            });
+
     }
 }

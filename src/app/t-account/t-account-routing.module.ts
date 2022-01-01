@@ -4,14 +4,13 @@ import {LoginComponent} from './login/login.component';
 import {RegisterComponent} from './register/register.component';
 import {ForgotpasswordComponent} from './forgotpassword/forgotpassword.component';
 
-
 const routes: Routes = [
     {
         path: '',
         component: LoginComponent,
         children: [
             {
-                path: 'auth',
+                path: 'login',
                 component: LoginComponent
             }
         ]

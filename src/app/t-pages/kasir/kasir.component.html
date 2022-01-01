@@ -1,294 +1,169 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary ">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/#/dashboard">Tokoku</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
-                aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
-            <ul class="navbar-nav mb-2 mb-lg-0 mx-auto">
-                <li class="nav-item d-flex align-items-center mx-3">
-                    <img src="../../../assets/img/home-solid.svg" alt="" style="width: 20px">
-                    <a href="/#/dashboard" class="nav-link active">Dashboard</a>
-                </li>
-                <li class="nav-item d-flex align-items-center mx-3">
-                    <img src="../../../assets/img/box-solid.svg" alt="" style="width: 15px">
-                    <a href="/#/product" class="nav-link active">Produk</a>
-                </li>
-                <li class="nav-item d-flex align-items-center mx-3">
-                    <img src="../../../assets/img/wallet-solid.svg" alt="" style="width: 15px">
-                    <a href="/#/kasir" class="nav-link active">Kasir</a>
-                </li>
-                <li class="nav-item d-flex align-items-center mx-3">
-                    <img src="../../../assets/img/file-alt-solid.svg" alt="" style="width: 12px">
-                    <a href="/#/transaksi" class="nav-link active">Transaksi</a>
-                </li>
-            </ul>
-            <a href="/#/dashboard" class="d-flex align-items-center mx-2">
-                <img src="../../../assets/img/user-solid.svg" style="width: 20px;" class="text-light" alt="">
-            </a>
-            <a href="/#/login" class="d-flex align-items-center mx-3">
-                <img src="../../../assets/img/sign-out-alt-solid.svg" style="width: 20px; " class="text-light" alt="">
-            </a>
-        </div>
-    </div>
-</nav>
-
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-xl-2 py-4">
-            <ul class="list-group">
-                <!-- produk -->
-                <li class="list-group-item list-group-item-primary">Produk</li>
-                <li class="list-group-item">Kelola Produk</li>
-                <li class="list-group-item">Diskon</li>
-                <li class="list-group-item">Kategory Produk</li>
-                <!-- Toko -->
-                <li class="list-group-item list-group-item-primary">Kelola Toko</li>
-                <li class="list-group-item">Pembayaran</li>
-                <li class="list-group-item">Outlet</li>
-                <li class="list-group-item">Inventory</li>
-                <!-- Transaksi -->
-                <li class="list-group-item list-group-item-primary">Transaksi</li>
-                <li class="list-group-item">Penjualan</li>
-                <li class="list-group-item">Pembelian</li>
-                <!-- Pengaturan -->
-                <li class="list-group-item list-group-item-primary">Laporan</li>
-                <li class="list-group-item"><a href="/#/laporan" class="text-decoration-none text-muted">Penjualan</a>
-                </li>
-            </ul>
-        </div>
-
-        <div class="col-xl-10 pt-4">
-            <div class="row">
-                <div class="col-sm-4 rounded-2">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <div class="mb-3 row">
-                                <label for="dateInput" class="col-sm-3 col-form-label">Tanggal</label>
-                                <div class="col-sm-8">
-                                    <input type="date" class="form-control" id="dateInput">
-                                </div>
-                            </div>
-                            <div class="mb-3 row">
-                                <label for="cashier" class="col-sm-3 col-form-label">Kasir</label>
-                                <div class="col-sm-8">
-                                    <input type="text" class="form-control" id="cashier">
-                                </div>
-                            </div>
-                            <div class="mb-3 row">
-                                <label for="customer" class="col-sm-3 col-form-label">Customer</label>
-                                <div class="col-sm-8">
-                                    <select class="form-select form-control text-center" id="customer"
-                                            style="width: 230px; height: 40px;">
-                                        <option>------</option>
-                                        <option>Makanan</option>
-                                        <option>Minuman</option>
-                                        <option>Snack</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+<div class="row">
+    <div class="col-sm-4 rounded-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="mb-3 row">
+                    <label for="dateInput" class="col-sm-3 col-form-label">Tanggal</label>
+                    <div class="col-sm-8">
+                        <input type="date" class="form-control" id="dateInput">
                     </div>
                 </div>
-                <div class="col-sm-4 rounded-2">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <div class="mb-3 row">
-                                <label for="barcode" class="col-sm-3 col-form-label">Barcode</label>
-                                <div class="col-sm-8">
-                                    <input type="text" class="form-control" id="barcode">
-                                </div>
-                            </div>
-                            <div class="mb-3 row">
-                                <label for="qty" class="col-sm-3 col-form-label">Qty</label>
-                                <div class="col-sm-8">
-                                    <input type="number" class="form-control" id="qty">
-                                </div>
-                            </div>
-                            <div class="mb-3 row">
-                                <div class="col-sm-8 ms-auto">
-                                    <button type="submit" class="btn btn-primary" id="submit">Add</button>
-                                </div>
-                            </div>
-                        </div>
+                <div class="mb-3 row">
+                    <label for="cashier" class="col-sm-3 col-form-label">Kasir</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="cashier">
                     </div>
                 </div>
-                <div class="col-sm-4 rounded-2">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <div class="mb-3 row">
-                                <span class="ml-2" style="font-size: 20px;">Total</span>
-                                <div class="col-sm-12 mt-4">
-                                    <h1 style="font-size: 60px">100000</h1>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col my-4">
-                    <div class="containter-fluid">
-                        <table class="table table-bordered">
-                            <thead class="thead-dark">
-                            <tr>
-                                <th scope="col">No</th>
-                                <th scope="col">Produk</th>
-                                <th scope="col">Harga</th>
-                                <th scope="col">Qty</th>
-                                <th scope="col">Discount</th>
-                                <th scope="col">Total</th>
-                                <th scope="col">Action</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <!-- <tr *ngFor="let kasir of tableKasir">
-                              <th scope="row">{{kasir.id}}</th>
-                              <td>{{kasir.name}}</td>
-                              <td>{{kasir.price}}</td>
-                              <td>{{kasir.qty}}</td>
-                              <td>{{kasir.discount}}</td>
-                              <td>{{kasir.total}}</td>
-                              <td>
-                                  <a href="" class="btn btn-warning me-2">Edit</a>  <a href="" class="btn btn-danger">Hapus</a>
-                              </td>
-                            </tr>                                   -->
-                            <tr>
-                                <th scope="row">1</th>
-                                <td class="text-left">Nasi Ayam Geprek</td>
-                                <td class="text-left">8000</td>
-                                <td class="text-left">2</td>
-                                <td class="text-left">0</td>
-                                <td class="text-left">20000</td>
-                                <td>
-                                    <a class="btn btn-warning mr-2" (click)="open(editData)">
-                                        <img src="../../../assets/img/edit-solid.svg" alt="" width="18">
-                                    </a>
-                                    <a href="" class="btn btn-danger align-items-center">
-                                        <img src="../../../assets/img/trash-solid.svg" alt="" width="16">
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">2</th>
-                                <td class="text-left">Nasi Goreng</td>
-                                <td class="text-left">8000</td>
-                                <td class="text-left">2</td>
-                                <td class="text-left">0</td>
-                                <td class="text-left">20000</td>
-                                <td>
-                                    <a class="btn btn-warning mr-2" (click)="open(editData)">
-                                        <img src="../../../assets/img/edit-solid.svg" alt="" width="18">
-                                    </a>
-                                    <a href="" class="btn btn-danger align-items-center">
-                                        <img src="../../../assets/img/trash-solid.svg" alt="" width="16">
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">3</th>
-                                <td class="text-left">Kopi</td>
-                                <td class="text-left">9000</td>
-                                <td class="text-left">2</td>
-                                <td class="text-left">0</td>
-                                <td class="text-left">20000</td>
-                                <td>
-                                    <a class="btn btn-warning mr-2" (click)="open(editData)">
-                                        <img src="../../../assets/img/edit-solid.svg" alt="" width="18">
-                                    </a>
-                                    <a href="" class="btn btn-danger align-items-center">
-                                        <img src="../../../assets/img/trash-solid.svg" alt="" width="16">
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">4</th>
-                                <td class="text-left">Nasi Ayam Geprek</td>
-                                <td class="text-left">8000</td>
-                                <td class="text-left">2</td>
-                                <td class="text-left">0</td>
-                                <td class="text-left">20000</td>
-                                <td>
-                                    <a class="btn btn-warning mr-2" (click)="open(editData)">
-                                        <img src="../../../assets/img/edit-solid.svg" alt="" width="18">
-                                    </a>
-                                    <a href="" class="btn btn-danger align-items-center">
-                                        <img src="../../../assets/img/trash-solid.svg" alt="" width="16">
-                                    </a>
-                                </td>
-                            </tr>
-
-                            </tbody>
-                        </table>
+                <div class="mb-3 row">
+                    <label for="customer" class="col-sm-3 col-form-label">Customer</label>
+                    <div class="col-sm-8">
+                        <select class="form-select form-control text-center" id="customer"
+                                style="width: 230px; height: 40px;">
+                            <option>------</option>
+                            <option>Makanan</option>
+                            <option>Minuman</option>
+                            <option>Snack</option>
+                        </select>
                     </div>
                 </div>
             </div>
-            <div class="row row-cols-4">
-                <div class="col-sm-4 rounded-2">
-
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <div class="mb-3 row">
-                                <label for="subtotal" class="col-sm-3 col-form-label">Sub Total</label>
-                                <div class="col-sm-8">
-                                    <input type="text" class="form-control" id="subtotal">
-                                </div>
-                            </div>
-                            <div class="mb-3 row">
-                                <label for="diskon" class="col-sm-3 col-form-label">Diskon</label>
-                                <div class="col-sm-8">
-                                    <input type="number" class="form-control" id="diskon">
-                                </div>
-                            </div>
-                            <div class="mb-2 row">
-                                <label for="grandtotal" class="col-sm-3 col-form-label">Grand Total</label>
-                                <div class="col-sm-8">
-                                    <input type="number" class="form-control" id="grandtotal">
-                                </div>
-                            </div>
-                        </div>
+        </div>
+    </div>
+    <div class="col-sm-4 rounded-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="mb-3 row">
+                    <label for="barcode" class="col-sm-3 col-form-label">Barcode</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="barcode">
                     </div>
-
-                    <div class="card shadow-sm mt-2">
-                        <div class="card-body">
-                            <div class="mb-3 row">
-                                <label for="tunai" class="col-sm-3 col-form-label">Tunai</label>
-                                <div class="col-sm-8">
-                                    <input type="number" class="form-control" id="tunai">
-                                </div>
-                            </div>
-                            <div class="mb-2 row ">
-                                <label for="kembalian" class="col-sm-3 col-form-label">Kembalian</label>
-                                <div class="col-sm-8">
-                                    <input type="number" class="form-control" id="kembalian">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
-                <div class="col-sm-4 rounded-2">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <label for="floatingTextarea2">Notes</label>
-                            <div class="form-floating">
+                <div class="mb-3 row">
+                    <label for="qty" class="col-sm-3 col-form-label">Qty</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="qty">
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <div class="col-sm-8 ms-auto">
+                        <button type="submit" class="btn btn-primary" id="submit">Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4 rounded-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="mb-3 row">
+                    <span class="ml-2" style="font-size: 20px;">Total</span>
+                    <div class="col-sm-12 mt-4">
+                        <h1 style="font-size: 60px">100000</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col my-4">
+        <div class="containter-fluid">
+            <table class="table table-bordered">
+                <thead class="thead-dark">
+                <tr>
+                    <th scope="col">No</th>
+                    <th scope="col">Produk</th>
+                    <th scope="col">Harga</th>
+                    <th scope="col">Qty</th>
+                    <th scope="col">Discount</th>
+                    <th scope="col">Total</th>
+                    <th scope="col">Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr *ngFor="let kasir of tableKasir">
+                  <th scope="row">{{kasir.id}}</th>
+                  <td class="text-left">{{kasir.name}}</td>
+                  <td class="text-left">{{kasir.price}}</td>
+                  <td class="text-left">{{kasir.qty}}</td>
+                  <td class="text-left">{{kasir.discount}}</td>
+                  <td class="text-left">{{kasir.total}}</td>
+                    <td>
+                        <a class="btn btn-warning mr-2" (click)="open(editData)">
+                            <img src="../../../assets/img/edit-solid.svg" alt="" width="18">
+                        </a>
+                        <a href="" class="btn btn-danger align-items-center">
+                            <img src="../../../assets/img/trash-solid.svg" alt="" width="16">
+                        </a>
+                    </td>
+                </tr>
+               </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div class="row row-cols-4">
+    <div class="col-sm-4 rounded-2">
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="mb-3 row">
+                    <label for="subtotal" class="col-sm-3 col-form-label">Sub Total</label>
+                    <div class="col-sm-8">
+                        <input type="text" class="form-control" id="subtotal">
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <label for="diskon" class="col-sm-3 col-form-label">Diskon</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="diskon">
+                    </div>
+                </div>
+                <div class="mb-2 row">
+                    <label for="grandtotal" class="col-sm-3 col-form-label">Grand Total</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="grandtotal">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-2">
+            <div class="card-body">
+                <div class="mb-3 row">
+                    <label for="tunai" class="col-sm-3 col-form-label">Tunai</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="tunai">
+                    </div>
+                </div>
+                <div class="mb-2 row ">
+                    <label for="kembalian" class="col-sm-3 col-form-label">Kembalian</label>
+                    <div class="col-sm-8">
+                        <input type="number" class="form-control" id="kembalian">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div class="col-sm-4 rounded-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <label for="floatingTextarea2">Notes</label>
+                <div class="form-floating">
                 <textarea class="form-control" placeholder="Leave a comment here" id="floatingTextarea2"
                           style="height: 320px"></textarea>
-                            </div>
-                        </div>
-                    </div>
                 </div>
-                <div class="col-sm-4 rounded-2">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <div class="mb-3 row">
-                                <div class="col-sm-8 my-2">
-                                    <button class="btn btn-warning">Batal</button>
-                                </div>
-                                <div class="col-sm-8">
-                                    <button class="btn btn-success">Proses Pembayaran</button>
-                                </div>
-                            </div>
-                        </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4 rounded-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="mb-3 row">
+                    <div class="col-sm-8 my-2">
+                        <button class="btn btn-warning">Batal</button>
+                    </div>
+                    <div class="col-sm-8">
+                        <button class="btn btn-success">Proses Pembayaran</button>
                     </div>
                 </div>
             </div>

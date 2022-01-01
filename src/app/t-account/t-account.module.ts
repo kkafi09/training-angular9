@@ -15,7 +15,7 @@ import {ReactiveFormsModule} from '@angular/forms';
         CommonModule,
         TAccountRoutingModule,
         NgbAlertModule,
-        ReactiveFormsModule
+        ReactiveFormsModule,
     ]
 })
 export class TAccountModule { }

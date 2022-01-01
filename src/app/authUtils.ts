@@ -1,7 +1,8 @@
 import * as firebase from 'firebase/app';
 import 'firebase/auth';
 import 'firebase/firestore';
-import { Router, ActivatedRoute } from '@angular/router';
+import {ActivatedRoute} from '@angular/router';
+
 class FirebaseAuthBackend {
     route = new ActivatedRoute();
 
@@ -11,17 +12,18 @@ class FirebaseAuthBackend {
             firebase.initializeApp(firebaseConfig);
             firebase.auth().onAuthStateChanged((user) => {
                 if (user) {
-                    // localStorage.setItem('userDetail', JSON.stringify(user));
+                    localStorage.setItem('userDetail', JSON.stringify(user));
                 } else {
                     // if (this.route.snapshot.paramMap.get('user') !== null) {
-                        // Do Nothing
+                    // Do Nothing
                     // }else{
-                       // localStorage.removeItem('userDetail');
+                    // localStorage.removeItem('userDetail');
                     // }
                 }
             });
         }
     }
+
     /**
      * Registers the user with given details
      */
@@ -34,7 +36,7 @@ class FirebaseAuthBackend {
                 reject(this._handleError(error));
             });
         });
-    }
+    };
     /**
      * Login user with given details
      */
@@ -49,9 +51,9 @@ class FirebaseAuthBackend {
                 reject(this._handleError(error));
             });
         });
-    }
-    
-    loginWithGoogle(){
+    };
+
+    loginWithGoogle() {
         return new Promise((resolve, reject) => {
             var provider = new firebase.auth.GoogleAuthProvider();
             provider.addScope('profile');
@@ -67,8 +69,9 @@ class FirebaseAuthBackend {
                 reject(this._handleError(error));
             });
         });
-       
+
     }
+
     /**
      * forget Password user with given details
      */
@@ -83,7 +86,7 @@ class FirebaseAuthBackend {
                 reject(this._handleError(error));
             });
         });
-    }
+    };
     /**
      * Logout the user
      */
@@ -96,7 +99,8 @@ class FirebaseAuthBackend {
                 reject(this._handleError(error));
             });
         });
-    }
+    };
+
     /**
      * Mengambil detail user dari collection users di firebase
      */
@@ -106,6 +110,7 @@ class FirebaseAuthBackend {
             resolve(true);
         });
     }
+
     /**
      * set client yang aktif
      */
@@ -133,6 +138,7 @@ class FirebaseAuthBackend {
             });
         });
     }
+
     /**
      * Set perusahaan yang aktif
      */
@@ -144,12 +150,13 @@ class FirebaseAuthBackend {
         user.company = companyData;
         return localStorage.setItem('userDetail', JSON.stringify(user));
     }
+
     /**
      * Set user yang login ke session storage
      */
     setLoggeedInUser = (user) => {
         localStorage.setItem('userDetail', JSON.stringify(user));
-    }
+    };
     /**
      * Returns the detail user
      */
@@ -158,7 +165,7 @@ class FirebaseAuthBackend {
             return null;
         }
         return JSON.parse(localStorage.getItem('userDetail'));
-    }
+    };
     /**
      * Returns the detail client
      */
@@ -168,7 +175,7 @@ class FirebaseAuthBackend {
         }
         const user = JSON.parse(localStorage.getItem('userDetail'));
         return user.client;
-    }
+    };
     /**
      * Returns the detail company
      */
@@ -178,7 +185,7 @@ class FirebaseAuthBackend {
         }
         const user = JSON.parse(localStorage.getItem('userDetail'));
         return user.company;
-    }
+    };
     /**
      * Returns the authenticated user
      */
@@ -187,7 +194,8 @@ class FirebaseAuthBackend {
             return null;
         }
         return JSON.parse(localStorage.getItem('userDetail'));
-    }
+    };
+
     /**
      * Handle the error
      * @param {*} error
@@ -197,6 +205,7 @@ class FirebaseAuthBackend {
         return errorMessage;
     }
 }
+
 let _fireBaseBackend = null;
 /**
  * Initilize the backend

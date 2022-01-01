@@ -11,7 +11,7 @@ const routes: Routes = [
     {
         path: '',
         component: DashboardComponent,
-        children: [
+        children : [
             {
                 path: 'dashboard',
                 component: DashboardComponent
@@ -21,7 +21,7 @@ const routes: Routes = [
     {
         path: '',
         component: ProductComponent,
-        children: [
+        children : [
             {
                 path: 'product',
                 component: ProductComponent
@@ -31,7 +31,7 @@ const routes: Routes = [
     {
         path: '',
         component: KasirComponent,
-        children: [
+        children : [
             {
                 path: 'kasir',
                 component: KasirComponent
@@ -41,7 +41,7 @@ const routes: Routes = [
     {
         path: '',
         component: TransaksiComponent,
-        children: [
+        children : [
             {
                 path: 'transaksi',
                 component: TransaksiComponent
@@ -51,23 +51,13 @@ const routes: Routes = [
     {
         path: '',
         component: LaporanComponent,
-        children: [
+        children : [
             {
                 path: 'laporan',
                 component: LaporanComponent
             }
         ]
     },
-    // {
-    //     path: '',
-    //     component: CetakLaporanComponent,
-    //     children: [
-    //         {
-    //             path: 'cetak-laporan',
-    //             component: CetakLaporanComponent
-    //         }
-    //     ]
-    // },
 ];
 
 @NgModule({

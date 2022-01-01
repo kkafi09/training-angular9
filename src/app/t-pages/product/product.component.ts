@@ -19,11 +19,11 @@ export class ProductComponent implements OnInit {
 
     ngOnInit(): void {
         this.products = [
-            {id: 1, name: 'Ayam goreng', category: 'Makanan', price: '20.000'},
-            {id: 2, name: 'Nasi goreng', category: 'Makanan', price: '20.000'},
-            {id: 5, name: 'Kopi', category: 'Minuman', price: '20.000'},
-            {id: 3, name: 'Es Jeruk', category: 'Minuman', price: '20.000'},
-            {id: 4, name: 'Teh', category: 'Minuman', price: '20.000'}
+            { name: 'Ayam goreng', category: 'Makanan', price: '20.000'},
+            { name: 'Nasi goreng', category: 'Makanan', price: '20.000'},
+            { name: 'Kopi', category: 'Minuman', price: '20.000'},
+            { name: 'Es Jeruk', category: 'Minuman', price: '20.000'},
+            { name: 'Teh', category: 'Minuman', price: '20.000'}
         ];
 
         this.productForm = this.formBuilder.group({

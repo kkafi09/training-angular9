@@ -35,15 +35,14 @@ const routes: Routes = [
             },
             {
                 path: 'pages',
-                loadChildren: () => import('./pages/pages.module').then(m => m.PagesModule)
+                loadChildren: () => import('./t-pages/t-pages.module').then(m => m.TPagesModule)
             }
         ]
     },
-    // {path: 'cetak-laporan', component: CetakLaporanComponent}
 ];
 
 @NgModule({
-    imports: [RouterModule.forRoot(routes, {scrollPositionRestoration: 'top', })],
+    imports: [RouterModule.forRoot(routes)],
     exports: [RouterModule]
 })
 

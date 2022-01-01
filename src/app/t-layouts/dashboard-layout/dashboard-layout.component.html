@@ -1,1 +1,64 @@
-<router-outlet></router-outlet>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary ">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/#/pages/dashboard">Tokoku</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
+                aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
+            <ul class="navbar-nav mb-2 mb-lg-0 mx-auto">
+                <li class="nav-item d-flex align-items-center mx-3">
+                    <img src="../../../assets/img/home-solid.svg" alt="" style="width: 20px">
+                    <a href="/#/pages/dashboard" class="nav-link active">Dashboard</a>
+                </li>
+                <li class="nav-item d-flex align-items-center mx-3">
+                    <img src="../../../assets/img/box-solid.svg" alt="" style="width: 15px">
+                    <a href="/#/pages/product" class="nav-link active">Produk</a>
+                </li>
+                <li class="nav-item d-flex align-items-center mx-3">
+                    <img src="../../../assets/img/wallet-solid.svg" alt="" style="width: 15px">
+                    <a href="/#/pages/kasir" class="nav-link active">Kasir</a>
+                </li>
+                <li class="nav-item d-flex align-items-center mx-3">
+                    <img src="../../../assets/img/file-alt-solid.svg" alt="" style="width: 12px">
+                    <a href="/#/pages/transaksi" class="nav-link active">Transaksi</a>
+                </li>
+            </ul>
+            <a href="/#/pages/dashboard" class="d-flex align-items-center mx-2">
+                <img src="../../../assets/img/user-solid.svg" style="width: 20px;" class="text-light" alt="">
+            </a>
+            <a href="/#/auth/login" class="d-flex align-items-center mx-3">
+                <img src="../../../assets/img/sign-out-alt-solid.svg" style="width: 20px; " class="text-light" alt="">
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xl-2 py-4">
+            <ul class="list-group">
+                <!-- produk -->
+                <li class="list-group-item list-group-item-primary">Produk</li>
+                <li class="list-group-item">Kelola Produk</li>
+                <li class="list-group-item">Diskon</li>
+                <li class="list-group-item">Kategory Produk</li>
+                <!-- Toko -->
+                <li class="list-group-item list-group-item-primary">Kelola Toko</li>
+                <li class="list-group-item">Pembayaran</li>
+                <li class="list-group-item">Outlet</li>
+                <li class="list-group-item">Inventory</li>
+                <!-- Transaksi -->
+                <li class="list-group-item list-group-item-primary">Transaksi</li>
+                <li class="list-group-item">Penjualan</li>
+                <li class="list-group-item">Pembelian</li>
+                <!-- Pengaturan -->
+                <li class="list-group-item list-group-item-primary">Laporan</li>
+                <li class="list-group-item"><a href="/#/pages/laporan" class="text-decoration-none text-muted">Penjualan</a></li>
+            </ul>
+        </div>
+        <div class="col-xl-10 pt-4">
+            <router-outlet></router-outlet>
+        </div>
+    </div>
+</div>

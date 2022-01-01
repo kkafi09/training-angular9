@@ -113,6 +113,7 @@ export class LoginComponent implements OnInit, AfterViewInit {
                 /**
                  * Simpan detail user ke session storage
                  */
+                // tslint:disable-next-line:triple-equals
                 if (res.status_code == 200) {
                     this.authenticationService
                         .setDetailUser(res.data.user)

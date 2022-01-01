@@ -44,7 +44,7 @@ initFirebaseBackend(environment.firebaseConfig);
     // providers: [AsyncPipe],
     providers: [MessagingService, AsyncPipe,
         {provide: NgbDateParserFormatter, useClass: NgbDateCustomParserFormatter},
-        {provide: LocationStrategy, useClass: HashLocationStrategy}// <-- add this
+        {provide: LocationStrategy, useClass: HashLocationStrategy}
     ],
     bootstrap: [AppComponent],
 })

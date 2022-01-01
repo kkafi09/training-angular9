@@ -1,162 +1,45 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary ">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/#/dashboard">Tokoku</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
-                aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
-            <ul class="navbar-nav mb-2 mb-lg-0 mx-auto">
-                <li class="nav-item d-flex align-items-center mx-3">
-                    <img src="../../../assets/img/home-solid.svg" alt="" style="width: 20px">
-                    <a href="/#/dashboard" class="nav-link active">Dashboard</a>
-                </li>
-                <li class="nav-item d-flex align-items-center mx-3">
-                    <img src="../../../assets/img/box-solid.svg" alt="" style="width: 15px">
-                    <a href="/#/product" class="nav-link active">Produk</a>
-                </li>
-                <li class="nav-item d-flex align-items-center mx-3">
-                    <img src="../../../assets/img/wallet-solid.svg" alt="" style="width: 15px">
-                    <a href="/#/kasir" class="nav-link active">Kasir</a>
-                </li>
-                <li class="nav-item d-flex align-items-center mx-3">
-                    <img src="../../../assets/img/file-alt-solid.svg" alt="" style="width: 12px">
-                    <a href="/#/transaksi" class="nav-link active">Transaksi</a>
-                </li>
-            </ul>
-            <a href="/#/dashboard" class="d-flex align-items-center mx-2">
-                <img src="../../../assets/img/user-solid.svg" style="width: 20px;" class="text-light" alt="">
-            </a>
-            <a href="/#/login" class="d-flex align-items-center mx-3">
-                <img src="../../../assets/img/sign-out-alt-solid.svg" style="width: 20px; " class="text-light" alt="">
-            </a>
-        </div>
-    </div>
-</nav>
-
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-xl-2 py-4">
-            <ul class="list-group">
-                <!-- produk -->
-                <li class="list-group-item list-group-item-primary">Produk</li>
-                <li class="list-group-item">Kelola Produk</li>
-                <li class="list-group-item">Diskon</li>
-                <li class="list-group-item">Kategory Produk</li>
-                <!-- Toko -->
-                <li class="list-group-item list-group-item-primary">Kelola Toko</li>
-                <li class="list-group-item">Pembayaran</li>
-                <li class="list-group-item">Outlet</li>
-                <li class="list-group-item">Inventory</li>
-                <!-- Transaksi -->
-                <li class="list-group-item list-group-item-primary">Transaksi</li>
-                <li class="list-group-item">Penjualan</li>
-                <li class="list-group-item">Pembelian</li>
-                <!-- Pengaturan -->
-                <li class="list-group-item list-group-item-primary">Laporan</li>
-                <li class="list-group-item"><a href="/#/laporan" class="text-decoration-none text-muted">Penjualan</a>
-                </li>
-            </ul>
-        </div>
-
-        <div class="col-lg-10 py-4">
-            <h2 class="">Produk</h2>
-            <div class="bd-highlight d-flex align-items-center mt-3 ">
-                <!-- <label for="exampleFormControlSelect1" class="me-2">Kategori : </label> -->
-                <select class="form-select text-center rounded" id="kategori" style="width: 125px; height: 40px;">
-                    <option>------</option>
-                    <option>Makanan</option>
-                    <option>Minuman</option>
-                    <option>Snack</option>
-                </select>
-                <!-- add data -->
-                <button class="btn btn-primary ml-auto" (click)="open(addData)">Tambah</button>
-            </div>
-
-            <div class="container-fluid">
-                <table class="table table-bordered table-striped mt-4">
-                    <thead class="thead-dark">
-                    <tr>
-                        <th scope="col">No</th>
-                        <th scope="col">Produk</th>
-                        <th scope="col">Kategori</th>
-                        <th scope="col">Harga</th>
-                        <th scope="col">Aksi</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr *ngFor="let item of products">
-                        <th scope="row">{{item.id}}</th>
-                        <td>{{item.name}}</td>
-                        <td>{{item.category}}</td>
-                        <td>{{item.price}}</td>
-                        <td>
-                            <a href="" class="btn btn-warning me-2">Edit</a> <a href="" class="btn btn-danger">Hapus</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">1</th>
-                        <td class="text-left">Nasi Ayam Geprek</td>
-                        <td class="text-left">Makanan</td>
-                        <td  class="text-left">20.000</td>
-                        <td>
-                            <a class="btn btn-warning mr-2" (click)="open(editData)">
-                                <img src="../../../assets/img/edit-solid.svg" alt="" width="18">
-                            </a>
-                            <a href="" class="btn btn-danger">
-                                <img src="../../../assets/img/trash-solid.svg" alt="" width="16">
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">2</th>
-                        <td class="text-left">Nasi Goreng</td>
-                        <td class="text-left">Makanan</td>
-                        <td class="text-left">20.000</td>
-                        <td>
-                            <a class="btn btn-warning mr-2" (click)="open(editData)">
-                                <img src="../../../assets/img/edit-solid.svg" alt="" width="18">
-                            </a>
-                            <a href="" class="btn btn-danger align-items-center">
-                                <img src="../../../assets/img/trash-solid.svg" alt="" width="16">
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">3</th>
-                        <td class="text-left">Kopi</td>
-                        <td class="text-left">Minuman</td>
-                        <td class="text-left">20.000</td>
-                        <td>
-                            <a class="btn btn-warning mr-2" (click)="open(editData)">
-                                <img src="../../../assets/img/edit-solid.svg" alt="" width="18">
-                            </a>
-                            <a href="" class="btn btn-danger">
-                                <img src="../../../assets/img/trash-solid.svg" alt="" width="16">
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">4</th>
-                        <td class="text-left">Nasi Ayam Geprek</td>
-                        <td class="text-left">Makanan</td>
-                        <td class="text-left">20.000</td>
-                        <td>
-                            <a class="btn btn-warning mr-2" (click)="open(editData)">
-                                <img src="../../../assets/img/edit-solid.svg" alt="" width="18">
-                            </a>
-                            <a href="" class="btn btn-danger">
-                                <img src="../../../assets/img/trash-solid.svg" alt="" width="16">
-                            </a>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+<h2 class="">Produk</h2>
+<div class="bd-highlight d-flex align-items-center mt-3 ">
+    <!-- <label for="exampleFormControlSelect1" class="me-2">Kategori : </label> -->
+    <select class="form-select text-center rounded" id="kategori" style="width: 125px; height: 40px;">
+        <option>------</option>
+        <option>Makanan</option>
+        <option>Minuman</option>
+        <option>Snack</option>
+    </select>
+    <!-- add data -->
+    <button class="btn btn-primary ml-auto" (click)="open(addData)">Tambah</button>
 </div>
 
+<div class="container-fluid">
+    <table class="table table-bordered table-striped mt-4">
+        <thead class="thead-dark">
+        <tr>
+            <th scope="col">No</th>
+            <th scope="col">Produk</th>
+            <th scope="col">Kategori</th>
+            <th scope="col">Harga</th>
+            <th scope="col">Aksi</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let item of products; index as i">
+            <td>{{ i + 1}}</td>
+            <td>{{item.name}}</td>
+            <td>{{item.category}}</td>
+            <td>{{item.price}}</td>
+            <td>
+                <a class="btn btn-warning me-2" (click)="open(editData)">
+                    <img src="../../../assets/img/edit-solid.svg" alt="" width="18">
+                </a>
+                <a href="" class="btn btn-danger">
+                    <img src="../../../assets/img/trash-solid.svg" alt="" width="16">
+                </a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
 
 <ng-template #addData let-modal>
     <div class="modal-header">
