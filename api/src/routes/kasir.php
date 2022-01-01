@@ -6,7 +6,7 @@ use Service\Db;
 $app->post('/kasir/log_in', function ($request, $response) {
     $db = Db::db();
     $params = $request->getParsedBody();
-    $username = $params['username'];
+    $username = $params['email'];
     $password = sha1($params['password']);
     $data = $db->select('*')
         ->from('m_user')
@@ -25,7 +25,7 @@ $app->post('/kasir/log_in', function ($request, $response) {
             'message' => "sukses login"
         ]);
     } else {
-        return successResponse($response, [
+        return unprocessResponse($response, [
             'message' => "gagal login"
         ]);
     }
