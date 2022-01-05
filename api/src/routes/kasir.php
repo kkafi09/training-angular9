@@ -59,19 +59,19 @@ function emailCheck($email): bool
     return false;
 }
 
-function passCheck($password): bool
+function passCheck($password):bool
 {
     $db = Db::db();
-    $data = $db->select('*')
+    $data = $db->select('password')
         ->from('m_user')
-        ->where('password','=',$password);
-    $getPass = $data->findAll();
+        ->where('password', '=', sha1($password));
+    $model = $data->findAll();
 
-    if (count($getPass) == 0) {
-        return true;
-    } else {
+    if (count($model) >0) {
         return false;
     }
+
+    return true;
 }
 
 function confPassCheck($pass, $confirmpass): bool
@@ -156,14 +156,11 @@ $app->post('/kasir/update_profile', function ($request, $response) {
         ]);
     }
 
-//    if (!passCheck($input['passwordlama'])) {
-//        return successResponse($response, [
-//            'data' => $model,
-//            'data pw' => sha1($input['passwordlama']),
-//            'data id' => $input['id'],
-//            'message' => "gagal mengupdate data, password lama tidak sesuai"
-//        ]);
-//    }
+    if (passCheck($input['passwordlama']) == true) {
+        return unprocessResponse($response, [
+            'message' => "gagal mengupdate data, password lama tidak sesuai"
+        ]);
+    }
 
     if (emailCheck($input['email'])) {
         return successResponse($response, [
@@ -171,7 +168,7 @@ $app->post('/kasir/update_profile', function ($request, $response) {
         ]);
     }
 
-    if ($input['passwordlama'] == null || $input['passwordbaru'] == null && $input['confirmpass'] == null) {
+    if ($input['passwordlama'] == null && $input['passwordbaru'] == null && $input['confirmpass'] == null) {
         $value = [
             "id" => $input["id"],
             "nama" => $input["nama"],
@@ -185,7 +182,7 @@ $app->post('/kasir/update_profile', function ($request, $response) {
         ]);
     }
 
-    if (confirmPassUpdate($input['passwordbaru'], $input['confirmpass'] && passCheck($input['passwordlama']))) {
+    if (confirmPassUpdate($input['passwordbaru'], $input['confirmpass'])) {
 //        $db->update('m_user', $value, ["id" => $input["id"]]);
         return successResponse($response, [
             'message' => "semua data, berhasil di update"
@@ -232,7 +229,7 @@ $app->post('/kasir/forgot', function ($request, $response) {
     }
 });
 
-
+// delete
 $app->post('/kasir/delete', function ($request, $response) {
     $db = Db::db();
     $input = $request->getParsedBody();

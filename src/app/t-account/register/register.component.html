@@ -20,35 +20,24 @@
                         </div>
                     </div>
                     <div class="card-body pt-0">
-                        <!-- <div>
-                          <a href="/">
-                            <div class="avatar-md profile-user-wid mb-4">
-                              <span class="avatar-title rounded-circle bg-light">
-                                <img src="assets/images/logo.svg" alt="" class="rounded-circle" height="34">
-                              </span>
-                            </div>
-                          </a>
-                        </div> -->
                         <div class="p-4">
 
                             <form class="form-horizontal" name="signupForm" [formGroup]="signupForm"
-                                  (ngSubmit)="onSubmit()"
-                                  novalidate>
+                                  (ngSubmit)="onSubmit()">
 
-                                <!--                                <ngb-alert type="success" *ngIf="successmsg" [dismissible]="false">Registeration successfull.-->
-                                <!--                                </ngb-alert>-->
-
-                                <!--                                <ngb-alert type="danger" *ngIf="error" [dismissible]="false">{{ error }}</ngb-alert>-->
+<!--                                <ngb-alert type="success" *ngIf="successmsg" [dismissible]="false">Registeration-->
+<!--                                    successfull.-->
+<!--                                </ngb-alert>-->
+<!--                                <ngb-alert type="danger" *ngIf="error" [dismissible]="false">{{ error }}</ngb-alert>-->
 
                                 <div class="form-group mb-3">
-                                    <label for="name">Username</label>
-
+                                    <label for="name">Name</label>
                                     <input type="text" formControlName="name" class="form-control"
                                            [ngClass]="{ 'is-invalid': submitted && f.name.errors }" id="name"
-                                           placeholder="Enter username"/>
+                                           placeholder="Enter your name"/>
 
                                     <div *ngIf="submitted && f.name.errors" class="invalid-feedback">
-                                        <div *ngIf="f.name.errors.required">Userame is required</div>
+                                        <div *ngIf="f.name.errors.required">Name is required</div>
                                     </div>
                                 </div>
 
@@ -62,6 +51,58 @@
                                     <div *ngIf="submitted && f.email.errors" class="invalid-feedback">
                                         <div *ngIf="f.email.errors.required">Email is required</div>
                                         <div *ngIf="f.email.errors.email">Email must be a valid email address</div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="gender">Gender</label>
+                                    <select class="custom-select" id="gender" formControlName="gender"
+                                            [ngClass]="{ 'is-invalid': submitted && f.gender.errors }">
+                                        <option selected>Gender</option>
+                                        <option value="Laki-laki">Laki-laki</option>
+                                        <option value="Perempuan">Perempuan</option>
+                                    </select>
+
+                                    <div *ngIf="submitted && f.gender.errors" class="invalid-feedback">
+                                        <div *ngIf="f.gender.errors.required">Gender is required</div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="address">Address</label>
+
+                                    <input type="text" formControlName="address" class="form-control"
+                                           [ngClass]="{ 'is-invalid': submitted && f.address.errors }" id="address"
+                                           placeholder="Enter your Address"/>
+
+                                    <div *ngIf="submitted && f.address.errors" class="invalid-feedback">
+                                        <div *ngIf="f.address.errors.required">Address is required</div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label for="number">Phone Number</label>
+
+                                    <input type="number" formControlName="number" class="form-control"
+                                           [ngClass]="{ 'is-invalid': submitted && f.number.errors }" id="number"
+                                           placeholder="Enter your Phone Number"/>
+
+                                    <div *ngIf="submitted && f.number.errors" class="invalid-feedback">
+                                        <div *ngIf="f.number.errors.required">Phone Number is required</div>
+                                    </div>
+                                </div>
+
+
+
+                                <div class="form-group mb-3">
+                                    <label for="username">Username</label>
+
+                                    <input type="text" formControlName="username" class="form-control"
+                                           [ngClass]="{ 'is-invalid': submitted && f.name.errors }" id="username"
+                                           placeholder="Enter username"/>
+
+                                    <div *ngIf="submitted && f.username.errors" class="invalid-feedback">
+                                        <div *ngIf="f.username.errors.required">Userame is required</div>
                                     </div>
                                 </div>
 
@@ -92,7 +133,8 @@
                                 </div>
 
                                 <div class="mt-4">
-                                    <button class="btn btn-primary btn-block" type="submit" type="submit">Register</button>
+                                    <button class="btn btn-primary btn-block" type="submit" type="submit">Register
+                                    </button>
                                 </div>
                                 <div class="mt-4 text-center">
                                     <p class="mb-0">By registering you agree to the Skote <a href="javascript: void(0);"
@@ -107,7 +149,8 @@
                 <!-- end card -->
 
                 <div class="mt-5 text-center">
-                    <p>Already have an account ? <a href="/#/auth/login" class="font-weight-medium text-primary"> Login</a>
+                    <p>Already have an account ? <a href="/#/auth/login" class="font-weight-medium text-primary">
+                        Login</a>
                     </p>
                     <!-- <p>© {{year}} Skote. Crafted with <i class="mdi mdi-heart text-danger"></i> by Themesbrand</p> -->
                 </div>
